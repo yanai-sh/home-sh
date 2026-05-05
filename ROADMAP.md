@@ -76,7 +76,7 @@ The current thesis is a hybrid delivery model:
 
 - Astro serves durable HTML first.
 - Rust/WASM handles bounded, high-value visual/search workloads.
-- Cloudflare Pages serves the site.
+- A Cloudflare Worker (Workers with Static Assets) serves the site.
 - Cloudflare Workers handle contact and telemetry.
 - D1 stores coarse aggregate telemetry.
 - Structured content feeds all resume surfaces.
@@ -96,7 +96,7 @@ Boundary decisions:
 
 Shipped foundation:
 
-- Astro 6 SSR site under `apps/site`, deployed through Cloudflare Pages.
+- Astro 6 SSR site under `apps/site`, deployed as a Cloudflare Worker (Workers with Static Assets) via `wrangler deploy`.
 - Bun monorepo with `apps/site` and `packages/ui-system`.
 - Design tokens emitted from `src/design/tokens.ts` through `buildRootCss()`.
 - Panda config and UI recipes under `packages/ui-system`.

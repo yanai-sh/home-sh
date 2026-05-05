@@ -7,7 +7,7 @@ Short rationale for choices a reviewer or interviewer might ask about. (Drafting
 | Decision | Rationale |
 |----------|-----------|
 | **Astro 6 + `output: 'server'`** | HTML-first components, SSR where we read `Request` / Cloudflare metadata for the footer trace line. |
-| **Cloudflare Pages + `@astrojs/cloudflare`** | Edge SSR, global CDN, one vendor for DNS + TLS + compute; **`astro preview`** (workerd) exercises the built artifact; deploy uses **`wrangler pages deploy`**. |
+| **Cloudflare Workers with Static Assets + `@astrojs/cloudflare` v13** | Edge SSR Worker serving its own static `client/` assets via the `ASSETS` binding. One vendor for DNS + TLS + compute; **`astro preview`** (workerd) exercises the built artifact; deploy uses **`wrangler deploy`** against `apps/site/dist/server/wrangler.json`. Cloudflare deprecated the Pages-Functions output path for new SSR apps in 2024–2025; the v13 adapter emits the Workers-shape bundle by default. |
 | **Bun** | Fast install/run, native TS, aligns with modern tooling; CI pins a minor line via `packageManager` + `engines`. |
 | **Monaspace** ([githubnext/monaspace](https://github.com/githubnext/monaspace)) | UI font (Neon on `body`); served from `@fontsource/monaspace-*` npm packages imported in `Layout.astro`. |
 
@@ -44,7 +44,7 @@ Short rationale for choices a reviewer or interviewer might ask about. (Drafting
 | **Biome** | Lint + format for JS/TS/config | ESLint + Prettier = two configs, slower; Biome is one fast formatter/linter. Astro templates still rely on **`astro check`** for template/types. |
 | **`@astrojs/check` + `astro check`** | `.astro` + TS diagnostics | Biome’s Astro story is intentionally limited here (see `biome.json` overrides); official check is the right layer. |
 | **TypeScript (strict) + `@astrojs/ts-plugin`** | Types + editor IntelliSense in `.astro` | No `vue-tsc`-style alternative for Astro; plugin is editor-focused, not runtime. |
-| **Wrangler + `wrangler-action`** | Pages deploy + local `pages dev` | Matches Cloudflare’s supported path; no generic “static host” shim for SSR. |
+| **Wrangler 4.x (project-pinned)** | `wrangler deploy` from CI + local `wrangler dev` | The `cloudflare/wrangler-action` ships wrangler 3.x which rejects v13-adapter output (top-level `triggers`, `ai_search` bindings, etc.). CI runs `bun run --cwd apps/site deploy` against the project-pinned 4.x. |
 | **Dependabot** | Monthly PRs for **`bun`** + **GitHub Actions** | No third-party app; weaker than Renovate for grouping/rules—acceptable for one maintainer. |
 | **Lefthook** | **`pre-push`** → **`verify`** only | **pre-commit** (framework) would add a Python runtime; Husky is fine but Lefthook stays one YAML + Bun-native **`prepare`**. |
 | **No Commitizen / commitlint / git-cliff** | Plain **`git commit`**; **`CHANGELOG`** by hand | Solo repo: generated changelogs and message lint were more ceremony than signal. |
@@ -56,7 +56,7 @@ Short rationale for choices a reviewer or interviewer might ask about. (Drafting
 | Situation | What to do |
 |-----------|------------|
 | **Before M0 alpha candidate** | A missing `origin` is intentional. Keep work local until `bun run verify` and the manual alpha deployment smoke test pass. |
-| **Alpha candidate accepted** | Set `origin` to **`yanai-sh/home-sh`**, push the branch/tag, then connect GitHub to Cloudflare Pages. |
+| **Alpha candidate accepted** | Set `origin` to **`yanai-sh/home-sh`**, push the branch/tag, then ensure the Deploy workflow secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `PUBLIC_TURNSTILE_SITE_KEY`) are set on the repo so `wrangler deploy` can publish. |
 | **`main` push rejected** | Expected when rulesets require PRs. Push a **topic branch**, open **PR → `main`**, merge when **CI / verify** is green. |
 | **Local `main` ahead of `origin/main`** | Usually means unpushed merges or local commits—publish via PR; avoid **`git push origin main`** if rulesets forbid it. |
 | **CI badge** | README tracks **`main`** (same branch as deploy). |

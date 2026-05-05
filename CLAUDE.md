@@ -4,7 +4,7 @@
 
 ## Cold-start essentials
 
-- **Bun monorepo** — Astro 6 SSR (Cloudflare Pages) + Rust/WASM (`apps/wasm/*`) + Cloudflare Workers (`infra/workers/*`).
+- **Bun monorepo** — Astro 6 SSR as a Cloudflare Worker with Static Assets + Rust/WASM (`apps/wasm/*`) + standalone Cloudflare Workers (`infra/workers/*`).
 - **Bun only** — `bun install`, `bun run`, `bun test`, `bunx`. No npm/yarn/pnpm. `.env` auto-loaded.
 - **Verify before claiming done:** `bun run verify` (= check → typecheck → test → build; mirrors CI).
 - **Polyglot tasks:** `just --list` (WASM, Workers, OpenTofu).

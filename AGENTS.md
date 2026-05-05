@@ -1,6 +1,6 @@
 ## This repository
 
-**Bun monorepo** — Astro SSR site on Cloudflare Pages + Rust/WASM modules + Cloudflare Workers. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+**Bun monorepo** — Astro 6 SSR site as a Cloudflare Worker (Workers with Static Assets) + Rust/WASM modules + standalone Cloudflare Workers under `infra/workers/`. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ### Monorepo layout
 
@@ -51,7 +51,7 @@ Canonical values live in **`src/design/tokens.ts`**. **`buildRootCss()`** in **`
 ### GitHub Actions
 
 - **CI** (`.github/workflows/ci.yml`): **`pull_request`** to **`main`** only — job **`CI / verify`**.
-- **Deploy** (`.github/workflows/deploy.yml`): **`push`** to **`main`** — runs **`verify`**, then Cloudflare Pages deploy.
+- **Deploy** (`.github/workflows/deploy.yml`): **`push`** to **`main`** — runs **`verify`**, then `wrangler deploy` of the site Worker via the project-pinned wrangler 4.x.
 
 ### Local hooks
 
