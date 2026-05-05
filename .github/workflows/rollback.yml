@@ -57,11 +57,10 @@ jobs:
       - name: Promote target version to 100%
         run: |
           set -euo pipefail
-          bun run --cwd apps/site exec -- \
-            wrangler versions deploy "${{ inputs.version_id }}@100%" \
-              --config dist/server/wrangler.json \
-              --message "rollback by ${{ github.actor }}: ${{ inputs.reason }}" \
-              --yes
+          bun run --cwd apps/site version-deploy -- \
+            "${{ inputs.version_id }}@100%" \
+            --message "rollback by ${{ github.actor }}: ${{ inputs.reason }}" \
+            --yes
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

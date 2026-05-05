@@ -46,18 +46,16 @@ jobs:
 
       - name: Upload Worker version
         id: upload
-        # Use project-pinned wrangler 4.x. The action's bundled wrangler 3.x
-        # rejects the v13-adapter wrangler.json (triggers, ai_search, etc.).
+        # Project-pinned wrangler 4.x via the `version-upload` script in
+        # apps/site/package.json. Extra args after `--` are forwarded to wrangler.
         # `--message` annotates each version with the commit subject so the
         # Cloudflare dashboard's version history is human-readable.
         # `--tag` records the short SHA for traceability when rolling back.
         run: |
           set -euo pipefail
-          OUTPUT="$(bun run --cwd apps/site exec -- \
-            wrangler versions upload \
-              --config dist/server/wrangler.json \
-              --message "$(git log --format='%s' -1)" \
-              --tag "${GITHUB_SHA:0:7}")"
+          OUTPUT="$(bun run --cwd apps/site version-upload -- \
+            --message "$(git log --format='%s' -1)" \
+            --tag "${GITHUB_SHA:0:7}")"
           echo "$OUTPUT"
           # Wrangler prints "Worker Version ID: <uuid>" on success.
           VERSION_ID="$(printf '%s\n' "$OUTPUT" | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $4}')"
@@ -73,11 +71,10 @@ jobs:
       - name: Promote version to 100% production traffic
         run: |
           set -euo pipefail
-          bun run --cwd apps/site exec -- \
-            wrangler versions deploy "${{ steps.upload.outputs.version_id }}@100%" \
-              --config dist/server/wrangler.json \
-              --message "auto-promote ${GITHUB_SHA:0:7} from $(git log --format='%s' -1 | head -c 60)" \
-              --yes
+          bun run --cwd apps/site version-deploy -- \
+            "${{ steps.upload.outputs.version_id }}@100%" \
+            --message "auto-promote ${GITHUB_SHA:0:7} from $(git log --format='%s' -1 | head -c 60)" \
+            --yes
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
