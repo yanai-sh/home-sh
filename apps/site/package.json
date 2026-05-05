@@ -4,11 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "panda codegen && astro dev --host 127.0.0.1",
-    "build": "panda codegen && astro build",
+    "wrangler-types": "wrangler types ./src/worker-configuration.d.ts",
+    "dev": "bun run wrangler-types && panda codegen && astro dev --host 127.0.0.1",
+    "build": "bun run wrangler-types && panda codegen && astro build",
     "check": "biome check ./src astro.config.mjs package.json",
     "fix": "biome check --write ./src astro.config.mjs package.json",
-    "typecheck": "astro check",
+    "typecheck": "bun run wrangler-types && astro check",
     "test": "bun test ./src",
     "verify": "bun run check && bun run typecheck && bun run test && bun run build",
     "preview": "bun scripts/strip-dist-wrangler-assets-binding.ts && astro preview"

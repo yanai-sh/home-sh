@@ -47,11 +47,6 @@ wasm-lint:
 worker-types:
     wrangler types --config infra/workers/telemetry-write/wrangler.jsonc --output-path infra/workers/telemetry-write/worker-configuration.d.ts
     wrangler types --config infra/workers/telemetry-read/wrangler.jsonc  --output-path infra/workers/telemetry-read/worker-configuration.d.ts
-    wrangler types --config infra/workers/contact/wrangler.jsonc         --output-path infra/workers/contact/worker-configuration.d.ts
-
-# Deploy contact Worker (staging)
-deploy-contact:
-    wrangler deploy --config infra/workers/contact/wrangler.jsonc
 
 # Deploy telemetry Workers (staging)
 deploy-telemetry:
@@ -99,10 +94,6 @@ tf-secrets:
 # Write apps/site/.env from direnv-loaded env (PUBLIC_TURNSTILE_SITE_KEY)
 refresh-env:
     ./scripts/refresh-site-env.sh
-
-# Write infra/workers/contact/.dev.vars from direnv-loaded env
-refresh-worker-env:
-    ./scripts/refresh-worker-env.sh
 
 # ── Full pipeline ────────────────────────────────────────────────────────────
 

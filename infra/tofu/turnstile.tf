@@ -1,8 +1,11 @@
 # Turnstile widget for the contact form.
-# The widget id (cloudflare_turnstile_widget.contact.id) IS the public site key,
-# referenced from the Pages project as PUBLIC_TURNSTILE_SITE_KEY.
-# The widget secret is committed under "turnstile_secret" in secrets.enc.json
-# after first apply (run `tofu output -raw turnstile_secret`, then sops-edit).
+# The widget id (cloudflare_turnstile_widget.contact.id) IS the public site key —
+# Astro reads it from PUBLIC_TURNSTILE_SITE_KEY (committed in secrets.enc.json
+# under "public_turnstile_site_key") at build time and embeds in the contact form HTML.
+# The widget secret is read by the site Worker's /api/contact route from the
+# TURNSTILE_SECRET binding (set via `wrangler secret put`).
+# After first apply, run `tofu output -raw turnstile_secret` and sops-edit
+# secrets.enc.json to keep the SOPS source of truth in sync.
 
 resource "cloudflare_turnstile_widget" "contact" {
   account_id = data.sops_file.secrets.data["cloudflare_account_id"]

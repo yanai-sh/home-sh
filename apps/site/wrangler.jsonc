@@ -1,13 +1,20 @@
 {
-  // Cloudflare Workers config for Pages SSR (Astro @astrojs/cloudflare).
-  // `pages_build_output_dir` must match `astro build` output; keep in sync with CI `pages deploy dist`.
+  // Cloudflare Worker config for the Astro 6 SSR site (@astrojs/cloudflare v13
+  // emits a Workers-with-Static-Assets bundle to dist/server/{entry.mjs,wrangler.json}
+  // and dist/client/). The Astro adapter reads this file and merges it into the
+  // generated dist/server/wrangler.json which is what `wrangler deploy` consumes.
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "yanai-sh",
   "compatibility_date": "2026-04-21",
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "pages_build_output_dir": "./dist",
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "24a11b0f6e8d48c5b0ac070019588200"
+    }
+  ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
