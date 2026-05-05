@@ -32,7 +32,12 @@ permissions:
   contents: read
 
 concurrency:
+  # Share the deploy group — a rollback IS a deploy (different version pointer).
+  # Mixing them in one group prevents a Deploy from racing a Rollback or
+  # vice-versa, which could leave the Worker pointing at an unintended version.
   group: workers-deploy-${{ github.ref }}
+  # Never cancel a rollback in progress — incident response is the highest
+  # priority; if a rollback is running, anything else waits.
   cancel-in-progress: false
 
 jobs:

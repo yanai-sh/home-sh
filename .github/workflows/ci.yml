@@ -10,6 +10,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Cancel stale PR runs. Inverse of Deploy's queue policy: each PR push
+  # supersedes the previous one (newer code under review = older test run is
+  # already obsolete). Saves CI minutes on rapid force-pushes during a PR.
   cancel-in-progress: true
 
 jobs:

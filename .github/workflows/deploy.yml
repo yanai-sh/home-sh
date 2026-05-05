@@ -20,7 +20,13 @@ permissions:
 
 concurrency:
   group: workers-deploy-${{ github.ref }}
-  cancel-in-progress: true
+  # Queue, don't cancel. Every push to `main` represents an intentional state
+  # that should land as its own Worker version (rollback granularity, audit
+  # trail, dashboard history). Cancelling mid-deploy wastes the upload step
+  # AND hides commits from the version log. The serial execution cost (~50s
+  # per push when many land at once, e.g. dependabot auto-merge) is the
+  # correct tradeoff for a production deploy pipeline.
+  cancel-in-progress: false
 
 jobs:
   publish:
