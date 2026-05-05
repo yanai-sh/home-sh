@@ -23,7 +23,8 @@ Short rationale for choices a reviewer or interviewer might ask about. (Drafting
 | Decision | Rationale |
 |----------|-----------|
 | **Protected `main` + PRs from topic branches** | Trunk flow: topic branch → PR → **`main`**. **CI:** **`pull_request`** to **`main`** only (`.github/workflows/ci.yml`). **`push`** to **`main`** does not re-run CI—**Deploy** already runs **`verify`** on that path. |
-| **Deploy workflow runs `bun run verify` before upload** | Same **`verify`** as PR CI; the Pages artifact is never uploaded without a full gate. |
+| **Deploy workflow runs `bun run verify` before upload** | Same **`verify`** as PR CI; the Worker version is never uploaded without a full gate. |
+| **Versioned deploys (`wrangler versions upload` + `versions deploy @100%`)** | Each push uploads an immutable Worker version (0% traffic), then promotes it. Decouples build from rollout — instant rollback via **`.github/workflows/rollback.yml`** without rebuilding. Cloudflare retains ~10 versions for rollback eligibility. |
 | **No `release-please` in-repo** | PAT/rules friction on strict **`main`**; tags + hand-edited **`CHANGELOG.md`** are enough at this size. |
 | **Dependabot (monthly) instead of Renovate** | Native GitHub: **`.github/dependabot.yml`** for **`bun`** + **`github-actions`**, **monthly** schedule—low noise for a solo repo. **Disable** Dependabot in repo settings if you prefer fully manual bumps. |
 

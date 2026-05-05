@@ -1,0 +1,75 @@
+# Manual rollback to a previous Worker version.
+#
+# When to use:
+#   - Latest deploy broke production and a fix would take too long to roll
+#     forward (CI rebuild is ~1 min; this rollback is ~10 sec).
+#   - A regression slipped past CI (e.g. visible only at runtime against real
+#     bindings) and needs to be reverted while you investigate.
+#
+# Find the target version_id:
+#   - Cloudflare Dashboard → Workers & Pages → yanai-sh → Deployments
+#   - OR locally: `bun run --cwd apps/site exec wrangler versions list --config apps/site/dist/server/wrangler.json`
+#
+# Note: Cloudflare retains the last ~10 versions per Worker. Older deploys age
+# out of the rollback-eligible set.
+
+name: Rollback Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_id:
+        description: "Worker version id (UUID) to promote to 100% — see Cloudflare dashboard or `wrangler versions list`"
+        required: true
+        type: string
+      reason:
+        description: "Why are you rolling back? (logged in the version's deploy message)"
+        required: false
+        type: string
+        default: "manual rollback"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workers-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Astro emits dist/server/wrangler.json — wrangler needs the file path,
+      # but it doesn't need to match the version being rolled back to. Any
+      # current-shape wrangler.json points at the Worker by name.
+      - name: Build (for wrangler.json)
+        run: bun run --cwd apps/site build
+        env:
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
+
+      - name: Promote target version to 100%
+        run: |
+          set -euo pipefail
+          bun run --cwd apps/site exec -- \
+            wrangler versions deploy "${{ inputs.version_id }}@100%" \
+              --config dist/server/wrangler.json \
+              --message "rollback by ${{ github.actor }}: ${{ inputs.reason }}" \
+              --yes
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          # Give the edge a few seconds to propagate the new active version.
+          sleep 10
+          curl -fsSL --http1.1 -4 -o /dev/null -w "HTTP %{http_code}\n" https://yanai.sh/
+          curl -fsSL --http1.1 -4 -o /dev/null -w "HTTP %{http_code} /resume\n" https://yanai.sh/resume

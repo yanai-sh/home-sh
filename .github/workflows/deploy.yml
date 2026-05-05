@@ -1,5 +1,12 @@
 # Production only: runs after merges land on `main`.
-# Build → wrangler deploy of the Astro Worker. Each push uploads a fresh artifact.
+# Two-step versioned deploy:
+#   1) `wrangler versions upload` — uploads code + bindings as an immutable
+#      version (0% traffic, addressable at a unique preview URL).
+#   2) `wrangler versions deploy <id>@100%` — promotes the version to take
+#      all production traffic at the Custom Domain (yanai.sh).
+# Decoupling the two enables instant rollback (.github/workflows/rollback.yml)
+# without rebuilding — earlier versions stay accessible until Cloudflare's
+# 10-version retention rolls them off.
 
 name: Deploy
 
@@ -37,12 +44,40 @@ jobs:
           # Turnstile widget renders. Public value (widget id), not a secret.
           PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
 
-      - name: Deploy Worker
-        # Use project-pinned wrangler 4.x (devDependency in apps/site) instead of
-        # cloudflare/wrangler-action which still ships wrangler 3.x. The dist
-        # wrangler.json that Astro adapter v13 emits uses wrangler 4.x schema
-        # (e.g. triggers: {} top-level, ai_search bindings) which 3.x rejects.
-        run: bun run --cwd apps/site deploy
+      - name: Upload Worker version
+        id: upload
+        # Use project-pinned wrangler 4.x. The action's bundled wrangler 3.x
+        # rejects the v13-adapter wrangler.json (triggers, ai_search, etc.).
+        # `--message` annotates each version with the commit subject so the
+        # Cloudflare dashboard's version history is human-readable.
+        # `--tag` records the short SHA for traceability when rolling back.
+        run: |
+          set -euo pipefail
+          OUTPUT="$(bun run --cwd apps/site exec -- \
+            wrangler versions upload \
+              --config dist/server/wrangler.json \
+              --message "$(git log --format='%s' -1)" \
+              --tag "${GITHUB_SHA:0:7}")"
+          echo "$OUTPUT"
+          # Wrangler prints "Worker Version ID: <uuid>" on success.
+          VERSION_ID="$(printf '%s\n' "$OUTPUT" | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $4}')"
+          if [ -z "$VERSION_ID" ]; then
+            echo "::error::Failed to parse Worker Version ID from wrangler output" >&2
+            exit 1
+          fi
+          echo "version_id=$VERSION_ID" >> "$GITHUB_OUTPUT"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Promote version to 100% production traffic
+        run: |
+          set -euo pipefail
+          bun run --cwd apps/site exec -- \
+            wrangler versions deploy "${{ steps.upload.outputs.version_id }}@100%" \
+              --config dist/server/wrangler.json \
+              --message "auto-promote ${GITHUB_SHA:0:7} from $(git log --format='%s' -1 | head -c 60)" \
+              --yes
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
