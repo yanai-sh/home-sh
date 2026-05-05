@@ -12,7 +12,8 @@
     "typecheck": "bun run wrangler-types && astro check",
     "test": "bun test ./src",
     "verify": "bun run check && bun run typecheck && bun run test && bun run build",
-    "preview": "bun scripts/strip-dist-wrangler-assets-binding.ts && astro preview"
+    "preview": "bun scripts/strip-dist-wrangler-assets-binding.ts && astro preview",
+    "deploy": "wrangler deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.2.0",

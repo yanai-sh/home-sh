@@ -38,8 +38,11 @@ jobs:
           PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
 
       - name: Deploy Worker
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config apps/site/dist/server/wrangler.json
+        # Use project-pinned wrangler 4.x (devDependency in apps/site) instead of
+        # cloudflare/wrangler-action which still ships wrangler 3.x. The dist
+        # wrangler.json that Astro adapter v13 emits uses wrangler 4.x schema
+        # (e.g. triggers: {} top-level, ai_search bindings) which 3.x rejects.
+        run: bun run --cwd apps/site deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
