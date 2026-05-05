@@ -5,6 +5,10 @@
 resource "cloudflare_d1_database" "telemetry" {
   account_id = data.sops_file.secrets.data["cloudflare_account_id"]
   name       = "home-sh-telemetry"
+
+  read_replication = {
+    mode = "disabled"
+  }
 }
 
 # ── KV Namespace ──────────────────────────────────────────────────────────────

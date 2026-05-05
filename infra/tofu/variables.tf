@@ -3,9 +3,9 @@
 # override. Most consumers shouldn't need to touch any variable here.
 
 variable "cloudflare_zone_id" {
-  description = "Cloudflare zone ID for yanai.sh. Currently unused; reserved for future DNS/route resources."
+  description = "Cloudflare zone ID for yanai.sh. Public identifier (not a credential), pinned here as the canonical reference."
   type        = string
-  default     = ""
+  default     = "9f72e70b8725ed50571fb17288a31344"
 }
 
 variable "github_owner" {

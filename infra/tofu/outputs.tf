@@ -18,3 +18,13 @@ output "turnstile_secret" {
   value       = cloudflare_turnstile_widget.contact.secret
   sensitive   = true
 }
+
+output "yanai_sh_custom_domain_id" {
+  description = "Worker Custom Domain id binding yanai.sh to the yanai-sh Worker — Cloudflare-managed cert + DNS"
+  value       = cloudflare_workers_custom_domain.yanai_sh.id
+}
+
+output "yanai_sh_custom_domain_cert_id" {
+  description = "TLS cert id auto-provisioned for yanai.sh"
+  value       = cloudflare_workers_custom_domain.yanai_sh.cert_id
+}
