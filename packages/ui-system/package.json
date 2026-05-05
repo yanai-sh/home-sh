@@ -1,0 +1,13 @@
+{
+  "name": "@yanai-sh/ui-system",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "devDependencies": {
+    "@pandacss/dev": "^0.53.0"
+  }
+}

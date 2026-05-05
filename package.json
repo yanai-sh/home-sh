@@ -1,0 +1,33 @@
+{
+  "name": "yanai-sh",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal portfolio — yanai.sh monorepo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yanai-sh/yanai-sh.github.io.git"
+  },
+  "packageManager": "bun@1.3.13",
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "workspaces": ["apps/site", "packages/ui-system"],
+  "scripts": {
+    "dev": "bun run --cwd apps/site dev",
+    "build": "bun run sync:resume && bun run --cwd apps/site build",
+    "check": "bun run --cwd apps/site check",
+    "fix": "bun run --cwd apps/site fix",
+    "typecheck": "bun run --cwd apps/site typecheck",
+    "test": "bun run --cwd apps/site test",
+    "verify": "bun run sync:resume && bun run --cwd apps/site verify",
+    "preview": "bun run --cwd apps/site preview",
+    "sync:resume": "bun scripts/sync-resume.ts",
+    "prepare": "bun -e \"if (!process.env.CI) { const r = Bun.spawnSync(['bun','x','lefthook','install'],{stdio:['inherit','inherit','inherit']}); process.exit(r.exitCode ?? 0); }\""
+  },
+  "devDependencies": {
+    "lefthook": "^2.1.6",
+    "playwright": "^1.59.1"
+  }
+}

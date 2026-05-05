@@ -1,0 +1,17 @@
+# Native GitHub dependency PRs (no Renovate / third-party app).
+# Schedule: `monthly` is the slowest interval Dependabot supports—there is no built-in bi-monthly.
+# Security advisories still surface in the Security tab; this adds version bumps for Bun + Actions.
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies

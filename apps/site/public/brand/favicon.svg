@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
+  <title>yanai.sh</title>
+  <rect width="64" height="64" rx="10" fill="#0A0A0A" />
+  <circle cx="32" cy="32" r="24" fill="#2F6BFF" opacity="0.18" />
+  <path d="M18 22h14v6H24v5h8v6h-8v9h-6V22Z" fill="#F5F7FA" />
+  <path d="M38 22h8v20h-8v6h-6V36h8v-8h-8v-6h6Z" fill="#2F6BFF" />
+</svg>

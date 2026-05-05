@@ -1,0 +1,39 @@
+{
+  "name": "@yanai-sh/site",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "panda codegen && astro dev --host 127.0.0.1",
+    "build": "panda codegen && astro build",
+    "check": "biome check ./src astro.config.mjs package.json",
+    "fix": "biome check --write ./src astro.config.mjs package.json",
+    "typecheck": "astro check",
+    "test": "bun test ./src",
+    "verify": "bun run check && bun run typecheck && bun run test && bun run build",
+    "preview": "bun scripts/strip-dist-wrangler-assets-binding.ts && astro preview"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^13.2.0",
+    "@fontsource/ibm-plex-mono": "^5.2.5",
+    "@fontsource/ibm-plex-serif": "^5.2.5",
+    "@yanai-sh/ui-system": "workspace:*",
+    "astro": "^6.1.9",
+    "gsap": "^3.15.0",
+    "lenis": "^1.3.23",
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.8",
+    "@astrojs/sitemap": "^3.7.2",
+    "@astrojs/ts-plugin": "^1.10.7",
+    "@biomejs/biome": "^2.4.12",
+    "@cloudflare/workers-types": "^4.20260423.1",
+    "@pandacss/dev": "^0.53.0",
+    "@types/bun": "^1.3.13",
+    "@types/three": "^0.184.0",
+    "postcss": "^8.5.6",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.87.0"
+  }
+}

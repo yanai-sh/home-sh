@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "apps/wasm/bridge",
+    "apps/wasm/canvas",
+    "apps/wasm/search",
+]

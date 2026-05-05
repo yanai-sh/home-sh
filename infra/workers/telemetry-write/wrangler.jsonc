@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "yanai-sh-telemetry-write",
+  "main": "index.ts",
+  "compatibility_date": "2026-04-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "home-sh-telemetry",
+      // Replace with actual database_id after `wrangler d1 create home-sh-telemetry`
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "../../infra/migrations"
+    }
+  ],
+  "routes": [
+    { "pattern": "yanai.sh/api/telemetry/beacon", "zone_name": "yanai.sh" }
+  ]
+}

@@ -1,0 +1,24 @@
+# https://lefthook.dev
+# We use Lefthook instead of pre-commit: no Python runtime; pairs with Bun and `bun install` → `prepare`.
+
+pre-commit:
+  commands:
+    # Belt-and-suspenders identity guard. The repo lives under ~/dev/sandbox/
+    # so global gitconfig's includeIf already pins user.email to me@yanai.sh,
+    # but a manual `git config user.email <kardome>` override would otherwise
+    # slip through. Abort any commit whose configured author looks like work.
+    no-work-identity:
+      run: |
+        email="$(git config user.email)"
+        case "$email" in
+          *@kardome.com|*kardome*|*klugman.yanai*)
+            echo "lefthook: refusing to commit — configured user.email is '$email'." >&2
+            echo "lefthook: this repo is personal; expected me@yanai.sh." >&2
+            exit 1
+            ;;
+        esac
+
+pre-push:
+  commands:
+    verify:
+      run: bun run verify

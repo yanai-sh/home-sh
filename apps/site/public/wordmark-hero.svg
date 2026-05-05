@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80" width="400" height="80" role="img">
+  <title>yanai.sh</title>
+  <desc>Wordmark (same as /brand/wordmark.svg). Monaspace Neon ExtraBold from /fonts.</desc>
+  <style>
+    @font-face {
+      font-family: "Monaspace Neon";
+      font-style: normal;
+      font-weight: 800;
+      font-display: block;
+      src: url("fonts/MonaspaceNeon-ExtraBold.woff2") format("woff2");
+    }
+    .w {
+      font-family: "Monaspace Neon", ui-monospace, monospace;
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+  </style>
+  <text
+    class="w"
+    x="50%"
+    y="50%"
+    text-anchor="middle"
+    dominant-baseline="middle"
+  >
+    <tspan fill="#F5F5F7">yanai</tspan><tspan fill="#2F6BFF">.sh</tspan>
+  </text>
+</svg>

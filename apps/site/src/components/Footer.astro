@@ -1,0 +1,108 @@
+---
+import type { FooterEdgeProps } from "@lib/footer-edge";
+
+type Props = FooterEdgeProps;
+---
+
+<footer class="footer-container" aria-hidden="true">
+  <div class="status-line">
+    <div class="segment">
+      <span class="status-indicator"></span>
+      <span class="label">SSR_ACTIVE</span>
+    </div>
+
+    <span class="divider">/</span>
+
+    <div class="segment trace">
+      <span class="meta" title="Protocol">{Astro.props.protocol}</span>
+      <span class="meta" title="Edge Node">{Astro.props.colo}</span>
+      <span class="meta highlight" title="Unique Request Trace"
+        >{Astro.props.ray}</span
+      >
+    </div>
+
+    <span class="divider">/</span>
+
+    <div class="segment">
+      <span class="label">VERIFIED_CONNECTION</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer-container {
+    position: fixed;
+    bottom: max(var(--spacing-8), env(safe-area-inset-bottom, 0px));
+    left: max(var(--spacing-12), env(safe-area-inset-left, 0px));
+    right: max(var(--spacing-12), env(safe-area-inset-right, 0px));
+    display: flex;
+    justify-content: flex-start;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-12);
+    padding: var(--spacing-8) 0;
+    color: rgba(245, 245, 247, 0.24);
+    font-family: var(--fonts-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    border-top: 1px solid rgba(245, 245, 247, 0.07);
+    max-width: min(100%, calc(100vw - max(var(--spacing-16), 2vi) - max(var(--spacing-16), 2vi)));
+    box-sizing: border-box;
+  }
+
+  .segment {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    min-width: 0;
+  }
+
+  .status-indicator {
+    width: 8px;
+    height: 8px;
+    background: #2F6BFF;
+    clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+    box-shadow: 0 0 10px rgba(47, 107, 255, 0.35);
+  }
+
+  .divider {
+    color: rgba(245, 245, 247, 0.18);
+    font-weight: 300;
+  }
+
+  .trace {
+    font-family: var(--fonts-mono);
+    gap: var(--spacing-12);
+    min-width: 0;
+  }
+
+  .highlight {
+    color: rgba(245, 245, 247, 0.16);
+    max-width: 14ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .label {
+    opacity: 0.7;
+    font-size: 11px;
+  }
+
+  @media (max-width: 860px) {
+    .footer-container {
+      display: none;
+    }
+  }
+
+  @media (max-height: 520px) and (orientation: landscape) {
+    .footer-container {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,10 @@
+# Provider binaries and cache
+.terraform/
+
+# State files — use Terraform Cloud or a remote backend instead.
+# Glob covers terraform.tfstate, .backup, and timestamped backups (.<ts>.backup).
+terraform.tfstate*
+
+# Local var overrides — never commit real credentials
+*.tfvars
+!terraform.tfvars.example

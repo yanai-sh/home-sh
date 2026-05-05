@@ -1,0 +1,243 @@
+{
+  "source": {
+    "owner": "yanai-sh",
+    "repo": "resume",
+    "path": "resume.toml",
+    "url": "https://github.com/yanai-sh/resume",
+    "fetchedAt": null,
+    "commitSha": null,
+    "fallback": true
+  },
+  "format": "home-sh-resume-v1",
+  "data": {
+    "header": {
+      "name": "Yanai Klugman",
+      "headline": "Forward Deployed Software Engineer",
+      "email": "me@yanai.sh",
+      "phone": "+972 53-270-2380",
+      "location": "Raanana, Israel"
+    },
+    "summary": "Software developer with systems, integration, infrastructure, and DevOps experience across customer-facing engineering environments. Field work across six international customer sites covering discovery, on-site release, validation, customer-hardware tuning, and demo control software. Native English speaker, Hebrew fluent, Israeli security clearance. M.A. in Organizational Behavior supports customer interviews, executive conversations, and coordination with engineering teams.",
+    "links": [
+      {
+        "label": "yanai.sh",
+        "url": "https://yanai.sh"
+      },
+      {
+        "label": "github.com/yanai-sh",
+        "url": "https://github.com/yanai-sh"
+      },
+      {
+        "label": "linkedin.com/in/yanaiklugman",
+        "url": "https://linkedin.com/in/yanaiklugman"
+      }
+    ],
+    "experience": [
+      {
+        "company": "Kardome",
+        "role": "Audio Systems & Software Engineer",
+        "period": "Dec 2024 - Present",
+        "location": "Tel Aviv, IL",
+        "summary": "",
+        "subtitle": "Systems Integration | Forward Deployment",
+        "highlights": [
+          "Validated and shipped Kardome's on-device Voice AI for the 2026 Hyundai ELEXIO customer program with Hyundai's China R&D center (HMTC), covering QA, field testing, library tuning on customer hardware, and release follow-up.",
+          "Performed vehicle validation across Seoul, Yantai, Sydney, and Dubai, documenting capture quality, wake-up behavior, and in-cabin edge cases for Hyundai customer engineers.",
+          "Integrated Kardome's Voice AI on-site at Toyota R&D in Sunnyvale alongside Toyota's engineering team.",
+          "Implemented offline tool-calling logic that maps free-form driver utterances to OEM vehicle functions and parameters without fixed commands or grammar.",
+          "Configured demo vehicles in Paris and ran Renault engineering evaluations with on-site QA and R&D debugging.",
+          "Deployed Docker Swarm and Traefik runtime controls for offline STT workloads on non-Kubernetes hardware, including wake-up, traffic-swap, and reset thresholds.",
+          "Built an on-site field-engineering utility outside assigned scope for audio tuning, embedded head-unit file management, recording workflows, and demo controls.",
+          "Extended the Python wrapper with recording, channel separation, and microphone-array controls, reducing validation script boilerplate by 95%.",
+          "Prepared demo vehicles for CES 2026 in Las Vegas."
+        ],
+        "skills": [
+          "backend",
+          "systems",
+          "cpp",
+          "python"
+        ]
+      },
+      {
+        "company": "BDR Group",
+        "role": "Backend .NET Engineer",
+        "period": "May 2024 - Nov 2024",
+        "location": "Ness Tziona, IL",
+        "summary": "",
+        "subtitle": "Embedded Linux & .NET Backend",
+        "highlights": [
+          "Modernized operator quality-control reporting services during a .NET 8 migration.",
+          "Wired dependency injection and updated CI/CD pipelines for backend service builds.",
+          "Connected embedded Linux devices to production reporting workflows for operator-facing fault tracking.",
+          "Integrated computer-vision model outputs into quality-control reports so line faults surfaced in operator tools."
+        ],
+        "skills": [
+          "backend",
+          "devops"
+        ]
+      },
+      {
+        "company": "Cognyte: NEXYTE",
+        "role": "Solutions & ETL Engineer",
+        "period": "Jun 2023 - Mar 2024",
+        "location": "Herzliya, IL",
+        "summary": "",
+        "subtitle": "Decision Intelligence Platform",
+        "highlights": [
+          "Adapted NEXYTE's ingestion pipeline to customer-specific data schemas without modifying core product and reused the deployment path across distinct customer environments.",
+          "Obtained Israeli security clearance required for access to sensitive intelligence deployment environments.",
+          "Debugged pipeline and indexing failures across Python transforms, NiFi flows, Kafka topics, and Elasticsearch mappings.",
+          "Mapped phone, location, financial, corporate, and automotive records into Elasticsearch for investigative search.",
+          "Developed Python pipeline components with NiFi, Kafka, and Spark for NEXYTE deployment workflows."
+        ],
+        "skills": [
+          "backend",
+          "devops",
+          "python"
+        ]
+      }
+    ],
+    "projects": [
+      {
+        "name": "WinWS Slim ISO Builder",
+        "description": "Developer",
+        "url": "",
+        "highlights": [
+          "Built an interactive PowerShell/WPF GUI for producing debloated Windows 11 developer workstation installers.",
+          "Published a hosted PowerShell bootstrapper at wwss.yanai.sh for launching the interactive installer."
+        ],
+        "skills": []
+      }
+    ],
+    "education": [
+      {
+        "institution": "Reichman University",
+        "degree": "M.A. Organizational Behavior & Development",
+        "period": "2019 - 2021",
+        "location": "Herzliya, IL",
+        "highlights": [
+          "Completed a Siemens Digital Industries Software practicum on post-acquisition integration, interviewing startup leaders and managers about engineering-team handoffs and coordination.",
+          "Invited to serve as teaching assistant for the M&A course after graduation."
+        ]
+      },
+      {
+        "institution": "Muhlenberg College",
+        "degree": "B.A. Business Administration & Philosophy",
+        "period": "2011 - 2015",
+        "location": "Pennsylvania, US",
+        "highlights": []
+      }
+    ],
+    "skills": {
+      "Field & Customer Engineering": [
+        "On-Site Deployment",
+        "Customer Environment Debugging",
+        "Requirements Clarification",
+        "Technical Demos",
+        "Release Follow-Up",
+        "Customer Feedback to Product"
+      ],
+      "Systems & Integration": [
+        "Linux",
+        "Embedded Linux",
+        "API Integration",
+        "Integration Testing",
+        "Customer Hardware Debugging",
+        "On-Prem Deployment",
+        "Edge Deployment",
+        "Production Debugging"
+      ],
+      "Software": [
+        "Python",
+        "C++",
+        "C",
+        ".NET",
+        "Bash",
+        "PowerShell",
+        "CMake",
+        "C/C++ Bindings",
+        "nanobind"
+      ],
+      "Cloud & Runtime": [
+        "Docker",
+        "Kubernetes",
+        "Docker Swarm",
+        "Traefik",
+        "GitHub Actions",
+        "Terraform",
+        "AWS",
+        "GCP"
+      ],
+      "AI & Data": [
+        "Tool Calling",
+        "LLM Workflow Integration",
+        "RAG",
+        "OpenAI API",
+        "llama.cpp",
+        "Elasticsearch",
+        "Kafka",
+        "NiFi",
+        "Spark"
+      ],
+      "Customer Discovery & Communication": [
+        "Customer Interviews",
+        "Requirements Translation",
+        "Executive Communication",
+        "Technical Writing",
+        "Engineering-Team Handoffs",
+        "Working With Technical and Non-Technical Teams"
+      ]
+    },
+    "training": [
+      {
+        "institution": "DevOps Experts",
+        "degree": "Software Architecture",
+        "period": "2025",
+        "location": "Ramat Gan, IL",
+        "highlights": [
+          "Designed service boundaries and integration points across a three-stage capstone with changing requirements.",
+          "Worked through event-driven, layered, and microkernel architectures, Domain-Driven Design, and serverless patterns on AWS."
+        ]
+      },
+      {
+        "institution": "Technion - Israel Institute of Technology",
+        "degree": "DevOps Professional",
+        "period": "2024",
+        "location": "Tel Aviv, IL",
+        "highlights": [
+          "Built CI/CD pipelines and reproducible cloud deployments with Docker, Kubernetes, Terraform, Ansible, Jenkins, and AWS.",
+          "Configured production web servers and reverse proxies with Nginx and Apache."
+        ]
+      },
+      {
+        "institution": "Infinity Labs R&D",
+        "degree": "Computer Science & C/C++ Development",
+        "period": "2022 - 2023",
+        "location": "Ramat Gan, IL",
+        "highlights": [
+          "Completed a selective 32-week full-time C/C++ systems program structured like an R&D team, with project briefs and engineer-led code reviews.",
+          "Built C/C++ projects across memory management, data structures, algorithms, multithreading with pthreads, and TCP/UDP sockets, debugging with GDB and Valgrind.",
+          "Joined Cognyte's NEXYTE engineering team after the program."
+        ]
+      }
+    ],
+    "military": [
+      {
+        "company": "Combat Engineering Corps, IDF",
+        "role": "Combat Medic, Ta'agad",
+        "period": "2016 - 2018",
+        "highlights": []
+      }
+    ],
+    "languages": [
+      {
+        "name": "English",
+        "proficiency": "Native (US)"
+      },
+      {
+        "name": "Hebrew",
+        "proficiency": "Fluent"
+      }
+    ]
+  }
+}

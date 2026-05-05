@@ -1,0 +1,61 @@
+---
+import GithubIcon from "@components/icons/GithubIcon.astro";
+import LinkedinIcon from "@components/icons/LinkedinIcon.astro";
+import { SOCIAL } from "@config/social";
+---
+
+<nav class="socials" aria-label="Profiles">
+  <a
+    href={SOCIAL.github.href}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label={SOCIAL.github.label}
+  >
+    <GithubIcon class="icon" />
+  </a>
+  <a
+    href={SOCIAL.linkedin.href}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label={SOCIAL.linkedin.label}
+  >
+    <LinkedinIcon class="icon" />
+  </a>
+</nav>
+
+<style>
+  .socials {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    gap: 1.85rem;
+    align-items: center;
+    justify-content: center;
+    padding-top: var(--spacing-16);
+  }
+
+  .socials :global(svg) {
+    pointer-events: none;
+    width: clamp(2rem, 1.5rem + 1.5vi, 2.5rem);
+    height: clamp(2rem, 1.5rem + 1.5vi, 2.5rem);
+  }
+
+  .socials a,
+  .socials a:visited {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    min-height: 52px;
+    padding: 0;
+    color: color-mix(in srgb, var(--colors-fg) 82%, transparent);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    border-radius: 999px;
+  }
+
+  .socials a:hover,
+  .socials a:focus-visible {
+    color: var(--colors-fg);
+  }
+</style>

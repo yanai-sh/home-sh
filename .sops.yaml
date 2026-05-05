@@ -1,0 +1,11 @@
+# SOPS config — defines who can decrypt files matching each path pattern.
+# All home-sh secrets are encrypted to the maintainer's age public key.
+# Adding a contributor: add their age public key to the appropriate `age:` line,
+# then re-run `sops updatekeys <file>` on each affected encrypted file.
+
+creation_rules:
+  - path_regex: infra/tofu/secrets\.enc\.json$
+    age: age1hqw548k8h2j5qe8am6yreacz93rrwxpngy302yr7yfrc0z4prppq3e5xjm
+
+  - path_regex: \.enc\.(json|yaml|env)$
+    age: age1hqw548k8h2j5qe8am6yreacz93rrwxpngy302yr7yfrc0z4prppq3e5xjm

@@ -1,0 +1,25 @@
+---
+import { SITE_LEDE } from "@config/site";
+
+const lede = SITE_LEDE.trim();
+---
+
+{
+  lede ? (
+    <p class="lede">{lede}</p>
+  ) : null
+}
+
+<style>
+  .lede {
+    max-width: min(32rem, 90vw);
+    margin: 0 0 var(--spacing-24);
+    padding: 0 var(--spacing-16);
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    text-align: center;
+    color: var(--colors-muted);
+  }
+</style>

@@ -1,0 +1,64 @@
+# --- DEPENDENCIES ---
+node_modules/
+/bun.lockb
+
+# --- BUILD & CACHE ---
+dist/
+.astro/
+.cache/
+*.tsbuildinfo
+styled-system/
+
+# --- CLOUDFLARE / INFRA ---
+.wrangler/
+.dev.vars
+
+# --- ENVIRONMENT & SECRETS ---
+.env
+.env*.local
+.env.test
+.env.production
+.env.development
+
+# --- LOGS ---
+*.log
+bun-error.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- SYSTEM (LINUX / MACOS) ---
+.DS_Store
+Thumbs.db
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# --- OPENTOFU / TERRAFORM ---
+**/.terraform/
+# Glob covers terraform.tfstate, .backup, and timestamped backups (.<ts>.backup).
+*.tfstate*
+# Plaintext SOPS sources (decrypted versions). The .enc.* counterparts are committed.
+infra/tofu/secrets.json
+infra/tofu/secrets.tfvars.json
+infra/tofu/*.dec.json
+
+# --- RUST ---
+target/
+
+# --- DATABASES ---
+*.sqlite
+
+# --- AI AGENTS & EDITORS ---
+!.cursor/rules/**
+.cursor/
+.codex
+.playwright-mcp/
+audit-*.png
+home-*.png
+# Track only shared editor config; keep other `.vscode/*` local.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.claude/

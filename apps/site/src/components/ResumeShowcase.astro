@@ -1,0 +1,608 @@
+---
+import rawResumeSnapshot from "../../../../content/resume.generated.json";
+
+type ResumeEntry = {
+  institution: string;
+  degree: string;
+  period: string;
+  location: string;
+  highlights: string[];
+};
+
+type ResumeSnapshot = {
+  source: {
+    url: string;
+    path: string;
+    commitSha: string | null;
+    fallback: boolean;
+  };
+  data: {
+    header: {
+      name: string;
+      headline: string;
+      email: string;
+      location: string;
+    };
+    summary: string;
+    experience: Array<{
+      company: string;
+      role: string;
+      period: string;
+      location: string;
+      subtitle: string;
+      highlights: string[];
+      skills: string[];
+    }>;
+    projects: Array<{
+      name: string;
+      description: string;
+      highlights: string[];
+    }>;
+    education: ResumeEntry[];
+    training: ResumeEntry[];
+    skills: Record<string, string[]>;
+    languages: Array<{
+      name: string;
+      proficiency: string;
+    }>;
+  };
+};
+
+const resumeSnapshot = rawResumeSnapshot as ResumeSnapshot;
+const { data: resume } = resumeSnapshot;
+const primaryExperience = resume.experience.slice(0, 4);
+const skillGroups = Object.entries(resume.skills).slice(0, 6);
+const fitSnapshot = [
+  "Systems integration",
+  "Infrastructure & DevOps",
+  "Python / C++ / Linux",
+  "Forward deployment",
+  "Customer-facing engineering",
+];
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+---
+
+<section
+  class="resume-showcase"
+  id="resume"
+  data-bg-variant="resume"
+  aria-labelledby="resume-showcase-title"
+  tabindex="-1"
+>
+  <span class="resume-roll-index" aria-hidden="true">02</span>
+
+  <div class="resume-inner">
+    <header class="resume-intro">
+      <p class="chapter-kicker">02 / resume</p>
+      <h2 id="resume-showcase-title">{resume.header.name}</h2>
+      <p class="headline">{resume.header.headline}</p>
+      <p class="summary">{resume.summary}</p>
+
+      <ul class="fit-snapshot" aria-label="Candidate fit snapshot">
+        {fitSnapshot.map((item) => <li>{item}</li>)}
+      </ul>
+
+      <dl class="resume-meta" aria-label="Resume metadata">
+        <div>
+          <dt class="sr-only">Location</dt>
+          <dd>{resume.header.location}</dd>
+        </div>
+        <div>
+          <dt class="sr-only">Email</dt>
+          <dd><a href={`mailto:${resume.header.email}`}>{resume.header.email}</a></dd>
+        </div>
+      </dl>
+    </header>
+
+    <ol class="resume-timeline" aria-label="Career timeline">
+      {primaryExperience.map((job, index) => (
+        <li class={`career-card ${index % 2 === 0 ? "career-card--left" : "career-card--right"}`}>
+          <article>
+            <span class="timeline-dot" aria-hidden="true"></span>
+            <div class="career-card-body">
+              <p class="period">{job.period}</p>
+              <h3>{job.role}</h3>
+              <p class="company-line">
+                {job.company}
+                {job.location ? <span class="company-location"> / {job.location}</span> : null}
+              </p>
+              {job.subtitle ? <p class="flavor-line">{job.subtitle}</p> : null}
+              <ul class="career-highlights">
+                {job.highlights.slice(0, 3).map((highlight) => (
+                  <li>{highlight}</li>
+                ))}
+              </ul>
+              {job.skills.length > 0 ? (
+                <div class="tag-list" aria-label={`${job.company} skills`}>
+                  {job.skills.map((skill) => <span>{skill}</span>)}
+                </div>
+              ) : null}
+            </div>
+          </article>
+        </li>
+      ))}
+    </ol>
+
+    <div class="resume-lower">
+      {resume.projects.length > 0 ? (
+        <section class="resume-panel" aria-labelledby="resume-project-title">
+          <p class="panel-index">03</p>
+          <h3 id="resume-project-title">Projects</h3>
+          {resume.projects.slice(0, 1).map((project) => (
+            <article>
+              <h4>{project.name}</h4>
+              {project.description ? <p class="meta">{project.description}</p> : null}
+              <ul>
+                {project.highlights.map((highlight) => (
+                  <li>{highlight}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </section>
+      ) : null}
+
+      <section class="resume-panel" aria-labelledby="resume-skills-title">
+        <p class="panel-index">04</p>
+        <h3 id="resume-skills-title">Working set</h3>
+        <div class="skill-grid">
+          {skillGroups.map(([group, items]) => (
+            <section class="skill-group" aria-labelledby={`home-skill-${slugify(group)}`}>
+              <h4 id={`home-skill-${slugify(group)}`}>{group}</h4>
+              <ul class="skill-list" aria-label={`${group} skills`}>
+                {items.slice(0, 6).map((item) => <li>{item}</li>)}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </section>
+
+      <section class="resume-panel resume-panel--compact" aria-labelledby="resume-education-title">
+        <p class="panel-index">05</p>
+        <h3 id="resume-education-title">Education & training</h3>
+        {[...resume.training, ...resume.education].slice(0, 4).map((entry) => (
+          <article class="education-line">
+            <p class="period">{entry.period}</p>
+            <h4>{entry.degree}</h4>
+            <p class="meta">
+              {entry.institution}
+              {entry.location ? ` / ${entry.location}` : ""}
+            </p>
+          </article>
+        ))}
+      </section>
+    </div>
+  </div>
+</section>
+
+<style>
+  .resume-showcase {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    min-width: 0;
+    overflow: clip;
+    padding:
+      clamp(var(--spacing-64), 12vh, 9rem)
+      max(var(--spacing-16), min(var(--spacing-48), 5vi))
+      clamp(var(--spacing-64), 12vh, var(--spacing-96));
+    box-sizing: border-box;
+  }
+
+  .resume-showcase:focus {
+    outline: none;
+  }
+
+  .resume-showcase {
+    --section-grid-size: 30px;
+    --section-grid-alpha: 0.016;
+  }
+
+  .resume-inner {
+    width: min(76rem, 100%);
+    margin: 0 auto;
+    display: grid;
+    gap: clamp(var(--spacing-48), 7vw, var(--spacing-96));
+  }
+
+  .resume-intro {
+    display: grid;
+    gap: var(--spacing-16);
+    max-width: 54rem;
+    min-width: 0;
+  }
+
+  .chapter-kicker,
+  .period,
+  .meta,
+  .panel-index {
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-muted) 86%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .resume-intro h2 {
+    margin: 0;
+    color: var(--colors-fg);
+    font-size: clamp(3rem, 10vw, 8rem);
+    font-weight: 800;
+    line-height: 0.88;
+    letter-spacing: 0;
+  }
+
+  .headline {
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-accent) 82%, var(--colors-fg));
+    font-size: clamp(1.1rem, 2vw, 1.55rem);
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .summary {
+    max-width: 50rem;
+    margin: var(--spacing-8) 0 0;
+    color: color-mix(in srgb, var(--colors-fg) 78%, transparent);
+    font-family: var(--fonts-serif);
+    font-size: clamp(1rem, 1.35vw, 1.125rem);
+    line-height: 1.75;
+  }
+
+  .fit-snapshot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-8);
+    margin: var(--spacing-8) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fit-snapshot li {
+    border: 1px solid color-mix(in srgb, var(--colors-warning) 26%, transparent);
+    padding: 0.32rem 0.58rem;
+    color: color-mix(in srgb, var(--colors-warning) 72%, var(--colors-fg));
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .resume-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-8) var(--spacing-16);
+    margin: 0;
+    padding-top: var(--spacing-8);
+    color: color-mix(in srgb, var(--colors-fg) 68%, transparent);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .resume-meta div,
+  .resume-meta dd {
+    margin: 0;
+  }
+
+  .resume-meta a {
+    color: inherit;
+    text-decoration-color: rgba(47, 107, 255, 0.5);
+    text-underline-offset: 0.22em;
+  }
+
+  .resume-timeline {
+    position: relative;
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .resume-timeline::before {
+    content: "";
+    position: absolute;
+    top: var(--spacing-8);
+    bottom: var(--spacing-8);
+    left: 50%;
+    width: 1px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--colors-accent) 72%, transparent),
+      rgba(245, 245, 247, 0.08) 54%,
+      transparent
+    );
+    transform: translateX(-50%);
+  }
+
+  .career-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+  }
+
+  .career-card + .career-card {
+    margin-top: clamp(-9.5rem, -10.5vw, -6rem);
+  }
+
+  .career-card article {
+    display: contents;
+  }
+
+  .career-card--left .career-card-body {
+    grid-column: 1;
+    text-align: right;
+  }
+
+  .career-card--right .career-card-body {
+    grid-column: 2;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    top: var(--spacing-16);
+    left: 50%;
+    z-index: 1;
+    width: 0.875rem;
+    height: 0.875rem;
+    border: 3px solid var(--colors-bg);
+    background: var(--colors-accent);
+    box-shadow: 0 0 22px color-mix(in srgb, var(--colors-accent) 46%, transparent);
+    transform: translateX(-50%);
+  }
+
+  .career-card-body,
+  .resume-panel {
+    min-width: 0;
+    border: 1px solid rgba(245, 245, 247, 0.1);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(245, 247, 250, 0.072), rgba(245, 247, 250, 0.032)),
+      color-mix(in srgb, var(--colors-surface) 78%, transparent);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .career-card-body {
+    display: grid;
+    gap: var(--spacing-12);
+    padding: clamp(var(--spacing-16), 3vw, var(--spacing-24));
+  }
+
+  .career-card--left .career-card-body {
+    margin-right: clamp(var(--spacing-32), 6vw, var(--spacing-64));
+  }
+
+  .career-card--right .career-card-body {
+    margin-left: clamp(var(--spacing-32), 6vw, var(--spacing-64));
+  }
+
+  .career-card h3,
+  .resume-panel h3,
+  .resume-panel h4 {
+    margin: 0;
+    color: var(--colors-fg);
+    letter-spacing: 0;
+  }
+
+  .career-card h3 {
+    font-size: clamp(1.125rem, 1.8vw, 1.45rem);
+    line-height: 1.24;
+  }
+
+  .company-line,
+  .flavor-line {
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-muted) 86%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .flavor-line {
+    color: color-mix(in srgb, var(--colors-accent) 76%, var(--colors-fg));
+  }
+
+  .career-card ul,
+  .resume-panel ul {
+    display: grid;
+    gap: var(--spacing-8);
+    margin: 0;
+    padding-left: 1.1rem;
+    color: color-mix(in srgb, var(--colors-fg) 76%, transparent);
+    font-family: var(--fonts-serif);
+    font-size: 0.875rem;
+    line-height: 1.62;
+    text-align: left;
+  }
+
+  .career-card li::marker,
+  .resume-panel li::marker {
+    color: var(--colors-accent);
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-8);
+  }
+
+  .career-card--left .tag-list {
+    justify-content: flex-end;
+  }
+
+  .tag-list span {
+    border: 1px solid color-mix(in srgb, var(--colors-accent) 26%, transparent);
+    padding: 0.25rem 0.5rem;
+    color: color-mix(in srgb, var(--colors-accent) 82%, var(--colors-fg));
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .resume-lower {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
+    gap: var(--spacing-24);
+  }
+
+  .resume-panel {
+    display: grid;
+    align-content: start;
+    gap: var(--spacing-16);
+    padding: clamp(var(--spacing-16), 3vw, var(--spacing-24));
+  }
+
+  .resume-panel--compact {
+    grid-column: 1 / -1;
+  }
+
+  .resume-panel h3 {
+    font-size: 1rem;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+
+  .resume-panel h4 {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .skill-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-16);
+  }
+
+  .skill-group {
+    display: grid;
+    gap: var(--spacing-8);
+    min-width: 0;
+    padding-top: var(--spacing-12);
+    border-top: 1px solid rgba(245, 245, 247, 0.08);
+  }
+
+  .skill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .skill-list li {
+    border: 1px solid rgba(245, 245, 247, 0.1);
+    padding: 0.24rem 0.48rem;
+    color: color-mix(in srgb, var(--colors-fg) 72%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0.04em;
+  }
+
+  .education-line {
+    display: grid;
+    gap: var(--spacing-4);
+    padding-top: var(--spacing-12);
+    border-top: 1px solid rgba(245, 245, 247, 0.08);
+  }
+
+  .resume-roll-index {
+    position: absolute;
+    top: clamp(var(--spacing-24), 7vh, var(--spacing-64));
+    right: max(var(--spacing-16), min(var(--spacing-64), 6vi));
+    z-index: -1;
+    color: rgba(245, 247, 250, 0.08);
+    font-size: clamp(9rem, 26vi, 24rem);
+    font-weight: 800;
+    line-height: 0.74;
+    letter-spacing: 0;
+    pointer-events: none;
+    transform: rotate(-4deg);
+    user-select: none;
+  }
+
+  @media (max-width: 860px) {
+    .resume-showcase {
+      padding-top: var(--spacing-64);
+    }
+
+    .resume-timeline {
+      gap: var(--spacing-24);
+      padding-left: var(--spacing-24);
+    }
+
+    .resume-timeline::before {
+      left: 0.45rem;
+    }
+
+    .career-card {
+      grid-template-columns: 1fr;
+      margin-top: 0;
+    }
+
+    .career-card + .career-card {
+      margin-top: 0;
+    }
+
+    .career-card--left .career-card-body,
+    .career-card--right .career-card-body {
+      grid-column: 1;
+      margin: 0;
+      text-align: left;
+    }
+
+    .career-card--left .tag-list {
+      justify-content: flex-start;
+    }
+
+    .career-card-body {
+      gap: var(--spacing-8);
+    }
+
+    .career-card .career-highlights,
+    .tag-list,
+    .company-location {
+      display: none;
+    }
+
+    .timeline-dot {
+      left: -1rem;
+    }
+
+    .resume-lower,
+    .skill-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .resume-intro h2 {
+      font-size: clamp(2.45rem, 14vw, 3.9rem);
+      line-height: 0.95;
+    }
+
+    .resume-meta {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .fit-snapshot li,
+    .skill-list li {
+      font-size: 0.6875rem;
+    }
+  }
+</style>

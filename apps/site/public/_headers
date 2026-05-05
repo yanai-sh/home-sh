@@ -1,0 +1,22 @@
+# Cloudflare Pages _headers
+# Security headers for static assets served by the CDN edge (bypasses the Worker).
+# NOTE: HSTS and CSP are intentionally omitted here — they are set by middleware.ts
+# on SSR responses to avoid duplication. The Worker is authoritative for those headers.
+
+# ── Global headers for all static assets ──────────────────────────────────────
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin
+
+# ── COOP/COEP scoped to /workspace/* ──────────────────────────────────────────
+# Required for SharedArrayBuffer access (WASM bridge, future Atomics-based workers).
+# IMPORTANT: Every asset referenced under /workspace/* must be self-hosted.
+# Third-party CDN embeds (scripts, images, iframes) under this path will be blocked
+# by COEP unless they carry the `Cross-Origin-Resource-Policy: cross-origin` header.
+/workspace/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin

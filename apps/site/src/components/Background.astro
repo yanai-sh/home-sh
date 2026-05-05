@@ -1,0 +1,83 @@
+<div class="grid-container"></div>
+
+<style>
+  :root {
+    --bg-dot-size: 1px;
+    --bg-dot-fade: 1.5px;
+    --bg-grid-size: 24px;
+    --bg-grid-offset: 12px;
+    --bg-dot-alpha: 0.075;
+  }
+
+  .grid-container {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    --dot: rgba(47, 107, 255, var(--bg-dot-alpha));
+    background-image:
+      radial-gradient(var(--dot) var(--bg-dot-size), transparent var(--bg-dot-fade)),
+      radial-gradient(var(--dot) var(--bg-dot-size), transparent var(--bg-dot-fade));
+    background-size:
+      var(--bg-grid-size) var(--bg-grid-size),
+      var(--bg-grid-size) var(--bg-grid-size);
+    background-position:
+      0 0,
+      var(--bg-grid-offset) var(--bg-grid-offset);
+    opacity: 0.84;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  :global([data-bg-variant]) {
+    --section-grid-size: 32px;
+    --section-grid-alpha: 0.018;
+    position: relative;
+    isolation: isolate;
+  }
+
+  :global([data-bg-variant]::before) {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: radial-gradient(
+      rgba(245, 247, 250, var(--section-grid-alpha)) 1px,
+      transparent 1.5px
+    );
+    background-size: var(--section-grid-size) var(--section-grid-size);
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      rgb(0 0 0 / 0) 0%,
+      rgb(0 0 0 / 0.82) 20%,
+      rgb(0 0 0 / 0.82) 80%,
+      rgb(0 0 0 / 0) 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      rgb(0 0 0 / 0) 0%,
+      rgb(0 0 0 / 0.82) 20%,
+      rgb(0 0 0 / 0.82) 80%,
+      rgb(0 0 0 / 0) 100%
+    );
+  }
+
+  :global([data-bg-variant="home"]) {
+    --section-grid-size: 36px;
+    --section-grid-alpha: 0.012;
+  }
+
+  :global([data-bg-variant="contact"]) {
+    --section-grid-size: 28px;
+    --section-grid-alpha: 0.018;
+  }
+
+  @media (max-width: 700px) {
+    :root {
+      --bg-grid-size: 22px;
+      --bg-grid-offset: 11px;
+      --bg-dot-alpha: 0.065;
+    }
+  }
+</style>

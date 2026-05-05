@@ -1,0 +1,555 @@
+---
+import { SITE_EMAIL } from "@config/site";
+
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+---
+
+<section class="contact-section" id="contact" data-bg-variant="contact" aria-labelledby="contact-heading">
+  <span class="contact-roll-index" aria-hidden="true">03</span>
+  <div class="contact-stage">
+    <div class="contact-label">
+      <p class="contact-kicker">03 / contact</p>
+      <h2 class="contact-heading" id="contact-heading">contact</h2>
+
+      <div class="contact-actions" aria-label="Contact actions">
+        <a class="contact-action contact-action--primary" href={`mailto:${SITE_EMAIL}`}>Email me</a>
+        <a class="contact-action" href="/resume.pdf" download>Download resume PDF</a>
+      </div>
+    </div>
+
+    {siteKey ? (
+      <form
+        class="contact-form"
+        id="contact-form"
+        novalidate
+        aria-label="Contact form"
+        aria-describedby="cf-status"
+        data-sitekey={siteKey}
+      >
+        <div class="form-field">
+          <label class="form-label" for="cf-name">name</label>
+          <input
+            class="form-input"
+            type="text"
+            id="cf-name"
+            name="name"
+            autocomplete="name"
+            required
+            maxlength="100"
+            placeholder="your name"
+          />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="cf-email">email</label>
+          <input
+            class="form-input"
+            type="email"
+            id="cf-email"
+            name="email"
+            autocomplete="email"
+            required
+            maxlength="254"
+            placeholder="you@example.com"
+          />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="cf-message">message</label>
+          <textarea
+            class="form-input form-textarea"
+            id="cf-message"
+            name="message"
+            required
+            maxlength="2000"
+            rows="5"
+            placeholder="..."></textarea>
+        </div>
+
+        <div class="form-turnstile" id="cf-turnstile-widget"></div>
+
+        <div class="form-footer">
+          <button class="form-submit" type="submit" id="cf-submit" disabled>
+            send
+          </button>
+          <span class="form-status" id="cf-status" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    ) : (
+      <div class="contact-form contact-direct" aria-label="Direct contact">
+        <p>
+          Send the role, timeline, and where field engineering would help.
+        </p>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .contact-section {
+    width: 100%;
+    min-height: 100dvh;
+    display: grid;
+    align-items: center;
+    position: relative;
+    overflow: clip;
+    padding:
+      clamp(var(--spacing-48), 8vh, var(--spacing-96))
+      max(var(--spacing-16), min(var(--spacing-48), 5vi))
+      calc(clamp(var(--spacing-48), 9vh, var(--spacing-96)) + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    transform-style: preserve-3d;
+  }
+
+  .contact-stage {
+    position: relative;
+    width: min(74rem, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(22rem, 0.78fr);
+    gap: clamp(var(--spacing-32), 7vi, var(--spacing-96));
+    align-items: start;
+    z-index: 1;
+  }
+
+  :global(html.has-scroll-scene) .contact-stage {
+    position: fixed;
+    top: 38%;
+    left: max(var(--spacing-16), min(var(--spacing-48), 5vi));
+    right: max(var(--spacing-16), min(var(--spacing-48), 5vi));
+    z-index: 11;
+    width: min(
+      74rem,
+      calc(
+        100vw - max(var(--spacing-16), min(var(--spacing-48), 5vi)) -
+          max(var(--spacing-16), min(var(--spacing-48), 5vi))
+      )
+    );
+    transform-origin: 50% 12%;
+    will-change: transform, opacity;
+  }
+
+  .contact-label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-24);
+    min-width: 0;
+  }
+
+  .contact-kicker {
+    color: rgba(245, 245, 247, 0.36);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    margin: 0;
+  }
+
+  .contact-roll-index {
+    position: absolute;
+    top: clamp(var(--spacing-16), 6vh, var(--spacing-64));
+    left: max(var(--spacing-16), min(var(--spacing-64), 6vi));
+    z-index: 0;
+    color: rgba(245, 247, 250, 0.11);
+    font-size: clamp(9rem, 30vi, 25rem);
+    font-weight: 800;
+    line-height: 0.74;
+    letter-spacing: 0;
+    pointer-events: none;
+    transform: rotate(5deg);
+    user-select: none;
+  }
+
+  .contact-heading {
+    color: rgba(245, 247, 250, 0.94);
+    font-size: clamp(3.25rem, 9vi, 7.5rem);
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 0.9;
+    text-transform: lowercase;
+    margin: 0;
+  }
+
+  .contact-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-12);
+  }
+
+  .contact-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    min-height: 2.5rem;
+    padding: 0 var(--spacing-16);
+    border: 1px solid color-mix(in srgb, var(--colors-accent) 58%, transparent);
+    background: color-mix(in srgb, var(--colors-accent) 14%, transparent);
+    color: var(--colors-fg);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .contact-action--primary {
+    border-color: color-mix(in srgb, var(--colors-accent) 72%, transparent);
+    background: color-mix(in srgb, var(--colors-accent) 22%, transparent);
+  }
+
+  .contact-action:hover,
+  .contact-action:focus-visible {
+    border-color: color-mix(in srgb, var(--colors-accent) 82%, transparent);
+    background: color-mix(in srgb, var(--colors-accent) 22%, transparent);
+    color: var(--colors-fg);
+  }
+
+  .contact-action--primary:hover,
+  .contact-action--primary:focus-visible {
+    background: color-mix(in srgb, var(--colors-accent) 30%, transparent);
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-16);
+    width: 100%;
+    min-width: 0;
+    padding: clamp(var(--spacing-16), 3vi, var(--spacing-32));
+    border: 1px solid rgba(245, 245, 247, 0.09);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, var(--colors-surface-contact-lift), rgba(245, 247, 250, 0.075)),
+      var(--colors-surface-contact);
+    color: rgba(245, 247, 250, 0.94);
+    box-shadow:
+      0 0 0 1px rgba(47, 107, 255, 0.12),
+      0 24px 80px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .contact-label,
+  .contact-form {
+    will-change: auto;
+  }
+
+  .contact-direct {
+    justify-content: center;
+    min-height: 17rem;
+  }
+
+  .contact-direct p {
+    max-width: 27rem;
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-fg) 72%, transparent);
+    font-family: var(--fonts-serif);
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
+    min-width: 0;
+  }
+
+  .form-label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    color: rgba(245, 247, 250, 0.62);
+    user-select: none;
+  }
+
+  .form-input {
+    background: var(--colors-surface-contact-field);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.96);
+    font-family: var(--fonts-mono);
+    font-size: 0.875rem;
+    letter-spacing: 0.02em;
+    padding: var(--spacing-12) var(--spacing-16);
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .form-input::placeholder {
+    color: rgba(245, 247, 250, 0.38);
+  }
+
+  .form-input:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.105);
+  }
+
+  .form-input:focus {
+    border-color: rgba(47, 107, 255, 0.82);
+    box-shadow:
+      0 0 0 2px rgba(47, 107, 255, 0.2),
+      0 0 32px rgba(47, 107, 255, 0.1);
+    background: rgba(47, 107, 255, 0.11);
+  }
+
+  .form-input:user-invalid {
+    border-color: rgba(215, 185, 122, 0.5);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 9rem;
+    line-height: 1.55;
+  }
+
+  .form-turnstile {
+    min-height: 65px;
+  }
+
+  .form-footer {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-16);
+    flex-wrap: wrap;
+  }
+
+  .form-submit {
+    appearance: none;
+    -webkit-appearance: none;
+    background: color-mix(in srgb, var(--colors-accent) 86%, transparent);
+    border: 1px solid rgba(102, 147, 255, 0.88);
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-family: var(--fonts-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    padding: var(--spacing-8) var(--spacing-24);
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .form-submit:hover:not(:disabled) {
+    background: rgba(72, 128, 255, 0.95);
+    border-color: rgba(176, 201, 255, 0.9);
+    color: #fff;
+  }
+
+  .form-submit:focus-visible {
+    outline: 1px dashed rgba(47, 107, 255, 0.6);
+    outline-offset: 3px;
+  }
+
+  .form-submit:disabled {
+    opacity: 0.52;
+    cursor: not-allowed;
+  }
+
+  .form-status {
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: rgba(245, 247, 250, 0.62);
+    transition: color 0.2s ease;
+  }
+
+  .form-status[data-state='success'] { color: rgba(16, 185, 129, 0.85); }
+  .form-status[data-state='error']   { color: rgba(215, 185, 122, 0.85); }
+  .form-status[data-state='loading'] { color: rgba(245, 245, 247, 0.4); }
+
+  @media (max-width: 840px) {
+    .contact-section {
+      align-items: start;
+      min-height: auto;
+      padding-bottom: calc(var(--spacing-96) + env(safe-area-inset-bottom, 0px));
+    }
+
+    .contact-stage {
+      grid-template-columns: 1fr;
+      gap: var(--spacing-32);
+    }
+
+    .contact-heading {
+      font-size: clamp(3rem, 14vi, 5.75rem);
+    }
+
+    .contact-roll-index {
+      top: var(--spacing-32);
+      left: auto;
+      right: var(--spacing-16);
+      font-size: clamp(7rem, 36vi, 13rem);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .contact-section {
+      padding-inline: var(--spacing-16);
+      padding-top: var(--spacing-64);
+      padding-bottom: calc(var(--spacing-96) + env(safe-area-inset-bottom, 0px));
+    }
+
+    .contact-form {
+      padding: var(--spacing-16);
+    }
+
+    .contact-action {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .form-footer {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+
+  @media (max-height: 520px) and (orientation: landscape) {
+    .contact-section {
+      min-height: auto;
+    }
+
+    .contact-label,
+    .contact-form,
+    .contact-stage,
+    .contact-roll-index {
+      animation: none;
+      clip-path: none;
+      filter: none;
+      opacity: 1;
+      transform: none;
+      will-change: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .contact-heading {
+      text-shadow: none;
+    }
+
+    .form-input,
+    .form-submit,
+    .form-status {
+      transition: none;
+    }
+
+    .contact-label,
+    .contact-form,
+    .contact-stage,
+    .contact-roll-index {
+      animation: none;
+      clip-path: none;
+      filter: none;
+      position: relative;
+      top: auto;
+      left: auto;
+      right: auto;
+      transform: none;
+      will-change: auto;
+      opacity: 1;
+    }
+  }
+</style>
+
+<script>
+  const CONTACT_ENDPOINT = '/api/contact';
+
+  function init() {
+    const form     = document.getElementById('contact-form')   as HTMLFormElement   | null;
+    const submitBtn = document.getElementById('cf-submit')     as HTMLButtonElement | null;
+    const statusEl  = document.getElementById('cf-status')     as HTMLElement       | null;
+    const widgetEl  = document.getElementById('cf-turnstile-widget') as HTMLElement | null;
+
+    if (!form || !submitBtn || !statusEl) return;
+
+    const siteKey = form.dataset.sitekey;
+    if (!siteKey) return;
+
+    // Dynamically load Turnstile — avoids render-blocking on pages without the form
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (widgetEl && siteKey) {
+        (window as any).turnstile?.render(widgetEl, {
+          sitekey: siteKey,
+          theme: 'dark',
+          callback: () => { submitBtn.disabled = false; },
+          'expired-callback': () => { submitBtn.disabled = true; },
+        });
+      }
+    };
+    document.head.appendChild(script);
+
+    function setStatus(msg: string, state: 'idle' | 'loading' | 'success' | 'error') {
+      statusEl!.textContent = msg;
+      statusEl!.dataset.state = state;
+      submitBtn!.disabled = state === 'loading';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        setStatus('', 'idle');
+        return;
+      }
+
+      const token = (window as any).turnstile?.getResponse();
+      if (!token) {
+        setStatus('complete the captcha first', 'error');
+        return;
+      }
+
+      setStatus('sending...', 'loading');
+
+      const payload = {
+        name:    (form.elements.namedItem('name')    as HTMLInputElement).value.trim(),
+        email:   (form.elements.namedItem('email')   as HTMLInputElement).value.trim(),
+        message: (form.elements.namedItem('message') as HTMLTextAreaElement).value.trim(),
+        token,
+      };
+
+      try {
+        const res = await fetch(CONTACT_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          setStatus('sent — thanks!', 'success');
+          form.reset();
+          (window as any).turnstile?.reset();
+          submitBtn.disabled = true;
+        } else {
+          const body = await res.json().catch(() => ({})) as { error?: string };
+          setStatus(body.error ?? 'something went wrong', 'error');
+          (window as any).turnstile?.reset();
+        }
+      } catch {
+        setStatus('network error — try again', 'error');
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>

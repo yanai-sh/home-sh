@@ -1,0 +1,678 @@
+---
+import Background from "@components/Background.astro";
+import Hero from "@components/Hero.astro";
+import { NOW, PROJECTS, READING, STACK, USES } from "@config/workspace";
+import Layout from "@layouts/Layout.astro";
+import rawResumeSnapshot from "../../../../../content/resume.generated.json";
+
+type ResumeSnapshot = {
+  source: {
+    url: string;
+    path: string;
+    commitSha: string | null;
+    fallback: boolean;
+  };
+  data: {
+    header: {
+      name: string;
+      headline: string;
+    };
+    summary: string;
+    experience: Array<{
+      company: string;
+      role: string;
+      period: string;
+      subtitle: string;
+      skills: string[];
+    }>;
+  };
+};
+
+const resumeSnapshot = rawResumeSnapshot as ResumeSnapshot;
+const resume = resumeSnapshot.data;
+const panes = [
+  { id: "projects", label: "Projects" },
+  { id: "resume", label: "Resume" },
+  { id: "stack", label: "Stack" },
+  { id: "uses", label: "Uses" },
+  { id: "telemetry", label: "Telemetry" },
+] as const;
+const primaryExperience = resume.experience.slice(0, 3);
+---
+
+<Layout title="workspace - yanai.sh" contentId="workspace-main">
+  <Background />
+
+  <main class="workspace" id="workspace-main" tabindex="-1">
+    <header class="workspace-hero" aria-labelledby="hero-title">
+      <a class="back-link" href="/">Back home</a>
+      <div class="hero-headline-slot">
+        <Hero />
+      </div>
+      <p class="lede">systems, integration, infra, and Rust/WASM proofs.</p>
+      <div class="workspace-actions">
+        <button class="action action--primary" type="button" id="ws-search-trigger">
+          Search workspace
+        </button>
+        <a class="action" href="/resume">View resume</a>
+      </div>
+    </header>
+
+    <section class="runtime-strip" aria-label="Runtime status">
+      <p class="runtime-strip__label">runtime</p>
+      <div class="runtime-items">
+        {["wasm", "sab", "canvas", "search"].map((item) => (
+          <span class="runtime-item" data-wip-status={item}>
+            <span>{item}</span>
+            <strong data-wip-value>pending</strong>
+          </span>
+        ))}
+      </div>
+    </section>
+
+    <div class="workspace-shell">
+      <nav class="pane-nav" aria-label="Workspace panes">
+        {panes.map((pane) => (
+          <a href={`#${pane.id}`} data-pane-link={pane.id}>{pane.label}</a>
+        ))}
+      </nav>
+
+      <div class="pane-stack">
+        <section class="pane pane--canvas" id="projects" data-pane aria-labelledby="projects-title">
+          <div class="pane-copy">
+            <p class="pane-kicker">projects</p>
+            <h2 id="projects-title">current build surface</h2>
+            <div class="project-list">
+              {PROJECTS.map((project) => (
+                <article class="project-card">
+                  <p class="project-status">{project.status}</p>
+                  <h3>{project.title}</h3>
+                  <p>{project.description}</p>
+                  <div class="tag-row" aria-label={`${project.title} tags`}>
+                    {project.tags.map((tag) => <span>{tag}</span>)}
+                  </div>
+                  {project.href ? <a href={project.href}>source</a> : null}
+                </article>
+              ))}
+            </div>
+          </div>
+          <div class="canvas-frame" aria-label="Rust canvas renderer">
+            <canvas id="ws-rust-canvas" width="720" height="420" aria-hidden="true"></canvas>
+            <p>Rust lyon tessellation renders this surface when WASM is available.</p>
+          </div>
+        </section>
+
+        <section class="pane" id="resume" data-pane aria-labelledby="resume-pane-title">
+          <p class="pane-kicker">resume index</p>
+          <h2 id="resume-pane-title">{resume.header.headline}</h2>
+          <p class="pane-summary">{resume.summary}</p>
+          <div class="experience-grid">
+            {primaryExperience.map((job) => (
+              <article>
+                <p class="project-status">{job.period}</p>
+                <h3>{job.role}</h3>
+                <p>{job.company}</p>
+                {job.subtitle ? <p class="accent-line">{job.subtitle}</p> : null}
+                <div class="tag-row" aria-label={`${job.company} skills`}>
+                  {job.skills.map((skill) => <span>{skill}</span>)}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section class="pane" id="stack" data-pane aria-labelledby="stack-title">
+          <p class="pane-kicker">stack</p>
+          <h2 id="stack-title">working set</h2>
+          <div class="stack-grid">
+            {STACK.map((row) => (
+              <section aria-labelledby={`stack-${row.category}`}>
+                <h3 id={`stack-${row.category}`}>{row.category}</h3>
+                <ul>
+                  {row.items.map((item) => <li>{item}</li>)}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </section>
+
+        <section class="pane" id="uses" data-pane aria-labelledby="uses-title">
+          <p class="pane-kicker">uses / now</p>
+          <h2 id="uses-title">tools and current work</h2>
+          <div class="uses-grid">
+            <section>
+              <h3>now</h3>
+              <ul>
+                {NOW.map((item) => (
+                  <li>
+                    <strong>{item.label}</strong>
+                    {item.note ? <span>{item.note}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
+            {USES.map((section) => (
+              <section>
+                <h3>{section.category}</h3>
+                <ul>
+                  {section.items.map((item) => (
+                    <li>
+                      <strong>{item.label}</strong>
+                      <span>{item.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </section>
+
+        <section class="pane" id="telemetry" data-pane aria-labelledby="telemetry-title">
+          <p class="pane-kicker">telemetry</p>
+          <h2 id="telemetry-title">local runtime proof</h2>
+          <div class="telemetry-grid">
+            <article>
+              <h3>search corpus</h3>
+              <p>Workspace, resume, stack, uses, and project entries are indexed by Rust WASM.</p>
+            </article>
+            <article>
+              <h3>shared bridge</h3>
+              <p>SharedArrayBuffer is scoped to `/workspace` through COOP/COEP headers.</p>
+            </article>
+            <article>
+              <h3>reading queue</h3>
+              <ul>
+                {READING.map((item) => (
+                  <li>{item.title} / {item.status}</li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <section class="ws-search" id="ws-search-panel" hidden aria-label="Workspace search">
+      <div class="ws-search__panel">
+        <div class="ws-search__bar">
+          <label class="sr-only" for="ws-search-input">Search workspace</label>
+          <input id="ws-search-input" type="search" autocomplete="off" placeholder="search resume, stack, projects" />
+          <button type="button" id="ws-search-close" aria-label="Close search">Close</button>
+        </div>
+        <div class="ws-search__results" id="ws-search-results" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .workspace {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    min-width: 0;
+    padding:
+      var(--spacing-32)
+      max(var(--spacing-16), min(var(--spacing-48), 5vi))
+      var(--spacing-64);
+    box-sizing: border-box;
+  }
+
+  .workspace-hero {
+    display: grid;
+    justify-items: center;
+    gap: var(--spacing-16);
+    min-height: min(58rem, 84dvh);
+    align-content: center;
+    text-align: center;
+  }
+
+  .back-link,
+  .action {
+    color: color-mix(in srgb, var(--colors-fg) 72%, transparent);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-decoration-color: color-mix(in srgb, var(--colors-accent) 42%, transparent);
+    text-transform: uppercase;
+    text-underline-offset: 0.24em;
+  }
+
+  .hero-headline-slot {
+    width: min(42rem, 100%);
+  }
+
+  .lede {
+    max-width: 36rem;
+    margin: 0;
+    color: var(--colors-muted);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .workspace-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-12);
+  }
+
+  .action {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--spacing-16);
+    border: 1px solid color-mix(in srgb, var(--colors-accent) 42%, transparent);
+    background: color-mix(in srgb, var(--colors-surface-base) 62%, transparent);
+    font-family: var(--fonts-mono);
+    cursor: pointer;
+  }
+
+  .action--primary {
+    border-color: color-mix(in srgb, var(--colors-accent) 68%, transparent);
+    background: color-mix(in srgb, var(--colors-accent) 18%, transparent);
+    color: var(--colors-fg);
+  }
+
+  .runtime-strip,
+  .workspace-shell {
+    width: min(76rem, 100%);
+    margin-inline: auto;
+  }
+
+  .runtime-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-16);
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-12) 0;
+    border-top: 1px solid rgba(245, 245, 247, 0.08);
+    border-bottom: 1px solid rgba(245, 245, 247, 0.08);
+  }
+
+  .runtime-strip__label,
+  .pane-kicker,
+  .project-status {
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-muted) 86%, transparent);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+
+  .runtime-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-8);
+  }
+
+  .runtime-item {
+    display: inline-flex;
+    gap: var(--spacing-8);
+    min-height: 1.8rem;
+    align-items: center;
+    padding: 0 var(--spacing-8);
+    border: 1px solid rgba(245, 245, 247, 0.1);
+    color: color-mix(in srgb, var(--colors-fg) 68%, transparent);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .runtime-item strong {
+    color: var(--colors-warning);
+    font-size: 0.68rem;
+  }
+
+  .runtime-item[data-state="ready"] strong {
+    color: color-mix(in srgb, var(--colors-accent) 78%, var(--colors-fg));
+  }
+
+  .runtime-item[data-state="error"] strong,
+  .runtime-item[data-state="off"] strong {
+    color: color-mix(in srgb, var(--colors-warning) 82%, var(--colors-fg));
+  }
+
+  .workspace-shell {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: clamp(var(--spacing-24), 4vi, var(--spacing-48));
+    padding-top: var(--spacing-48);
+  }
+
+  .pane-nav {
+    position: sticky;
+    top: var(--spacing-24);
+    display: grid;
+    align-content: start;
+    gap: var(--spacing-8);
+    height: fit-content;
+  }
+
+  .pane-nav a {
+    padding: var(--spacing-8) 0;
+    border-bottom: 1px solid rgba(245, 245, 247, 0.08);
+    color: color-mix(in srgb, var(--colors-fg) 62%, transparent);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .pane-nav a[aria-current="true"] {
+    color: var(--colors-fg);
+    border-bottom-color: color-mix(in srgb, var(--colors-accent) 62%, transparent);
+  }
+
+  .pane-stack {
+    display: grid;
+    gap: var(--spacing-24);
+    min-width: 0;
+  }
+
+  .pane {
+    scroll-margin-top: var(--spacing-24);
+    display: grid;
+    gap: var(--spacing-16);
+    min-width: 0;
+    padding: clamp(var(--spacing-16), 3vi, var(--spacing-32));
+    border: 1px solid rgba(245, 245, 247, 0.1);
+    background: color-mix(in srgb, var(--colors-surface-base) 58%, transparent);
+  }
+
+  .pane--canvas {
+    grid-template-columns: minmax(0, 0.88fr) minmax(18rem, 1fr);
+    align-items: stretch;
+  }
+
+  .pane h2,
+  .pane h3,
+  .pane p {
+    margin: 0;
+  }
+
+  .pane h2 {
+    color: var(--colors-fg);
+    font-size: clamp(1.35rem, 3vi, 2.25rem);
+    line-height: 1.12;
+    letter-spacing: 0;
+  }
+
+  .pane h3 {
+    color: var(--colors-fg);
+    font-size: 0.96rem;
+    line-height: 1.35;
+  }
+
+  .pane-summary,
+  .project-card p,
+  .telemetry-grid p,
+  .canvas-frame p {
+    color: color-mix(in srgb, var(--colors-fg) 72%, transparent);
+    font-family: var(--fonts-serif);
+    line-height: 1.65;
+  }
+
+  .project-list,
+  .experience-grid,
+  .stack-grid,
+  .uses-grid,
+  .telemetry-grid {
+    display: grid;
+    gap: var(--spacing-16);
+  }
+
+  .project-card,
+  .experience-grid article,
+  .stack-grid section,
+  .uses-grid section,
+  .telemetry-grid article {
+    display: grid;
+    gap: var(--spacing-8);
+    min-width: 0;
+    padding-top: var(--spacing-12);
+    border-top: 1px solid rgba(245, 245, 247, 0.08);
+  }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-8);
+  }
+
+  .tag-row span {
+    border: 1px solid color-mix(in srgb, var(--colors-accent) 24%, transparent);
+    padding: 0.22rem 0.48rem;
+    color: color-mix(in srgb, var(--colors-accent) 82%, var(--colors-fg));
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .accent-line {
+    color: color-mix(in srgb, var(--colors-warning) 76%, var(--colors-fg));
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .canvas-frame {
+    position: relative;
+    display: grid;
+    align-content: end;
+    min-height: 22rem;
+    overflow: hidden;
+    border: 1px solid rgba(245, 245, 247, 0.08);
+    background: rgba(3, 5, 9, 0.42);
+  }
+
+  .canvas-frame canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .canvas-frame p {
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-16);
+    background: linear-gradient(180deg, transparent, rgba(10, 15, 24, 0.88));
+  }
+
+  .stack-grid,
+  .uses-grid,
+  .telemetry-grid,
+  .experience-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stack-grid ul,
+  .uses-grid ul,
+  .telemetry-grid ul {
+    display: grid;
+    gap: var(--spacing-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: color-mix(in srgb, var(--colors-fg) 72%, transparent);
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+
+  .uses-grid li {
+    display: grid;
+    gap: var(--spacing-4);
+  }
+
+  .uses-grid strong {
+    color: var(--colors-fg);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .ws-search {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: grid;
+    place-items: start center;
+    padding: max(var(--spacing-48), 10vh) var(--spacing-16);
+    background: rgba(4, 6, 10, 0.76);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .ws-search[hidden] {
+    display: none;
+  }
+
+  .ws-search__panel {
+    width: min(44rem, 100%);
+    border: 1px solid rgba(245, 245, 247, 0.14);
+    background: var(--colors-bg);
+  }
+
+  .ws-search__bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    border-bottom: 1px solid rgba(245, 245, 247, 0.1);
+  }
+
+  .ws-search__bar input,
+  .ws-search__bar button {
+    min-height: 3rem;
+    border: 0;
+    background: transparent;
+    color: var(--colors-fg);
+    font-family: var(--fonts-mono);
+  }
+
+  .ws-search__bar input {
+    min-width: 0;
+    padding: 0 var(--spacing-16);
+    outline: none;
+  }
+
+  .ws-search__bar button {
+    padding: 0 var(--spacing-16);
+    border-left: 1px solid rgba(245, 245, 247, 0.1);
+    cursor: pointer;
+  }
+
+  .ws-search__results {
+    display: grid;
+    max-height: min(28rem, 62vh);
+    overflow: auto;
+  }
+
+  .ws-search__result {
+    display: grid;
+    gap: var(--spacing-4);
+    padding: var(--spacing-12) var(--spacing-16);
+    border-bottom: 1px solid rgba(245, 245, 247, 0.08);
+    color: var(--colors-fg);
+    text-decoration: none;
+  }
+
+  .ws-search__kind {
+    color: var(--colors-warning);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .ws-search__title {
+    font-weight: 800;
+  }
+
+  .ws-search__body,
+  .ws-search__empty {
+    color: color-mix(in srgb, var(--colors-fg) 62%, transparent);
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .ws-search__empty {
+    margin: 0;
+    padding: var(--spacing-16);
+  }
+
+  @media (max-width: 860px) {
+    .workspace-hero {
+      min-height: 72dvh;
+    }
+
+    .workspace-shell,
+    .pane--canvas,
+    .stack-grid,
+    .uses-grid,
+    .telemetry-grid,
+    .experience-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pane-nav {
+      position: relative;
+      top: auto;
+      display: flex;
+      overflow-x: auto;
+      padding-bottom: var(--spacing-8);
+    }
+
+    .pane-nav a {
+      white-space: nowrap;
+      min-width: max-content;
+    }
+
+    .canvas-frame {
+      min-height: 16rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .workspace {
+      padding-inline: var(--spacing-16);
+    }
+
+    .workspace-actions,
+    .action {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .runtime-strip {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .runtime-items {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .canvas-frame canvas {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { mountWorkspaceWip } from "@lib/workspace-wip-client";
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mountWorkspaceWip, { once: true });
+  } else {
+    mountWorkspaceWip();
+  }
+</script>

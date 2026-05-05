@@ -1,0 +1,10 @@
+# /workspace#stack pane content
+[[tools]]
+name       = "Rust"
+role       = "WASM modules (search, canvas, bridge)"
+rationale  = ""
+
+[[tools]]
+name       = "Astro"
+role       = "Static site orchestration"
+rationale  = "Zero-JS by default, SSR on Cloudflare Pages"

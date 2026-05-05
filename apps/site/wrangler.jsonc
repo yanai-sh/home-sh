@@ -1,0 +1,15 @@
+{
+  // Cloudflare Workers config for Pages SSR (Astro @astrojs/cloudflare).
+  // `pages_build_output_dir` must match `astro build` output; keep in sync with CI `pages deploy dist`.
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "yanai-sh",
+  "compatibility_date": "2026-04-21",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "pages_build_output_dir": "./dist",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

@@ -1,0 +1,17 @@
+# Structured resume data — source for both the web /resume page and the PDF via Tectonic.
+# Schema TBD in apps/site/src/content/config.ts.
+
+[header]
+name     = "Yanai Klugman"
+headline = ""
+email    = "me@yanai.sh"
+location = ""
+
+# jobs = [ { company, role, period, location, highlights = [] } ]
+jobs = []
+
+# education = [ { institution, degree, period } ]
+education = []
+
+[skills]
+# grouped: { "Languages" = ["Rust", "TypeScript", ...], ... }
