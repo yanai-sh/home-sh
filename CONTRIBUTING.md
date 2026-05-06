@@ -2,38 +2,61 @@
 
 Personal portfolio: outside contributions are not expected. This doc is for **you** (and future collaborators) shipping through **`main`**.
 
-## Workflow (trunk)
+## Workflow (dev → main)
 
-1. **`git checkout main && git pull`** — start from current production history.
+Two long-lived branches, each backed by its own Cloudflare Worker. The same `apps/site/wrangler.jsonc` config is used for both — at upload time, the deploy workflow passes `--name yanai-sh-staging` to wrangler on `dev` pushes, redirecting the same code + bindings to a second Worker:
+
+- **`dev`** — staging. Every push deploys to the **`yanai-sh-staging`** Worker. Independent ~10-version retention from prod, so dev iterations never burn prod rollback slots. Bindings (KV, Secrets Store, D1, rate limit) are sent verbatim from the shared config — staging and prod share state.
+- **`main`** — production. Every push deploys to **`yanai-sh`** at 100% on `yanai.sh`.
+
+The same Deploy workflow handles both — only the `--name` flag and the promote step branch on `github.ref`.
+
+### Versioning
+
+Auto-tagged in CI on every push:
+
+- **dev push** → patch bump (`vX.Y.Z` → `vX.Y.Z+1`). Each dev iteration is addressable.
+- **main push** → minor bump (`vX.Y.Z` → `vX.(Y+1).0`). Production releases stay on `vX.Y.0`.
+
+Major bumps (`vX.0.0`) are intentional and remain manual: tag and push by hand when the change warrants it.
+
+### Day-to-day
+
+1. **`git checkout dev && git pull`** — start from staging history.
 2. **`git checkout -b <topic>`** — short-lived branch (`feat/…`, `fix/…`, `chore/…`).
-3. **`bun run verify`** before every push (matches CI on PRs and Deploy on `main`).
-4. Open a **PR → `main`**. **Direct `git push origin main`** should fail under a strict ruleset—merge via PR after **CI / verify** is green.
-5. **CHANGELOG:** maintain **`[Unreleased]`** by hand; cut dated sections when you tag (e.g. **`v2.0.1`**).
+3. **`bun run verify`** before every push (matches CI on PRs and Deploy on `dev`/`main`).
+4. Open a **PR → `dev`**. CI / verify gates the merge; once green and merged, Deploy uploads to **`yanai-sh-staging`** and auto-tags a patch bump. The run summary lists the preview URL.
+5. QA the preview URL. When happy, open a **PR `dev` → `main`**. Merging promotes to 100% prod and auto-tags the next minor.
+6. **CHANGELOG:** maintain **`[Unreleased]`** on `dev`; cut dated `[vX.Y.0]` sections in a chore-PR right before merging `dev` → `main`. Dev tags are throwaway markers — they don't get changelog entries.
 
-Branch protection: **`./scripts/gh-protect-main.sh`** (see [README](README.md)) or **Settings → Rules → Rulesets**.
+Branch protection: **`./scripts/gh-protect-main.sh`** (see [README](README.md)) protects `main`. **Direct `git push origin main`** should fail under a strict ruleset — merge via PR after **CI / verify** is green. `dev` is intentionally less restricted (QA workflow benefits from fast-forward pushes during iteration).
 
 ## Releases
 
-Tag a release once the **`[Unreleased]`** entry in `CHANGELOG.md` reflects everything you want to ship.
+A production release is whatever lands on `main`. The Deploy workflow auto-tags the commit with the next minor (`vX.(Y+1).0`); you don't run `git tag` by hand.
 
-1. **Update the changelog**
-   - Move `## [Unreleased]` content into a new `## [vX.Y.Z] - YYYY-MM-DD` section.
+1. **Update the changelog on `dev`** before opening the `dev` → `main` PR
+   - Move `## [Unreleased]` content into a new `## [vX.(Y+1).0] - YYYY-MM-DD` section. (Predict the next minor — the workflow uses the same arithmetic.)
    - Leave a fresh empty `## [Unreleased]` block above it.
-   - Commit: `git commit -am "chore: changelog for vX.Y.Z"`.
+   - Commit on a chore branch off `dev`: `git commit -am "chore: changelog for vX.(Y+1).0"`, PR into `dev`, merge.
 
-2. **Tag**
+2. **PR `dev` → `main`** — merging triggers Deploy, which uploads + promotes the new prod version and auto-tags `vX.(Y+1).0`. No manual `git tag` step.
+
+3. **For a major release** (breaking changes), bump the major manually after merge:
    ```sh
-   git tag -a vX.Y.Z -m "vX.Y.Z"
-   git push origin main --follow-tags
+   git checkout main && git pull
+   git tag -a vX+1.0.0 -m "vX+1.0.0"
+   git push origin vX+1.0.0
    ```
+   The Deploy workflow's auto-tag will compute its next bump off whatever tag exists, so a manual major tag becomes the new baseline.
 
-3. **Verify deploy**
+4. **Verify deploy**
    ```sh
    gh run watch
    ```
    The Deploy workflow runs as part of the push to `main`. Wait for green.
 
-4. **Production smoke**
+5. **Production smoke**
    ```sh
    bun run --cwd apps/site smoke
    # uses SMOKE_BASE_URL=https://yanai.sh in CI; pass it locally:

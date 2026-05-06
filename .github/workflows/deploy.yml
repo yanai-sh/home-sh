@@ -1,31 +1,38 @@
-# Production only: runs after merges land on `main`.
-# Two-step versioned deploy:
-#   1) `wrangler versions upload` — uploads code + bindings as an immutable
-#      version (0% traffic, addressable at a unique preview URL).
-#   2) `wrangler versions deploy <id>@100%` — promotes the version to take
-#      all production traffic at the Custom Domain (yanai.sh).
-# Decoupling the two enables instant rollback (.github/workflows/rollback.yml)
-# without rebuilding — earlier versions stay accessible until Cloudflare's
-# 10-version retention rolls them off.
+# Two-stage versioned deploy:
+#
+#   Push to `dev` → uploads an immutable Worker version to the staging
+#   Worker (yanai-sh-staging, set via `--name` override at upload time
+#   against the shared apps/site/wrangler.jsonc). Production at yanai.sh
+#   is unaffected. Auto-tags the commit with a patch bump (vX.Y.Z+1) so
+#   dev iterations are addressable.
+#
+#   Push to `main` → uploads + promotes to 100% on the production Worker
+#   (yanai-sh, bound to yanai.sh via Custom Domain). Auto-tags with a
+#   minor bump (vX.(Y+1).0).
+#
+# Each Worker has its own ~10-version retention, so dev pushes never
+# displace prod rollback options. Rollback (.github/workflows/rollback.yml)
+# remains a separate workflow that promotes any prior immutable production
+# version to 100% without rebuilding.
 
 name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # Auto-tagging pushes git tags back to the repository, so the workflow
+  # needs write access to repo contents (default token has read-only).
+  contents: write
 
 concurrency:
   group: workers-deploy-${{ github.ref }}
-  # Queue, don't cancel. Every push to `main` represents an intentional state
-  # that should land as its own Worker version (rollback granularity, audit
-  # trail, dashboard history). Cancelling mid-deploy wastes the upload step
-  # AND hides commits from the version log. The serial execution cost (~50s
-  # per push when many land at once, e.g. dependabot auto-merge) is the
-  # correct tradeoff for a production deploy pipeline.
+  # Queue, don't cancel. Every push represents an intentional state that
+  # should land as its own Worker version (rollback granularity, audit
+  # trail, dashboard history). Cancelling mid-deploy wastes the upload
+  # step AND hides commits from the version log.
   cancel-in-progress: false
 
 jobs:
@@ -33,6 +40,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Need full history (or at least all tags) so `git tag -l` can
+          # compute the previous version for the patch/minor bump.
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-node@v6
         with:
@@ -58,18 +70,50 @@ jobs:
         env:
           PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
 
+      - name: Compute next version tag
+        id: tag
+        # Convention:
+        #   - dev push → patch bump (vX.Y.Z → vX.Y.Z+1)
+        #   - main push → minor bump (vX.Y.Z → vX.(Y+1).0)
+        # Major bumps are intentional and remain manual.
+        run: |
+          set -euo pipefail
+          LAST="$(git tag -l --sort=-v:refname 'v[0-9]*.[0-9]*.[0-9]*' | head -1 || true)"
+          if [ -z "$LAST" ]; then LAST="v0.0.0"; fi
+          VERSION="${LAST#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            NEXT="v${MAJOR}.$((MINOR + 1)).0"
+          else
+            NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+          fi
+          echo "previous=$LAST"
+          echo "next=$NEXT"
+          echo "previous=$LAST" >> "$GITHUB_OUTPUT"
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+
       - name: Upload Worker version
         id: upload
         # Project-pinned wrangler 4.x via the `version-upload` script in
-        # apps/site/package.json. Extra args after `--` are forwarded to wrangler.
-        # `--message` annotates each version with the commit subject so the
-        # Cloudflare dashboard's version history is human-readable.
-        # `--tag` records the short SHA for traceability when rolling back.
+        # apps/site/package.json. Extra args after `--` are forwarded to
+        # wrangler. `--message` annotates each version with the commit
+        # subject so the Cloudflare dashboard's version history is
+        # human-readable. `--tag` records the new version (e.g. v2.3.1).
+        # On dev pushes, `--name yanai-sh-staging` overrides the Worker
+        # name so the upload lands on a separate script with its own
+        # ~10-version retention. Bindings (KV, Secrets Store, D1, rate
+        # limit) come from the same wrangler.jsonc and are sent verbatim
+        # to whichever Worker name is the target.
         run: |
           set -euo pipefail
+          NAME_FLAG=""
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            NAME_FLAG="--name yanai-sh-staging"
+          fi
           OUTPUT="$(bun run --cwd apps/site version-upload -- \
+            $NAME_FLAG \
             --message "$(git log --format='%s' -1)" \
-            --tag "${GITHUB_SHA:0:7}")"
+            --tag "${{ steps.tag.outputs.next }}")"
           echo "$OUTPUT"
           # Wrangler prints "Worker Version ID: <uuid>" on success.
           VERSION_ID="$(printf '%s\n' "$OUTPUT" | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $4}')"
@@ -83,6 +127,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Promote version to 100% production traffic
+        if: github.ref == 'refs/heads/main'
         run: |
           set -euo pipefail
           bun run --cwd apps/site version-deploy -- \
@@ -92,3 +137,36 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Push git tag
+        run: |
+          set -euo pipefail
+          git config user.email "deploy@yanai.sh"
+          git config user.name "deploy-bot"
+          git tag -a "${{ steps.tag.outputs.next }}" -m "${{ steps.tag.outputs.next }}"
+          git push origin "${{ steps.tag.outputs.next }}"
+
+      - name: Annotate run summary
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            {
+              echo "### Production deploy"
+              echo ""
+              echo "Tagged \`${{ steps.tag.outputs.next }}\` (previous: \`${{ steps.tag.outputs.previous }}\`)."
+              echo ""
+              echo "Promoted version \`${{ steps.upload.outputs.version_id }}\` to 100% at https://yanai.sh"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### Staging deploy (yanai-sh-staging)"
+              echo ""
+              echo "Tagged \`${{ steps.tag.outputs.next }}\` (previous: \`${{ steps.tag.outputs.previous }}\`)."
+              echo ""
+              echo "Uploaded version \`${{ steps.upload.outputs.version_id }}\` to the **yanai-sh-staging** Worker. Production at https://yanai.sh is unchanged."
+              echo ""
+              echo "QA the preview at the version-specific URL printed in the **Upload Worker version** step (Cloudflare logs \`Version Preview URL: https://...\`)."
+              echo ""
+              echo "When ready, open a PR \`dev\` → \`main\` to promote."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
