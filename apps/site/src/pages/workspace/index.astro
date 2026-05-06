@@ -81,7 +81,7 @@ const primaryExperience = resume.experience.slice(0, 3);
         <section class="pane pane--canvas" id="projects" data-pane aria-labelledby="projects-title">
           <div class="pane-copy">
             <p class="pane-kicker">projects</p>
-            <h2 id="projects-title">current build surface</h2>
+            <h2 id="projects-title" tabindex="-1">current build surface</h2>
             <div class="project-list">
               {PROJECTS.map((project) => (
                 <article class="project-card">
@@ -104,7 +104,7 @@ const primaryExperience = resume.experience.slice(0, 3);
 
         <section class="pane" id="resume" data-pane aria-labelledby="resume-pane-title">
           <p class="pane-kicker">resume index</p>
-          <h2 id="resume-pane-title">{resume.header.headline}</h2>
+          <h2 id="resume-pane-title" tabindex="-1">{resume.header.headline}</h2>
           <p class="pane-summary">{resume.summary}</p>
           <div class="experience-grid">
             {primaryExperience.map((job) => (
@@ -123,7 +123,7 @@ const primaryExperience = resume.experience.slice(0, 3);
 
         <section class="pane" id="stack" data-pane aria-labelledby="stack-title">
           <p class="pane-kicker">stack</p>
-          <h2 id="stack-title">working set</h2>
+          <h2 id="stack-title" tabindex="-1">working set</h2>
           <div class="stack-grid">
             {STACK.map((row) => (
               <section aria-labelledby={`stack-${row.category}`}>
@@ -138,7 +138,7 @@ const primaryExperience = resume.experience.slice(0, 3);
 
         <section class="pane" id="uses" data-pane aria-labelledby="uses-title">
           <p class="pane-kicker">uses / now</p>
-          <h2 id="uses-title">tools and current work</h2>
+          <h2 id="uses-title" tabindex="-1">tools and current work</h2>
           <div class="uses-grid">
             <section>
               <h3>now</h3>
@@ -169,7 +169,7 @@ const primaryExperience = resume.experience.slice(0, 3);
 
         <section class="pane" id="telemetry" data-pane aria-labelledby="telemetry-title">
           <p class="pane-kicker">telemetry</p>
-          <h2 id="telemetry-title">local runtime proof</h2>
+          <h2 id="telemetry-title" tabindex="-1">local runtime proof</h2>
           <div class="telemetry-grid">
             <article>
               <h3>search corpus</h3>

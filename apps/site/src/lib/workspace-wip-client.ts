@@ -327,8 +327,18 @@ function mountPaneNavigation(): void {
     }
   };
 
+  const focusPaneHeading = (id: string) => {
+    const pane = document.getElementById(id);
+    const heading = pane?.querySelector<HTMLElement>('h2[tabindex="-1"]');
+    heading?.focus({ preventScroll: true });
+  };
+
   if (location.hash.length > 1) {
-    setActive(location.hash.slice(1));
+    const id = location.hash.slice(1);
+    setActive(id);
+    // Defer to next frame so the browser's own fragment-scroll completes first;
+    // focusing earlier can race the scroll and leave the heading off-screen.
+    requestAnimationFrame(() => focusPaneHeading(id));
   } else {
     setActive(panes[0]?.id ?? '');
   }
@@ -346,7 +356,12 @@ function mountPaneNavigation(): void {
   );
 
   for (const pane of panes) observer.observe(pane);
-  window.addEventListener('hashchange', () => setActive(location.hash.slice(1)));
+
+  window.addEventListener('hashchange', () => {
+    const id = location.hash.slice(1);
+    setActive(id);
+    focusPaneHeading(id);
+  });
 }
 
 function isFormField(element: Element | null): boolean {
