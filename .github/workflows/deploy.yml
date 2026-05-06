@@ -146,6 +146,22 @@ jobs:
           git tag -a "${{ steps.tag.outputs.next }}" -m "${{ steps.tag.outputs.next }}"
           git push origin "${{ steps.tag.outputs.next }}"
 
+      - name: Create GitHub Release (production only)
+        if: github.ref == 'refs/heads/main'
+        # `gh release create --generate-notes` uses the categories declared in
+        # .github/release.yml to group merged PRs between this tag and the
+        # previous one. Marked `--latest` so github.com surfaces it as the
+        # current release. Dev tags are intentionally skipped — staging
+        # versions aren't releases.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release create "${{ steps.tag.outputs.next }}" \
+            --title "${{ steps.tag.outputs.next }}" \
+            --generate-notes \
+            --latest
+
       - name: Annotate run summary
         run: |
           set -euo pipefail
