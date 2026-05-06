@@ -10,6 +10,11 @@ const lede = SITE_LEDE.trim();
   ) : null
 }
 
+<div class="lede-cta" role="group" aria-label="Resume access">
+  <a class="lede-cta__primary" href="/resume">View resume</a>
+  <a class="lede-cta__download" href="/resume.pdf" download>Download PDF</a>
+</div>
+
 <style>
   .lede {
     max-width: min(32rem, 90vw);
@@ -21,5 +26,43 @@ const lede = SITE_LEDE.trim();
     letter-spacing: 0.01em;
     text-align: center;
     color: var(--colors-muted);
+  }
+
+  .lede-cta {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-12);
+    margin: 0 0 var(--spacing-24);
+    flex-wrap: wrap;
+  }
+
+  .lede-cta a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding-inline: var(--spacing-16);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid color-mix(in srgb, var(--colors-accent) 58%, transparent);
+    color: var(--colors-fg);
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .lede-cta__primary {
+    background: color-mix(in srgb, var(--colors-accent) 22%, transparent);
+    border-color: color-mix(in srgb, var(--colors-accent) 72%, transparent);
+  }
+
+  .lede-cta__primary:hover,
+  .lede-cta__primary:focus-visible {
+    background: color-mix(in srgb, var(--colors-accent) 30%, transparent);
+  }
+
+  .lede-cta__download:hover,
+  .lede-cta__download:focus-visible {
+    background: color-mix(in srgb, var(--colors-accent) 14%, transparent);
   }
 </style>
