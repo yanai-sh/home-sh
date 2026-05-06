@@ -3,7 +3,14 @@ import { createSharedState } from '@lib/shared-state';
 
 interface CanvasModule {
   default(input?: RequestInfo | URL | WebAssembly.Module): Promise<unknown>;
-  render_lattice(canvas: HTMLCanvasElement, width: number, height: number): number;
+  render_lattice(
+    canvas: HTMLCanvasElement,
+    width: number,
+    height: number,
+    mouseXNorm: number,
+    mouseYNorm: number,
+    timeMs: number,
+  ): number;
 }
 
 interface BridgeModule {
@@ -70,8 +77,12 @@ export function mountWorkspaceWip(): void {
     search: document.querySelector('[data-wip-status="search"]'),
   };
 
-  void mountSharedState(targets);
-  mountCanvas(targets);
+  // mountSharedState resolves to the SharedStateWriters (or undefined if
+  // crossOriginIsolated is false / SAB unavailable). Canvas waits for it so
+  // the animation can read mouse coords; if SAB never resolves, canvas falls
+  // back to a static render.
+  const sharedStatePromise = mountSharedState(targets);
+  void mountCanvas(targets, sharedStatePromise);
   mountSearch(targets);
   mountPaneNavigation();
 }
@@ -83,7 +94,9 @@ function setStatus(target: HTMLElement | null, state: keyof typeof statusText): 
   if (value) value.textContent = statusText[state];
 }
 
-async function mountSharedState(targets: StatusTargets): Promise<void> {
+async function mountSharedState(
+  targets: StatusTargets,
+): Promise<import('@lib/shared-state').SharedStateWriters | undefined> {
   try {
     const { writers } = createSharedState();
     const moduleUrl = new URL('/wasm/bridge/bridge.js', globalThis.location.href).href;
@@ -116,40 +129,82 @@ async function mountSharedState(targets: StatusTargets): Promise<void> {
         document.hidden ? 1 : matchMedia('(pointer: coarse)').matches ? 30 : 60,
       );
     });
+    return writers;
   } catch {
     setStatus(targets.sab, 'off');
+    return undefined;
   }
 }
 
-async function mountCanvas(targets: StatusTargets): Promise<void> {
+async function mountCanvas(
+  targets: StatusTargets,
+  sharedStatePromise: Promise<import('@lib/shared-state').SharedStateWriters | undefined>,
+): Promise<void> {
   const canvas = document.getElementById('ws-rust-canvas');
   if (!(canvas instanceof HTMLCanvasElement)) return;
 
+  // prefers-reduced-motion users get a single static render (or none if the
+  // CSS rule has hidden the canvas entirely — `display: none` short-circuits
+  // getBoundingClientRect to width=0/height=0, which we guard below).
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let mod: CanvasModule;
   try {
     const moduleUrl = new URL('/wasm/canvas/canvas.js', globalThis.location.href).href;
-    const mod = (await import(/* @vite-ignore */ moduleUrl)) as unknown as CanvasModule;
+    mod = (await import(/* @vite-ignore */ moduleUrl)) as unknown as CanvasModule;
     await mod.default();
     setStatus(targets.wasm, 'ready');
-
-    const draw = () => {
-      const rect = canvas.getBoundingClientRect();
-      mod.render_lattice(
-        canvas,
-        rect.width || window.innerWidth,
-        rect.height || window.innerHeight,
-      );
-      setStatus(targets.canvas, 'ready');
-    };
-
-    draw();
-    const resizeObserver = new ResizeObserver(draw);
-    resizeObserver.observe(canvas);
-    window.addEventListener('resize', draw, { passive: true });
   } catch (error) {
-    console.error(error);
+    console.error('canvas: WASM load failed', error);
     setStatus(targets.wasm, 'error');
     setStatus(targets.canvas, 'error');
+    return;
   }
+
+  const writers = await sharedStatePromise;
+
+  const drawFrame = (timeMs: number) => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const mxNorm = writers ? writers.readMouseX() / window.innerWidth : 0.5;
+    const myNorm = writers ? writers.readMouseY() / window.innerHeight : 0.5;
+    mod.render_lattice(canvas, rect.width, rect.height, mxNorm, myNorm, timeMs);
+  };
+
+  // First paint so the canvas is never empty even before the rAF loop starts
+  // (e.g. SAB unavailable, or pane briefly off-screen at mount).
+  drawFrame(performance.now());
+  setStatus(targets.canvas, 'ready');
+
+  if (reducedMotion) return;
+
+  let rafId: number | null = null;
+  const loop = (timeMs: number) => {
+    drawFrame(timeMs);
+    rafId = requestAnimationFrame(loop);
+  };
+
+  // Gate the loop on canvas visibility — pause when the projects pane scrolls
+  // off-screen so we don't burn CPU on a hidden surface.
+  const visibility = new IntersectionObserver(
+    (entries) => {
+      const visible = entries.some((entry) => entry.isIntersecting);
+      if (visible && rafId === null) {
+        rafId = requestAnimationFrame(loop);
+      } else if (!visible && rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    },
+    { threshold: 0 },
+  );
+  visibility.observe(canvas);
+
+  // Resize triggers a single re-draw; the rAF loop will pick it up on the
+  // next frame anyway, but a synchronous redraw avoids a one-frame stretch
+  // on the new buffer dimensions.
+  const resizeObserver = new ResizeObserver(() => drawFrame(performance.now()));
+  resizeObserver.observe(canvas);
 }
 
 function mountSearch(targets: StatusTargets): void {

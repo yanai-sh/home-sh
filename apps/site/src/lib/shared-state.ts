@@ -18,6 +18,8 @@ export interface SharedStateWriters {
   setTickTarget(hz: number): void;
   incrementFrameCounter(): number;
   readFrameCounter(): number;
+  readMouseX(): number;
+  readMouseY(): number;
 }
 
 export interface SharedStateHandle {
@@ -65,6 +67,12 @@ export function createSharedState(): SharedStateHandle {
       },
       readFrameCounter() {
         return uints[UINTS.frameCounter];
+      },
+      readMouseX() {
+        return floats[FLOATS.mouseX];
+      },
+      readMouseY() {
+        return floats[FLOATS.mouseY];
       },
     },
   };
