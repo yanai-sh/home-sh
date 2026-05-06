@@ -1,8 +1,11 @@
 // POST /api/contact — contact-form receiver. Validates input, verifies the
 // Turnstile token server-side, and forwards the message via Resend.
 //
-// Bindings come from the site Worker's secrets (`wrangler secret put` →
-// site Worker store). Tofu Phase 7 will migrate these to Workers Secrets Store.
+// Secrets bind from the account-level Workers Secrets Store via
+// `secrets_store_secrets` in wrangler.jsonc. Each binding is a
+// `SecretsStoreSecret` whose value is fetched lazily through `.get()`.
+// Source-of-truth for values is infra/tofu/secrets.enc.json (SOPS),
+// pushed by `bun run scripts/push-secrets.ts`.
 //
 // Lives in the site Worker (single ingress for yanai.sh), not as a separate
 // Worker — avoids the per-route IAM scope and the operational tax of an extra
@@ -95,7 +98,14 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: CONTACT_ERROR.INVALID_INPUT }, 400);
   }
 
-  const verified = await verifyTurnstile(token, env.TURNSTILE_SECRET, ip);
+  const [turnstileSecret, resendKey, contactFrom, contactTo] = await Promise.all([
+    env.TURNSTILE_SECRET.get(),
+    env.RESEND_API_KEY.get(),
+    env.CONTACT_FROM.get(),
+    env.CONTACT_TO.get(),
+  ]);
+
+  const verified = await verifyTurnstile(token, turnstileSecret, ip);
   if (!verified) {
     return json({ error: CONTACT_ERROR.TURNSTILE_FAILED }, 403);
   }
@@ -103,12 +113,12 @@ export const POST: APIRoute = async ({ request }) => {
   const sendRes = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      Authorization: `Bearer ${resendKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: env.CONTACT_FROM,
-      to: [env.CONTACT_TO],
+      from: contactFrom,
+      to: [contactTo],
       reply_to: email,
       subject: `Contact from ${name.trim()}`,
       text: `From: ${name.trim()} <${email}>\n\n${message.trim()}`,
@@ -116,6 +126,8 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (!sendRes.ok) {
+    const errBody = await sendRes.text().catch(() => '<unreadable>');
+    console.error('contact: resend rejected', { status: sendRes.status, body: errBody });
     return json({ error: CONTACT_ERROR.SEND_FAILED }, 502);
   }
 

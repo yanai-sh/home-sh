@@ -86,6 +86,12 @@ tf-destroy:
 tf-secrets:
     sops infra/tofu/secrets.enc.json
 
+# Push runtime secrets from SOPS into the Workers Secrets Store. Idempotent —
+# run after editing infra/tofu/secrets.enc.json. Worker reads them via the
+# `secrets_store_secrets` bindings declared in apps/site/wrangler.jsonc.
+push-secrets:
+    bun run scripts/push-secrets.ts
+
 
 # ── Full pipeline ────────────────────────────────────────────────────────────
 
