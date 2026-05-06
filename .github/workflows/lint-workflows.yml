@@ -1,0 +1,39 @@
+# actionlint runs against every change to .github/workflows/*.{yml,yaml}.
+# Catches typos in `${{ github.* }}` expressions, invalid keys, missing
+# inputs/outputs, and shell-snippet bugs (via shellcheck integration) before
+# the workflow fails at runtime — saving the deploy → red-X → fix loop.
+
+name: Lint workflows
+
+on:
+  pull_request:
+    paths: ['.github/workflows/**']
+  push:
+    branches: [main, dev]
+    paths: ['.github/workflows/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-workflows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install actionlint
+        # The upstream installer downloads the latest pinned release into
+        # the working dir; we move it onto PATH so the run step is plain.
+        run: |
+          set -euo pipefail
+          mkdir -p .bin
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) latest .bin
+          echo "${GITHUB_WORKSPACE}/.bin" >> "$GITHUB_PATH"
+
+      - name: Run actionlint
+        run: actionlint -color
