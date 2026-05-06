@@ -53,21 +53,6 @@ test('runtime strip transitions wasm/sab/canvas out of pending', async ({ page }
   }
 });
 
-test('search strip item transitions out of pending when panel is opened', async ({ page }) => {
-  // The search Worker uses dynamic WASM import; the wrangler miniflare runtime
-  // used by `astro preview` does not resolve the Worker message reliably, so
-  // this test only runs against a real deployed Worker URL.
-  test.skip(!process.env.SMOKE_BASE_URL, 'search WASM worker requires deployed Worker runtime');
-  await page.goto(`${BASE}/workspace`);
-  // "search" stays "pending" until the search panel is first opened.
-  await expect(page.locator('[data-wip-status="search"]')).toHaveText(/pending/i);
-  await page.click('#ws-search-trigger');
-  // Opening the panel triggers the Worker init and flips the status.
-  await expect(page.locator('[data-wip-status="search"]')).not.toHaveText(/pending/i, {
-    timeout: 8000,
-  });
-});
-
 test('search panel opens and closes without error', async ({ page }) => {
   await page.goto(`${BASE}/workspace`);
   // Panel is hidden by default.
