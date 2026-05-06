@@ -45,21 +45,15 @@ wasm-lint:
 
 # Generate TypeScript types from wrangler bindings (run after changing wrangler.jsonc)
 worker-types:
-    wrangler types --config infra/workers/telemetry-write/wrangler.jsonc --output-path infra/workers/telemetry-write/worker-configuration.d.ts
-    wrangler types --config infra/workers/telemetry-read/wrangler.jsonc  --output-path infra/workers/telemetry-read/worker-configuration.d.ts
-
-# Deploy telemetry Workers (staging)
-deploy-telemetry:
-    wrangler deploy --config infra/workers/telemetry-write/wrangler.jsonc
-    wrangler deploy --config infra/workers/telemetry-read/wrangler.jsonc
+    cd apps/site && bun run wrangler-types
 
 # Run D1 migrations against local dev database
 migrate-local:
-    wrangler d1 migrations apply home-sh-telemetry --local --config infra/workers/telemetry-write/wrangler.jsonc
+    cd apps/site && bunx wrangler d1 migrations apply home-sh-telemetry --local
 
 # Run D1 migrations against remote database (production — use carefully)
 migrate-remote:
-    wrangler d1 migrations apply home-sh-telemetry --config infra/workers/telemetry-write/wrangler.jsonc
+    cd apps/site && bunx wrangler d1 migrations apply home-sh-telemetry --remote
 
 # ── OpenTofu / Infrastructure ────────────────────────────────────────────────
 # Secrets are read from infra/tofu/secrets.enc.json via the carlpett/sops provider
@@ -92,6 +86,17 @@ tf-secrets:
 push-secrets:
     bun run scripts/push-secrets.ts
 
+# ── Resume PDF ───────────────────────────────────────────────────────────────
+# Canonical CV is built in yanai-sh/resume (LaTeX → PDF) and attached to each
+# `vX.Y.Z` GitHub Release. Download lands in **gitignored** `artifacts/resume/`
+# (outside Astro `public/` so it never shadows the SSR **`/resume.pdf`** route).
+
+sync-resume-pdf:
+    mkdir -p artifacts/resume
+    gh release download --repo yanai-sh/resume \
+        --pattern 'YanaiKlugman_CV_*.pdf' \
+        --output artifacts/resume/YanaiKlugman_CV.pdf \
+        --clobber
 
 # ── Full pipeline ────────────────────────────────────────────────────────────
 
