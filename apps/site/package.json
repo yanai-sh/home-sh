@@ -13,6 +13,7 @@
     "test": "bun test ./src",
     "verify": "bun run check && bun run typecheck && bun run test && bun run build",
     "preview": "astro preview",
+    "smoke": "playwright test --config=tests/smoke/playwright.config.ts",
     "version-upload": "wrangler versions upload --config dist/server/wrangler.json",
     "version-deploy": "wrangler versions deploy --config dist/server/wrangler.json"
   },
