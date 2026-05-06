@@ -39,9 +39,52 @@ jobs:
         run: |
           set -euo pipefail
 
-          response="$(curl -fsS \
+          # Drop --fail-on-error so we can read Cloudflare's structured response
+          # body (which carries actionable info even on 4xx).
+          response="$(curl -sS \
             -H "Authorization: Bearer $CF_API_TOKEN" \
             https://api.cloudflare.com/client/v4/user/tokens/verify)"
+
+          success="$(printf '%s' "$response" | jq -r '.success')"
+
+          # The verify endpoint requires the token to have User → User Details → Read.
+          # Without it, Cloudflare returns code 1000 "Invalid API Token" even for
+          # tokens that work fine for their scoped operations (e.g. Workers Scripts:
+          # Edit). Treat this distinct from "token is actually invalid" — the
+          # probe needs the permission added, not a rotation.
+          if [ "$success" != "true" ]; then
+            error_code="$(printf '%s' "$response" | jq -r '.errors[0].code // 0')"
+            error_msg="$(printf '%s'  "$response" | jq -r '.errors[0].message // "<no message>"')"
+            echo "::error::Verify endpoint returned success=false code=$error_code message=$error_msg"
+
+            existing="$(gh issue list --label token-expiry --state open --json number --jq '.[0].number // empty')"
+            body="$(cat <<EOF
+          The token-expiry probe got \`success=false\` from \`/user/tokens/verify\`:
+
+          - **Code**: \`$error_code\`
+          - **Message**: \`$error_msg\`
+
+          ## Two possible causes
+
+          1. **Missing permission** (most likely if deploys still work). The verify endpoint
+             needs \`User → User Details → Read\` on the token. Add it at
+             https://dash.cloudflare.com/profile/api-tokens → edit token → Permissions →
+             \`User → User Details → Read\`. Save. Re-run this workflow to confirm.
+          2. **Token actually invalid/revoked.** If deploys are also failing with 401, the
+             token was rotated or revoked. Generate a new one and update SOPS + GH secret
+             (see steps in earlier rotation comments).
+          EOF
+          )"
+            if [ -n "$existing" ]; then
+              gh issue comment "$existing" --body "$body"
+            else
+              gh issue create \
+                --title "Token expiry probe failing: $error_msg" \
+                --body "$body" \
+                --label "token-expiry,infra"
+            fi
+            exit 1
+          fi
 
           status="$(printf '%s' "$response" | jq -r '.result.status')"
           expires_on="$(printf '%s' "$response" | jq -r '.result.expires_on // empty')"
