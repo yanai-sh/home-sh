@@ -360,7 +360,9 @@ function mountPaneNavigation(): void {
   window.addEventListener('hashchange', () => {
     const id = location.hash.slice(1);
     setActive(id);
-    focusPaneHeading(id);
+    // Mirror the initial-load deferral: focus after the browser's fragment-scroll
+    // settles so the heading lands on-screen before screen readers announce it.
+    requestAnimationFrame(() => focusPaneHeading(id));
   });
 }
 
