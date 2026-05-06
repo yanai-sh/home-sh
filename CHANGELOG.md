@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-05-06
+
+### Added
+
+- **Workspace Alpha (M5)** — animated WASM canvas in the projects pane (rAF loop reads mouse_x/y from the bridge SAB and feeds them to `render_lattice`; gated by `IntersectionObserver` to pause when the pane is off-screen). Pane headings are programmatically focusable, and hash navigation (initial-load deep links + nav-link clicks) moves focus into the pane so screen readers announce the heading. Reduced-motion users get a single-column projects pane with the canvas frame hidden entirely. Smoke suite at `apps/site/tests/smoke/workspace.spec.ts` locks every M5 acceptance gate: deep-link viewport, focus management, runtime-strip status transitions, reduced-motion layout, WASM-failure fallback, COOP/COEP header scope, mobile pane-nav layout.
+
 ## [2.1.0] - 2026-05-06
 
 ### Added
