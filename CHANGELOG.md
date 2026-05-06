@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`GET /resume.pdf`** as a site Worker route — streams **`YanaiKlugman_CV_*.pdf`** from **`yanai-sh/resume`**’s latest GitHub Release (API + asset download). Binding **`RESUME_REPO_TOKEN`** (**`resume_repo_token`** in SOPS → **`push-secrets`**).
+
+### Removed
+
+- **`bun run gen:pdf`** / **`scripts/generate-resume-pdf.ts`** — no build-time or static **`dist/client/resume.pdf`**.
+- Astro **content collection** for resume — **`getEntry('resume', 'current')`** replaced by **`Astro.locals.resumeSnapshot`** populated in middleware (`resume-remote.ts`).
+
+### Changed
+
+- **Deploy** — dropped pre-build PDF download, Playwright Chromium install, and **`gen:pdf`** steps; production PDF is always fetched on demand at the edge.
+
+- **`/resume`** and home/workspace resume excerpts — hydrate from live **`resume.toml`** in **`yanai-sh/resume`** (GitHub Contents API, **`RESUME_REPO_TOKEN`**), cached ~120s at the edge, with **`content/resume.generated.json`** fallback when GitHub fails or no token (**`sync:resume`** still writes that artifact for offline builds).
+
+- **`@yanai-sh/ui-system`** — **`@pandacss/dev`** raised to **`^1.11.0`** so presets match **`apps/site`** after **`npm-check-updates`** (fixes **`panda.config.ts`** Preset type errors).
+
+- **`scripts/sync-resume.ts`** — also reads **`RESUME_REPO_TOKEN`** when **`RESUME_GITHUB_TOKEN`** / **`GITHUB_TOKEN`** are unset (same PAT as the Worker / SOPS **`resume_repo_token`**).
+
+## [2.3.0] - 2026-05-06
+
+### Added
+
+- **Telemetry (M6)** — live aggregate telemetry in **`/workspace#telemetry`**, backed by **`home-sh-telemetry` D1** bound as **`DB`** on the site Worker (`apps/site/wrangler.jsonc`). **`POST /api/telemetry/beacon`** validates UUIDv4 clients, caps **`frame_samples`** at 300, and stores **`CF-IPCountry`** (never client IP); **`GET /api/telemetry/stats`** returns totals, 30‑day sessions, AVG LCP / FPS, top countries (aggregated only), device breakdown — **cached 60s** with stale‑while‑revalidate, **JSON without session ids**. **`mountTelemetry`** in `telemetry-client.ts` sends **`sendBeacon` on pagehide**, captures LCP via **`PerformanceObserver`**, samples FPS on an rAF ticker, reacts to **`telemetry:wasm-ready`** from **`workspace-wip-client.ts`**, and honors **`navigator.doNotTrack`** (`1` / `yes`) plus **`localStorage['telemetry:opt-out']`** without breaking the page. **`mountTelemetryStats`** fills **`data-telemetry-stat`** slots fail‑soft.
+
+### Removed
+
+- **Skeleton Workers** **`infra/workers/telemetry-{read,write}/`** — never deployed; superseded by the site Worker routes.
+
+### Changed
+
+- **`just migrate-local` / `migrate-remote`** and **`worker-types`** now run from **`apps/site`** with **Wrangler** against the Astro Worker config (**`deploy-telemetry`** dropped).
+- **`AGENTS.md`**, **`CLAUDE.md`**, and **`infra/tofu/outputs.tf`** clarify that telemetry ingress is the **site Worker**.
+
 ## [2.2.0] - 2026-05-06
 
 ### Added
@@ -20,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Workers Secrets Store** as the source-of-binding for runtime secrets (`TURNSTILE_SECRET`, `RESEND_API_KEY`, `CONTACT_FROM`, `CONTACT_TO`). Account-level store `yanai-sh-prod` bound to the site Worker via `secrets_store_secrets` in `apps/site/wrangler.jsonc`; values pushed from SOPS by `bun run scripts/push-secrets.ts` (or `just push-secrets`).
 - **Contact endpoint hardening** — server-side honeypot (`website` field, silent 200 on bot fill), Cloudflare Workers Rate Limiting binding (`CONTACT_RATE_LIMIT`, 5 requests / IP / minute), stable error-code module at `apps/site/src/lib/contact-error-codes.ts` mapped to user-friendly strings client-side, and `console.error` of Resend rejection bodies for observability.
 - **Astro content collection** for the resume snapshot — Zod schema at `apps/site/src/content/resume-schema.ts` is the single source of truth; both `/resume` and the homepage `ResumeShowcase` consume `getEntry('resume', 'current')`. Sync helpers extracted into `scripts/lib/sync-resume-normalize.ts` with unit tests.
-- **Build-time `resume.pdf`** via headless Playwright printing the SSR'd `/resume` route at deploy time (`scripts/generate-resume-pdf.ts`); CI generates it after `verify` and before Worker upload. Drops the checked-in stale `apps/site/public/resume.pdf`.
+- **Build-time `resume.pdf`** via headless Playwright printing the SSR'd `/resume` route at deploy time (`scripts/generate-resume-pdf.ts`); CI generates it after `verify` and before Worker upload. No committed `resume.pdf` (optional LaTeX release asset may land in **untracked** `apps/site/public/`; smoke runs **`gen:pdf`** before preview).
 - **First-viewport resume CTAs** in `Lede.astro` (`View resume` / `Download PDF`) — readable without WASM/JS.
 - **Playwright smoke suite** at `apps/site/tests/smoke/landing.spec.ts` covering CTAs, `/resume`, `/resume.pdf`, `/workspace`, 404, reduced-motion, contact form sitekey, and mobile viewport.
 - **Versioned Worker deploys** — CI runs `wrangler versions upload` then `versions deploy <id>@100%`, tagging each version with the commit SHA.

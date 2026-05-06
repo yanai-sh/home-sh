@@ -24,7 +24,10 @@ type GitHubContent = {
 };
 
 async function fetchResume(): Promise<ResumeSnapshot | null> {
-  const token = process.env.RESUME_GITHUB_TOKEN ?? process.env.GITHUB_TOKEN;
+  const token =
+    process.env.RESUME_GITHUB_TOKEN ??
+    process.env.GITHUB_TOKEN ??
+    process.env.RESUME_REPO_TOKEN;
   const headers = new Headers({
     Accept: 'application/vnd.github.object+json',
     'X-GitHub-Api-Version': API_VERSION,

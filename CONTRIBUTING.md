@@ -63,6 +63,12 @@ A production release is whatever lands on `main`. The Deploy workflow auto-tags 
    SMOKE_BASE_URL=https://yanai.sh bun run --cwd apps/site smoke
    ```
 
+   For local **`astro dev`** / **`preview`**, **`/resume`**, the home resume section, **`/workspace`**, and **`/resume.pdf`**, put the same **`RESUME_REPO_TOKEN`** PAT in **`apps/site/.dev.vars`** (Secrets Store-compatible value: **`resume_repo_token`** in **`infra/tofu/secrets.enc.json`**, deployed via **`bun run scripts/push-secrets.ts`**). Needs **Contents read** on **`yanai-sh/resume`** (private repo API + Releases). Without it the console warns in dev and the site falls back to **`content/resume.generated.json`** from the last **`sync:resume`**.
+
+   Root **`bun run sync:resume`** (via **`bun run build`** / **`verify`**) also honors **`RESUME_REPO_TOKEN`** when **`GITHUB_TOKEN`** / **`RESUME_GITHUB_TOKEN`** are unset, so **`direnv`** decrypting SOPS can refresh **`resume.generated.json`** with the same PAT as production.
+
+   For **`/resume.pdf`** smoke only: if **`RESUME_REPO_TOKEN`** is unset locally, that test is skipped unless **`SMOKE_BASE_URL`** hits an origin where the Worker already has the binding.
+
 5. **Annotate the version on Cloudflare**
    The CI deploy includes the commit SHA in the `--tag` flag, so the dashboard shows the SHA next to each version. No manual annotation needed.
 
