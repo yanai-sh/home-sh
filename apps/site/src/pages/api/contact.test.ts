@@ -4,12 +4,15 @@ import { CONTACT_ERROR } from '@lib/contact-error-codes';
 
 // `cloudflare:workers` is a virtual module only resolvable inside the Workers
 // runtime. Mock it before importing the handler so bun:test can load the file.
+// Each secret is a `SecretsStoreSecret`-shaped object with an async `.get()`,
+// matching the runtime binding emitted by `secrets_store_secrets`.
+const secret = (value: string) => ({ get: async () => value });
 mock.module('cloudflare:workers', () => ({
   env: {
-    TURNSTILE_SECRET: 'test-secret',
-    RESEND_API_KEY: 'test-key',
-    CONTACT_FROM: 'noreply@yanai.sh',
-    CONTACT_TO: 'inbox@yanai.sh',
+    TURNSTILE_SECRET: secret('test-secret'),
+    RESEND_API_KEY: secret('test-key'),
+    CONTACT_FROM: secret('noreply@yanai.sh'),
+    CONTACT_TO: secret('inbox@yanai.sh'),
     CONTACT_RATE_LIMIT: { limit: async () => ({ success: true }) },
   },
 }));
