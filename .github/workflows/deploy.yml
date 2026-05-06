@@ -106,12 +106,12 @@ jobs:
         # to whichever Worker name is the target.
         run: |
           set -euo pipefail
-          NAME_FLAG=""
+          NAME_FLAGS=()
           if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
-            NAME_FLAG="--name yanai-sh-staging"
+            NAME_FLAGS=(--name yanai-sh-staging)
           fi
           OUTPUT="$(bun run --cwd apps/site version-upload -- \
-            $NAME_FLAG \
+            "${NAME_FLAGS[@]}" \
             --message "$(git log --format='%s' -1)" \
             --tag "${{ steps.tag.outputs.next }}")"
           echo "$OUTPUT"
