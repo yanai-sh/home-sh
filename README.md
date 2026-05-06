@@ -30,8 +30,8 @@ The site deploys as a single Cloudflare Worker (Workers with Static Assets) name
 
 Configure these **repository secrets** in GitHub:
 
-- `CLOUDFLARE_API_TOKEN` — API token with `Workers Scripts: Edit` (account scope)
-- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account id
-- `PUBLIC_TURNSTILE_SITE_KEY` — public Turnstile widget id, embedded into the contact form HTML at build time
+- `CLOUDFLARE_API_TOKEN` — token with `Workers Scripts: Edit` (account-scoped). Add `User → User Details → Read` so the monthly token-expiry probe (`.github/workflows/token-expiry-check.yml`) can verify it.
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account id (visible at dash.cloudflare.com top-right).
+- `PUBLIC_TURNSTILE_SITE_KEY` — public Turnstile widget id (also stored in `infra/tofu/secrets.enc.json`); embedded in the contact form HTML at build time.
 
 Apex `yanai.sh` is bound to the Worker via a Workers Custom Domain (managed declaratively in `infra/tofu/custom_domain.tf`). Production URL and SEO metadata use **`SITE_URL`** in [`apps/site/src/config/site.ts`](apps/site/src/config/site.ts).
