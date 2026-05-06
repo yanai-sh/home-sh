@@ -66,6 +66,17 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
             placeholder="..."></textarea>
         </div>
 
+        <div class="hp-trap" aria-hidden="true">
+          <label for="cf-website">Website (leave blank)</label>
+          <input
+            type="text"
+            name="website"
+            id="cf-website"
+            tabindex="-1"
+            autocomplete="off"
+          />
+        </div>
+
         <div class="form-turnstile" id="cf-turnstile-widget"></div>
 
         <div class="form-footer">
@@ -314,6 +325,15 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     line-height: 1.55;
   }
 
+  .hp-trap {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
   .form-turnstile {
     min-height: 65px;
   }
@@ -464,6 +484,8 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 </style>
 
 <script>
+  import { errorMessage } from "@lib/contact-error-codes";
+
   const CONTACT_ENDPOINT = '/api/contact';
 
   function init() {
@@ -517,11 +539,13 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
       setStatus('sending...', 'loading');
 
+      const website = (form.elements.namedItem('website') as HTMLInputElement | null)?.value ?? '';
       const payload = {
         name:    (form.elements.namedItem('name')    as HTMLInputElement).value.trim(),
         email:   (form.elements.namedItem('email')   as HTMLInputElement).value.trim(),
         message: (form.elements.namedItem('message') as HTMLTextAreaElement).value.trim(),
         token,
+        website,  // honeypot — humans leave empty
       };
 
       try {
@@ -538,7 +562,7 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
           submitBtn.disabled = true;
         } else {
           const body = await res.json().catch(() => ({})) as { error?: string };
-          setStatus(body.error ?? 'something went wrong', 'error');
+          setStatus(errorMessage(body.error ?? 'send_failed'), 'error');
           (window as any).turnstile?.reset();
         }
       } catch {

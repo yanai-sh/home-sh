@@ -12,6 +12,39 @@ Personal portfolio: outside contributions are not expected. This doc is for **yo
 
 Branch protection: **`./scripts/gh-protect-main.sh`** (see [README](README.md)) or **Settings → Rules → Rulesets**.
 
+## Releases
+
+Tag a release once the **`[Unreleased]`** entry in `CHANGELOG.md` reflects everything you want to ship.
+
+1. **Update the changelog**
+   - Move `## [Unreleased]` content into a new `## [vX.Y.Z] - YYYY-MM-DD` section.
+   - Leave a fresh empty `## [Unreleased]` block above it.
+   - Commit: `git commit -am "chore: changelog for vX.Y.Z"`.
+
+2. **Tag**
+   ```sh
+   git tag -a vX.Y.Z -m "vX.Y.Z"
+   git push origin main --follow-tags
+   ```
+
+3. **Verify deploy**
+   ```sh
+   gh run watch
+   ```
+   The Deploy workflow runs as part of the push to `main`. Wait for green.
+
+4. **Production smoke**
+   ```sh
+   bun run --cwd apps/site smoke
+   # uses SMOKE_BASE_URL=https://yanai.sh in CI; pass it locally:
+   SMOKE_BASE_URL=https://yanai.sh bun run --cwd apps/site smoke
+   ```
+
+5. **Annotate the version on Cloudflare**
+   The CI deploy includes the commit SHA in the `--tag` flag, so the dashboard shows the SHA next to each version. No manual annotation needed.
+
+6. **If anything fails**, follow the rollback procedure in `ARCHITECTURE.md`.
+
 ## Commits
 
 Use clear messages; **Conventional Commits** are optional but help reading history.

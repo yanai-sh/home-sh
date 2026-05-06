@@ -54,6 +54,10 @@ target/
 # --- DATABASES ---
 *.sqlite
 
+# --- TEST ARTIFACTS ---
+test-results/
+playwright-report/
+
 # --- AI AGENTS & EDITORS ---
 !.cursor/rules/**
 .cursor/

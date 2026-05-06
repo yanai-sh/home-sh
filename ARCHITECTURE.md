@@ -62,3 +62,35 @@ Short rationale for choices a reviewer or interviewer might ask about. (Drafting
 | **`main` push rejected** | Expected when rulesets require PRs. Push a **topic branch**, open **PR → `main`**, merge when **CI / verify** is green. |
 | **Local `main` ahead of `origin/main`** | Usually means unpushed merges or local commits—publish via PR; avoid **`git push origin main`** if rulesets forbid it. |
 | **CI badge** | README tracks **`main`** (same branch as deploy). |
+
+## Rollback
+
+Each `wrangler deploy` creates an immutable Worker version. The current production deployment is one of those versions held at 100%; older versions remain accessible until Cloudflare's ~10-version retention rolls them off. Rolling back is a version-pointer change, not a rebuild.
+
+### Find a known-good version id
+
+```sh
+bun run --cwd apps/site exec wrangler versions list --config dist/server/wrangler.json
+```
+
+Or via Cloudflare Dashboard → Workers & Pages → `yanai-sh` → Deployments tab. Each row shows the version id, message (commit subject from CI), and tag (short SHA).
+
+### Roll back via the GitHub Actions workflow
+
+GitHub → Actions → **Rollback Worker** → Run workflow → enter the version id and an optional reason. The workflow promotes the target version to 100% and runs a smoke check against `/` and `/resume`.
+
+### Roll back from the local CLI (if Actions is unavailable)
+
+```sh
+eval "$(SOPS_AGE_KEY_FILE=$HOME/.config/sops/age/keys.txt sops --decrypt --input-type json --output-type json infra/tofu/secrets.enc.json | jq -r 'to_entries[] | "export \(.key | ascii_upcase)=\(.value)"')"
+bun run --cwd apps/site build
+bun run --cwd apps/site exec wrangler versions deploy "<version-id>@100%" \
+  --config dist/server/wrangler.json --message "manual rollback" --yes
+```
+
+### Failure modes that rollback does not solve
+
+- **D1 schema regression** — D1 migrations are forward-only. To recover, write a fix-forward migration; never mutate the in-place schema.
+- **KV namespace data corruption** — restore from a prior backup (manual). KV has no point-in-time recovery on the free tier.
+- **Custom Domain detachment** — re-bind via `cloudflare_workers_custom_domain.yanai_sh` in Tofu (`tofu apply`), or via the Cloudflare API.
+- **Secrets rotation gone wrong** — revert the SOPS commit and re-apply Tofu / re-`wrangler secret put` the prior value.
