@@ -1,26 +1,34 @@
-# Weekly probe of CLOUDFLARE_API_TOKEN health.
+# Monthly probe of CLOUDFLARE_API_TOKEN health.
 #
 # Why this exists:
 #   Cloudflare API tokens have configurable expiry (recommended: 1 year).
 #   When they expire, the next deploy fails. Without an active probe, you only
 #   learn at deploy time — bad for an on-call surface.
 #
-#   This workflow runs weekly, queries Cloudflare's verify endpoint, and:
-#     • exits 0 if the token is healthy and >14 days remain
-#     • opens / updates a `token-expiry` issue when ≤14 days remain
+#   This workflow runs the 1st of each month (12/year), queries Cloudflare's
+#   verify endpoint, and:
+#     • exits 0 if the token is healthy and >30 days remain
+#     • opens / updates a `token-expiry` issue when ≤30 days remain
 #     • opens a `security` + `infra` issue if the token isn't active
+#
+#   The 30-day threshold matches the monthly cadence: any token expiring in
+#   the gap between two runs gets flagged on the prior run.
 #
 #   Calendar-free rotation: the issue is the reminder. You see it in the
 #   normal "open issues" list, rotate the token at the Cloudflare dashboard,
 #   update the SOPS file + GH secret, close the issue.
 #
-# Cost: ~5 sec per run, once a week. Cloudflare API call is free.
+# Cost: ~5 sec per run, once a month. Cloudflare API call is free.
 
 name: Token expiry health check
 
 on:
   schedule:
-    - cron: "0 9 * * MON" # Monday 09:00 UTC
+    # Monthly on the 1st at 09:00 UTC. With a 30-day warning threshold below,
+    # this guarantees ≥1 alert before any expiry that would otherwise slip
+    # between checks. 12 runs/year — minimum cadence that still catches a
+    # 14-day window without missing it.
+    - cron: "0 9 1 * *"
   workflow_dispatch:
 
 permissions:
@@ -128,8 +136,10 @@ jobs:
           days=$(( ($(date -d "$expires_on" +%s) - $(date +%s)) / 86400 ))
           echo "Days remaining: $days"
 
-          if [ "$days" -gt 14 ]; then
-            echo "Healthy. Next check next Monday."
+          # 30-day threshold matches the monthly cron interval — guarantees the
+          # next scheduled run will see the alert before the token actually expires.
+          if [ "$days" -gt 30 ]; then
+            echo "Healthy. Next check 1st of next month."
             exit 0
           fi
 
