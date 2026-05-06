@@ -1,0 +1,129 @@
+# Weekly probe of CLOUDFLARE_API_TOKEN health.
+#
+# Why this exists:
+#   Cloudflare API tokens have configurable expiry (recommended: 1 year).
+#   When they expire, the next deploy fails. Without an active probe, you only
+#   learn at deploy time — bad for an on-call surface.
+#
+#   This workflow runs weekly, queries Cloudflare's verify endpoint, and:
+#     • exits 0 if the token is healthy and >14 days remain
+#     • opens / updates a `token-expiry` issue when ≤14 days remain
+#     • opens a `security` + `infra` issue if the token isn't active
+#
+#   Calendar-free rotation: the issue is the reminder. You see it in the
+#   normal "open issues" list, rotate the token at the Cloudflare dashboard,
+#   update the SOPS file + GH secret, close the issue.
+#
+# Cost: ~5 sec per run, once a week. Cloudflare API call is free.
+
+name: Token expiry health check
+
+on:
+  schedule:
+    - cron: "0 9 * * MON" # Monday 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify CLOUDFLARE_API_TOKEN
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          response="$(curl -fsS \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            https://api.cloudflare.com/client/v4/user/tokens/verify)"
+
+          status="$(printf '%s' "$response" | jq -r '.result.status')"
+          expires_on="$(printf '%s' "$response" | jq -r '.result.expires_on // empty')"
+
+          echo "Token status: $status"
+          echo "Token expires_on: ${expires_on:-<no expiry>}"
+
+          # --- Critical: token not active (revoked, expired, malformed) -------
+          if [ "$status" != "active" ]; then
+            gh issue create \
+              --title "🚨 Cloudflare API token status: $status" \
+              --body "$(cat <<EOF
+          The weekly token-expiry probe ran against \`secrets.CLOUDFLARE_API_TOKEN\` and got back \`status=$status\`.
+
+          **Action required:** rotate immediately. Deploy will fail at the next push.
+
+          1. Generate a new token at https://dash.cloudflare.com/profile/api-tokens
+             (use the same permissions as the existing one — *Workers Scripts: Edit* on the account, plus any zone scopes you've added)
+          2. Update the SOPS source of truth:
+             \`\`\`sh
+             sops infra/tofu/secrets.enc.json    # set cloudflare_api_token
+             \`\`\`
+          3. Update the GH Actions secret:
+             \`\`\`sh
+             gh secret set CLOUDFLARE_API_TOKEN -b "<new-value>"
+             \`\`\`
+          4. Re-run this workflow to confirm: Actions → Token expiry health check → Run workflow.
+          EOF
+          )" \
+              --label "security,infra,token-expiry"
+            exit 1
+          fi
+
+          # --- Warning: no expiry set (loose hygiene) -------------------------
+          if [ -z "$expires_on" ]; then
+            echo "::warning::Cloudflare token has no expiry set — recommended to set one (1 year is fine for solo use)"
+            exit 0
+          fi
+
+          # --- Calculate days remaining ---------------------------------------
+          days=$(( ($(date -d "$expires_on" +%s) - $(date +%s)) / 86400 ))
+          echo "Days remaining: $days"
+
+          if [ "$days" -gt 14 ]; then
+            echo "Healthy. Next check next Monday."
+            exit 0
+          fi
+
+          # --- ≤14 days: open or update tracking issue ------------------------
+          existing="$(gh issue list \
+            --label token-expiry \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')"
+
+          body="$(cat <<EOF
+          Cloudflare API token expires in **${days} days** (\`${expires_on}\`).
+
+          ## Rotate now
+
+          1. Cloudflare Dashboard → **My Profile → API Tokens** → find the active token → **⋯ → Roll**
+             (Roll keeps the same token id and permissions, generates a new value, invalidates the old immediately.)
+          2. Update SOPS source of truth:
+             \`\`\`sh
+             sops infra/tofu/secrets.enc.json    # update cloudflare_api_token
+             \`\`\`
+          3. Update GH Actions secret:
+             \`\`\`sh
+             gh secret set CLOUDFLARE_API_TOKEN -b "<new-value>" --repo $REPO
+             \`\`\`
+          4. Re-run **Actions → Token expiry health check** to confirm clean.
+          5. Close this issue once \`days remaining\` is back above 14.
+          EOF
+          )"
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+            echo "Updated existing issue #$existing"
+          else
+            gh issue create \
+              --title "Cloudflare token expires in $days days" \
+              --body "$body" \
+              --label "token-expiry,infra"
+            echo "Opened new tracking issue"
+          fi
