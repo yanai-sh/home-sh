@@ -1,55 +1,9 @@
 ---
-import rawResumeSnapshot from "../../../../content/resume.generated.json";
+import { getEntry } from "astro:content";
 
-type ResumeEntry = {
-  institution: string;
-  degree: string;
-  period: string;
-  location: string;
-  highlights: string[];
-};
-
-type ResumeSnapshot = {
-  source: {
-    url: string;
-    path: string;
-    commitSha: string | null;
-    fallback: boolean;
-  };
-  data: {
-    header: {
-      name: string;
-      headline: string;
-      email: string;
-      location: string;
-    };
-    summary: string;
-    experience: Array<{
-      company: string;
-      role: string;
-      period: string;
-      location: string;
-      subtitle: string;
-      highlights: string[];
-      skills: string[];
-    }>;
-    projects: Array<{
-      name: string;
-      description: string;
-      highlights: string[];
-    }>;
-    education: ResumeEntry[];
-    training: ResumeEntry[];
-    skills: Record<string, string[]>;
-    languages: Array<{
-      name: string;
-      proficiency: string;
-    }>;
-  };
-};
-
-const resumeSnapshot = rawResumeSnapshot as ResumeSnapshot;
-const { data: resume } = resumeSnapshot;
+const entry = await getEntry("resume", "current");
+if (!entry) throw new Error("missing 'resume.current' content entry");
+const resume = entry.data;
 const primaryExperience = resume.experience.slice(0, 4);
 const skillGroups = Object.entries(resume.skills).slice(0, 6);
 const fitSnapshot = [
