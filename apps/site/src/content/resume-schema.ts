@@ -33,7 +33,7 @@ const Education = z.object({
 });
 
 const Military = z.object({
-  company: z.string(),
+  unit: z.string(),
   role: z.string(),
   period: z.string(),
   highlights: z.array(z.string()),
