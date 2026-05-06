@@ -19,7 +19,7 @@ const Job = z.object({
 const Project = z.object({
   name: z.string(),
   description: z.string(),
-  url: z.string(),
+  url: z.string().optional(),
   highlights: z.array(z.string()),
   skills: z.array(z.string()),
 });
