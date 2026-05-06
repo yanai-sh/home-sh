@@ -3,57 +3,18 @@ import Background from "@components/Background.astro";
 import Footer from "@components/Footer.astro";
 import Layout from "@layouts/Layout.astro";
 import { footerEdgeProps } from "@lib/footer-edge";
-import rawResumeSnapshot from "../../../../content/resume.generated.json";
+import { getEntry } from "astro:content";
+import generated from "../../../../content/resume.generated.json";
 
-type ResumeEntry = {
-  institution: string;
-  degree: string;
-  period: string;
-  location: string;
-  highlights: string[];
+const entry = await getEntry("resume", "current");
+if (!entry) throw new Error("missing 'resume.current' content entry");
+const resume = entry.data;
+const source = generated.source as {
+  url: string;
+  path: string;
+  commitSha: string | null;
+  fallback: boolean;
 };
-
-type ResumeSnapshot = {
-  source: {
-    url: string;
-    path: string;
-    commitSha: string | null;
-    fallback: boolean;
-  };
-  data: {
-    header: {
-      name: string;
-      headline: string;
-      email: string;
-      location: string;
-    };
-    summary: string;
-    experience: Array<{
-      company: string;
-      role: string;
-      period: string;
-      location: string;
-      subtitle: string;
-      highlights: string[];
-      skills: string[];
-    }>;
-    projects: Array<{
-      name: string;
-      description: string;
-      highlights: string[];
-    }>;
-    education: ResumeEntry[];
-    training: ResumeEntry[];
-    skills: Record<string, string[]>;
-    languages: Array<{
-      name: string;
-      proficiency: string;
-    }>;
-  };
-};
-
-const resumeSnapshot = rawResumeSnapshot as ResumeSnapshot;
-const { data: resume, source } = resumeSnapshot;
 const footer = footerEdgeProps(Astro.request);
 const pageTitle = `${resume.header.name} — resume`;
 const pageDescription = `${resume.header.name}, ${resume.header.headline}.`;
