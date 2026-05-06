@@ -7,7 +7,14 @@ use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 #[wasm_bindgen]
-pub fn render_lattice(canvas: HtmlCanvasElement, width: f64, height: f64) -> Result<u32, JsValue> {
+pub fn render_lattice(
+    canvas: HtmlCanvasElement,
+    width: f64,
+    height: f64,
+    mouse_x_norm: f64,
+    mouse_y_norm: f64,
+    time_ms: f64,
+) -> Result<u32, JsValue> {
     let dpr = web_sys::window()
         .map(|window| window.device_pixel_ratio())
         .unwrap_or(1.0)
@@ -33,13 +40,32 @@ pub fn render_lattice(canvas: HtmlCanvasElement, width: f64, height: f64) -> Res
     let rows = (height / spacing).ceil() as u32 + 2;
     let mut node_count = 0;
 
+    // mouse_x_norm / mouse_y_norm are clamped to [0, 1] by the caller. Convert
+    // to lattice coordinates so a node directly under the pointer experiences
+    // the strongest pull.
+    let mx = mouse_x_norm.clamp(0.0, 1.0) * cols as f64;
+    let my = mouse_y_norm.clamp(0.0, 1.0) * rows as f64;
+    // time_ms ticks at 1 ms/frame from performance.now(); 0.0008 rad/ms ≈
+    // one full sin cycle per ~1.3 s, which reads as a slow lattice "breathe".
+    let time_phase = time_ms * 0.0008;
+
     let mut path = Path::builder();
 
     for row in 0..rows {
         for col in 0..cols {
             let x = col as f64 * spacing - spacing * 0.5;
             let y = row as f64 * spacing - spacing * 0.5;
-            let lean = ((row + col) as f64 * 0.73).sin() * 10.0;
+
+            // dy is dampened by 0.7 so the falloff stretches vertically a touch
+            // — a circle in lattice space draws a slightly taller ellipse in
+            // pixel space, which reads better under the cursor than a sphere.
+            let dx = col as f64 - mx;
+            let dy = (row as f64 - my) * 0.7;
+            let mouse_falloff = (-(dx * dx + dy * dy) * 0.04).exp();
+            // 10 px base lean + up to 18 px boost under the pointer (peaks at
+            // 28 px). Tuned by eye; bump the second coefficient for a heavier
+            // pull or drop the first for less ambient sway.
+            let lean = ((row + col) as f64 * 0.73 + time_phase).sin() * (10.0 + mouse_falloff * 18.0);
 
             if col + 1 < cols {
                 path.begin(point(x as f32, y as f32));

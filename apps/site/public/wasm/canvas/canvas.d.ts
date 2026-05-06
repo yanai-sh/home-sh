@@ -1,13 +1,13 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export function render_lattice(canvas: HTMLCanvasElement, width: number, height: number): number;
+export function render_lattice(canvas: HTMLCanvasElement, width: number, height: number, mouse_x_norm: number, mouse_y_norm: number, time_ms: number): number;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly render_lattice: (a: any, b: number, c: number) => [number, number, number];
+    readonly render_lattice: (a: any, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
     readonly __wbindgen_exn_store: (a: number) => void;
     readonly __externref_table_alloc: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;

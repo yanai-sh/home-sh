@@ -4,10 +4,13 @@
  * @param {HTMLCanvasElement} canvas
  * @param {number} width
  * @param {number} height
+ * @param {number} mouse_x_norm
+ * @param {number} mouse_y_norm
+ * @param {number} time_ms
  * @returns {number}
  */
-export function render_lattice(canvas, width, height) {
-    const ret = wasm.render_lattice(canvas, width, height);
+export function render_lattice(canvas, width, height, mouse_x_norm, mouse_y_norm, time_ms) {
+    const ret = wasm.render_lattice(canvas, width, height, mouse_x_norm, mouse_y_norm, time_ms);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
