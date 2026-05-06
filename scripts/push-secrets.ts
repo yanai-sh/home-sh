@@ -19,6 +19,7 @@ const MANAGED: Record<string, string> = {
   resend_api_key: 'RESEND_API_KEY',
   contact_from: 'CONTACT_FROM',
   contact_to: 'CONTACT_TO',
+  resume_repo_token: 'RESUME_REPO_TOKEN',
 };
 
 type Secret = { id: string; name: string };

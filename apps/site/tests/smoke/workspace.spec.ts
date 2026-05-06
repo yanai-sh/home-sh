@@ -120,3 +120,70 @@ test('mobile viewport (375px) renders pane-nav as horizontal scroll', async ({ b
   }
   await ctx.close();
 });
+
+test('telemetry pane renders aggregate stat slots', async ({ page }) => {
+  await page.goto(`${BASE}/workspace#telemetry`);
+  for (const name of ['total-sessions', 'sessions-30d', 'avg-lcp', 'avg-fps', 'countries', 'devices']) {
+    await expect(page.locator(`[data-telemetry-stat="${name}"]`)).toBeAttached();
+  }
+});
+
+test('beacon endpoint rejects malformed UUID', async ({ request }) => {
+  test.skip(!process.env.SMOKE_BASE_URL, 'beacon endpoint requires deployed Worker (D1 binding)');
+  const res = await request.post(`${BASE}/api/telemetry/beacon`, {
+    data: { id: 'not-a-uuid', started_at: Date.now() },
+  });
+  expect(res.status()).toBe(400);
+});
+
+test('beacon endpoint accepts oversized frame_samples without erroring', async ({ request }) => {
+  test.skip(!process.env.SMOKE_BASE_URL, 'beacon endpoint requires deployed Worker (D1 binding)');
+  const samples = Array.from({ length: 1000 }, (_, i) => ({ t: i, fps: 60 }));
+  const res = await request.post(`${BASE}/api/telemetry/beacon`, {
+    data: {
+      id: '44444444-4444-4444-8444-444444444444',
+      started_at: Date.now(),
+      frame_samples: samples,
+    },
+  });
+  expect(res.status()).toBe(200);
+});
+
+test('stats endpoint returns expected aggregate shape', async ({ request }) => {
+  test.skip(!process.env.SMOKE_BASE_URL, 'stats endpoint requires deployed Worker (D1 binding)');
+  const res = await request.get(`${BASE}/api/telemetry/stats`);
+  expect(res.status()).toBe(200);
+  expect(res.headers()['cache-control']).toContain('max-age=60');
+  const body = await res.json();
+  for (const key of [
+    'total_sessions',
+    'sessions_last_30d',
+    'avg_lcp_ms',
+    'avg_fps',
+    'top_countries',
+    'device_breakdown',
+  ]) {
+    expect(body).toHaveProperty(key);
+  }
+  expect(JSON.stringify(body)).not.toMatch(/\bid\b/);
+});
+
+test('DNT user does not POST a beacon', async ({ browser }) => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, 'doNotTrack', {
+      configurable: true,
+      get: () => '1',
+    });
+  });
+  let beaconRequests = 0;
+  page.on('request', (req) => {
+    if (req.url().includes('/api/telemetry/beacon')) beaconRequests += 1;
+  });
+  await page.goto(`${BASE}/workspace`);
+  await page.goto(`${BASE}/`);
+  await page.waitForTimeout(500);
+  expect(beaconRequests).toBe(0);
+  await ctx.close();
+});

@@ -1,6 +1,6 @@
 ## This repository
 
-**Bun monorepo** — Astro 6 SSR site as a Cloudflare Worker (Workers with Static Assets) + Rust/WASM modules + standalone Cloudflare Workers under `infra/workers/`. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+**Bun monorepo** — Astro 6 SSR site as a Cloudflare Worker (Workers with Static Assets) + Rust/WASM modules (`/api/contact` and `/api/telemetry/*` ship in that same Worker). Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ### Monorepo layout
 
@@ -12,11 +12,7 @@ apps/
     canvas/    # Lyon canvas renderer — geometric node-lattice
     search/    # Nucleo fuzzy search — runs in Web Worker via Comlink
 infra/
-  workers/
-    contact/          # Contact form Worker (Turnstile + Resend)
-    telemetry-read/   # Aggregated stats endpoint (cached 60s)
-    telemetry-write/  # Session beacon receiver → D1
-  migrations/  # D1 SQL migrations (forward-only)
+  migrations/ # D1 SQL migrations (telemetry schema; bind + apply via `apps/site/wrangler.jsonc`)
 ```
 
 ### Astro app (`apps/site/src/`)
@@ -26,6 +22,7 @@ pages/       # index.astro, 404.astro
 layouts/     # Layout.astro — injects rootCss via buildRootCss()
 components/  # .astro UI components; icons/ subdir
 lib/         # edge helpers + unit tests (*.test.ts colocated)
+__tests__/   # API handler tests (*.test.ts), outside `pages/` so Vite does not bundle them into the Worker SSR graph
 config/      # site.ts — canonical title, URL, email, brand constants
 design/      # tokens.ts + build-root-css.ts
 middleware.ts # security headers (CSP, HSTS, etc.)

@@ -1,5 +1,5 @@
 output "d1_database_id" {
-  description = "Paste into database_id in infra/workers/telemetry-write/wrangler.jsonc and infra/workers/telemetry-read/wrangler.jsonc"
+  description = "home-sh-telemetry database id — must match apps/site/wrangler.jsonc d1_databases[0].database_id"
   value       = cloudflare_d1_database.telemetry.id
 }
 

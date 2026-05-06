@@ -15,7 +15,11 @@ test('resume route renders content', async ({ page }) => {
   await expect(page.locator('.entry').first()).toBeVisible();
 });
 
-test('resume.pdf returns a PDF', async ({ request }) => {
+test('resume.pdf returns a PDF', async ({ request }, testInfo) => {
+  testInfo.skip(
+    !process.env.RESUME_REPO_TOKEN?.trim() && !process.env.SMOKE_BASE_URL,
+    'Set RESUME_REPO_TOKEN (PAT: contents read on yanai-sh/resume) for local proxy, or SMOKE_BASE_URL for deployed origin',
+  );
   const res = await request.get(`${BASE}/resume.pdf`);
   expect(res.status()).toBe(200);
   expect(res.headers()['content-type']).toContain('application/pdf');

@@ -11,10 +11,12 @@ export default defineConfig({
   webServer: process.env.SMOKE_BASE_URL
     ? undefined
     : {
-        command: 'bun run preview',
+        // `/resume.pdf` is an SSR route (GitHub Release proxy). Local smoke can
+        // set `RESUME_REPO_TOKEN` or use `SMOKE_BASE_URL` against production.
+        command: 'bun run build && bun run preview',
         cwd: '../..',
         url: 'http://localhost:4321/',
         reuseExistingServer: false,
-        timeout: 60_000,
+        timeout: 120_000,
       },
 });

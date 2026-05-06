@@ -55,44 +55,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Sync canonical resume PDF from yanai-sh/resume
-        # Downloads the latest YanaiKlugman_CV_*.pdf from yanai-sh/resume's
-        # most recent GitHub Release into apps/site/public/resume.pdf so
-        # the build picks up the LaTeX-typeset CV.
-        #
-        # Cross-repo auth: yanai-sh/resume is private, so the default
-        # GITHUB_TOKEN can't read its releases. Provide a fine-grained PAT
-        # in `secrets.RESUME_REPO_TOKEN` with `Contents: Read` on
-        # yanai-sh/resume to enable the fetch. Without the token (or on
-        # transient API failure) the step is non-fatal: deploy proceeds
-        # with the committed apps/site/public/resume.pdf as fallback.
-        env:
-          GH_TOKEN: ${{ secrets.RESUME_REPO_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          if gh release download --repo yanai-sh/resume \
-              --pattern 'YanaiKlugman_CV_*.pdf' \
-              --output apps/site/public/resume.pdf \
-              --clobber 2>/tmp/sync-pdf.err; then
-            echo "synced fresh resume PDF from yanai-sh/resume latest release"
-          else
-            echo "::warning::resume PDF fetch failed; falling back to committed apps/site/public/resume.pdf"
-            sed -e 's/^/  /' /tmp/sync-pdf.err >&2 || true
-          fi
-
       - name: Verify
         run: bun run verify
         env:
           # Embedded into the SSR'd HTML at build time so the contact form's
           # Turnstile widget renders. Public value (widget id), not a secret.
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
-
-      - name: Install Playwright chromium
-        run: bun x playwright install --with-deps chromium
-
-      - name: Generate resume.pdf
-        run: bun run gen:pdf
-        env:
           PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
 
       - name: Compute next version tag
