@@ -1,20 +1,16 @@
 ---
+import { getEntry } from "astro:content";
 import Background from "@components/Background.astro";
 import Footer from "@components/Footer.astro";
 import Layout from "@layouts/Layout.astro";
 import { footerEdgeProps } from "@lib/footer-edge";
-import { getEntry } from "astro:content";
+import type { ResumeSnapshot } from "@/content/resume-schema";
 import generated from "../../../../content/resume.generated.json";
 
 const entry = await getEntry("resume", "current");
 if (!entry) throw new Error("missing 'resume.current' content entry");
 const resume = entry.data;
-const source = generated.source as {
-  url: string;
-  path: string;
-  commitSha: string | null;
-  fallback: boolean;
-};
+const source = generated.source as ResumeSnapshot["source"];
 const footer = footerEdgeProps(Astro.request);
 const pageTitle = `${resume.header.name} — resume`;
 const pageDescription = `${resume.header.name}, ${resume.header.headline}.`;
