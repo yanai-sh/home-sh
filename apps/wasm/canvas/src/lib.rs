@@ -56,9 +56,15 @@ pub fn render_lattice(
             let x = col as f64 * spacing - spacing * 0.5;
             let y = row as f64 * spacing - spacing * 0.5;
 
+            // dy is dampened by 0.7 so the falloff stretches vertically a touch
+            // — a circle in lattice space draws a slightly taller ellipse in
+            // pixel space, which reads better under the cursor than a sphere.
             let dx = col as f64 - mx;
-            let dy = row as f64 * 0.7 - my * 0.7;
+            let dy = (row as f64 - my) * 0.7;
             let mouse_falloff = (-(dx * dx + dy * dy) * 0.04).exp();
+            // 10 px base lean + up to 18 px boost under the pointer (peaks at
+            // 28 px). Tuned by eye; bump the second coefficient for a heavier
+            // pull or drop the first for less ambient sway.
             let lean = ((row + col) as f64 * 0.73 + time_phase).sin() * (10.0 + mouse_falloff * 18.0);
 
             if col + 1 < cols {
