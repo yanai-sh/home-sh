@@ -29,6 +29,12 @@ declare namespace Cloudflare {
     CONTACT_FROM: string;
     /** To-address for outgoing contact-form notifications. */
     CONTACT_TO: string;
+    /**
+     * Cloudflare Workers rate-limit binding (declared under `unsafe.bindings`
+     * in wrangler.jsonc). Returns `{ success: true }` while within the policy
+     * window, `{ success: false }` once the per-key limit trips.
+     */
+    CONTACT_RATE_LIMIT: { limit: (opts: { key: string }) => Promise<{ success: boolean }> };
   }
 }
 

@@ -9,6 +9,7 @@
 // deploy artifact.
 
 import { env } from 'cloudflare:workers';
+import { CONTACT_ERROR } from '@lib/contact-error-codes';
 import type { APIRoute } from 'astro';
 
 export const prerender = false;
@@ -50,14 +51,14 @@ export const OPTIONS: APIRoute = () => new Response(null, { status: 204, headers
 export const POST: APIRoute = async ({ request }) => {
   const origin = request.headers.get('Origin');
   if (origin && origin !== ALLOWED_ORIGIN) {
-    return json({ error: 'Forbidden' }, 403);
+    return json({ error: CONTACT_ERROR.FORBIDDEN_ORIGIN }, 403);
   }
 
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
-    return json({ error: 'Invalid JSON' }, 400);
+    return json({ error: CONTACT_ERROR.INVALID_JSON }, 400);
   }
 
   if (typeof body.website === 'string' && body.website.trim().length > 0) {
@@ -65,6 +66,15 @@ export const POST: APIRoute = async ({ request }) => {
     // crawlers; the message is dropped silently.
     console.log('contact: honeypot tripped', { ip: request.headers.get('CF-Connecting-IP') });
     return json({ ok: true });
+  }
+
+  // Per-IP rate limit (5/min) sits ahead of Turnstile so abusive callers
+  // don't burn siteverify quota. CF-Connecting-IP is set at the edge; in
+  // `wrangler dev` it can be missing, so fall back to a literal key.
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  const limit = await env.CONTACT_RATE_LIMIT.limit({ key: ip });
+  if (!limit.success) {
+    return json({ error: CONTACT_ERROR.RATE_LIMITED }, 429);
   }
 
   const { name, email, message, token } = body;
@@ -82,13 +92,12 @@ export const POST: APIRoute = async ({ request }) => {
     typeof token !== 'string' ||
     token.length === 0
   ) {
-    return json({ error: 'Invalid input' }, 400);
+    return json({ error: CONTACT_ERROR.INVALID_INPUT }, 400);
   }
 
-  const ip = request.headers.get('CF-Connecting-IP');
   const verified = await verifyTurnstile(token, env.TURNSTILE_SECRET, ip);
   if (!verified) {
-    return json({ error: 'Turnstile verification failed' }, 403);
+    return json({ error: CONTACT_ERROR.TURNSTILE_FAILED }, 403);
   }
 
   const sendRes = await fetch('https://api.resend.com/emails', {
@@ -107,7 +116,7 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (!sendRes.ok) {
-    return json({ error: 'Failed to send' }, 502);
+    return json({ error: CONTACT_ERROR.SEND_FAILED }, 502);
   }
 
   return json({ ok: true });

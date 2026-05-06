@@ -18,5 +18,15 @@
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
+  },
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "CONTACT_RATE_LIMIT",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": { "limit": 5, "period": 60 }
+      }
+    ]
   }
 }
