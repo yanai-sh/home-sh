@@ -16,7 +16,7 @@
 #
 #   Calendar-free rotation: the issue is the reminder. You see it in the
 #   normal "open issues" list, rotate the token at the Cloudflare dashboard,
-#   update the SOPS file + GH secret, close the issue.
+#   update terraform.tfvars + GH secret, close the issue.
 #
 # Cost: ~5 sec per run, once a month. Cloudflare API call is free.
 
@@ -79,7 +79,7 @@ jobs:
              https://dash.cloudflare.com/profile/api-tokens → edit token → Permissions →
              \`User → User Details → Read\`. Save. Re-run this workflow to confirm.
           2. **Token actually invalid/revoked.** If deploys are also failing with 401, the
-             token was rotated or revoked. Generate a new one and update SOPS + GH secret
+             token was rotated or revoked. Generate a new one and update GH secret + terraform.tfvars (+ worker-secrets.local.json if you store the token there)
              (see steps in earlier rotation comments).
           EOF
           )"
@@ -111,14 +111,11 @@ jobs:
 
           1. Generate a new token at https://dash.cloudflare.com/profile/api-tokens
              (use the same permissions as the existing one — *Workers Scripts: Edit* on the account, plus any zone scopes you've added)
-          2. Update the SOPS source of truth:
-             \`\`\`sh
-             sops infra/tofu/secrets.enc.json    # set cloudflare_api_token
-             \`\`\`
-          3. Update the GH Actions secret:
+          2. Update the GH Actions secret:
              \`\`\`sh
              gh secret set CLOUDFLARE_API_TOKEN -b "<new-value>"
              \`\`\`
+          3. Update **infra/tofu/terraform.tfvars** (\`cloudflare_api_token\`) for local OpenTofu.
           4. Re-run this workflow to confirm: Actions → Token expiry health check → Run workflow.
           EOF
           )" \
@@ -157,14 +154,11 @@ jobs:
 
           1. Cloudflare Dashboard → **My Profile → API Tokens** → find the active token → **⋯ → Roll**
              (Roll keeps the same token id and permissions, generates a new value, invalidates the old immediately.)
-          2. Update SOPS source of truth:
-             \`\`\`sh
-             sops infra/tofu/secrets.enc.json    # update cloudflare_api_token
-             \`\`\`
-          3. Update GH Actions secret:
+          2. Update GH Actions secret:
              \`\`\`sh
              gh secret set CLOUDFLARE_API_TOKEN -b "<new-value>" --repo $REPO
              \`\`\`
+          3. Update **infra/tofu/terraform.tfvars** (\`cloudflare_api_token\`).
           4. Re-run **Actions → Token expiry health check** to confirm clean.
           5. Close this issue once \`days remaining\` is back above 14.
           EOF

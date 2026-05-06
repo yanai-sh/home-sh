@@ -3,7 +3,7 @@
 # After `tofu apply`, paste outputs.d1_database_id into both telemetry wrangler.jsonc files.
 
 resource "cloudflare_d1_database" "telemetry" {
-  account_id = data.sops_file.secrets.data["cloudflare_account_id"]
+  account_id = var.cloudflare_account_id
   name       = "home-sh-telemetry"
 
   read_replication = {
@@ -17,7 +17,7 @@ resource "cloudflare_d1_database" "telemetry" {
 #   Workers & Pages → yanai-sh → Settings → Bindings → KV → SESSION = (this namespace)
 
 resource "cloudflare_workers_kv_namespace" "sessions" {
-  account_id = data.sops_file.secrets.data["cloudflare_account_id"]
+  account_id = var.cloudflare_account_id
   title      = "home-sh-sessions"
 }
 

@@ -1,4 +1,15 @@
+# Copy to terraform.tfvars (gitignored). CI uses the same values from GitHub
+# encrypted secrets CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID via TF_VAR_*.
+#
+# Upgrading from OpenTofu + SOPS (carlpett/sops): remove the old data source from state once:
+#   cd infra/tofu && tofu state rm 'data.sops_file.secrets'
+
 cloudflare_api_token  = "your-api-token"
 cloudflare_account_id = "your-account-id"
 cloudflare_zone_id    = "your-zone-id"
 github_owner          = "your-github-username"
+
+# Optional: Zero Trust Access for yanai-sh / yanai-sh-staging workers.dev + previews
+# (see ../ACCESS_WORKERS.md). workers_account_subdomain is the account slug only.
+# workers_account_subdomain  = "your-workers-dev-subdomain"
+# access_allow_email_domains = ["yanai.sh"]

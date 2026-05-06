@@ -9,14 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`GET /resume.pdf`** as a site Worker route — streams **`YanaiKlugman_CV_*.pdf`** from **`yanai-sh/resume`**’s latest GitHub Release (API + asset download). Binding **`RESUME_REPO_TOKEN`** (**`resume_repo_token`** in SOPS → **`push-secrets`**).
+- **`infra/README.md`** + **`infra/secrets/`** — operator docs for secrets layout, workflows, and optional Terraform Cloud backend (`tofu/backend.tf.example`).
+- **`.github/workflows/push-worker-secrets.yml`** — `workflow_dispatch` to sync the Workers Secrets Store from repository secrets (no SOPS on the runner).
+- **`GET /resume.pdf`** as a site Worker route — streams **`YanaiKlugman_CV_*.pdf`** from **`yanai-sh/resume`**’s latest GitHub Release (API + asset download). Binding **`RESUME_REPO_TOKEN`** (Secrets Store via **`push-secrets`** / GitHub secrets).
 
 ### Removed
+
+- **Tracked `infra/tofu/secrets.enc.json`** — SOPS ciphertext no longer in version control (keep a local copy if needed; path is gitignored).
 
 - **`bun run gen:pdf`** / **`scripts/generate-resume-pdf.ts`** — no build-time or static **`dist/client/resume.pdf`**.
 - Astro **content collection** for resume — **`getEntry('resume', 'current')`** replaced by **`Astro.locals.resumeSnapshot`** populated in middleware (`resume-remote.ts`).
 
 ### Changed
+
+- **Secrets model** — **`scripts/push-secrets.ts`** reads **`infra/secrets/worker-secrets.local.json`** (gitignored) or **`PUSH_SECRETS_FROM_ENV`** in CI; **`.envrc`** loads the same JSON. Legacy committed **`infra/tofu/secrets.enc.json`** (SOPS) removed from version control.
 
 - **Deploy** — dropped pre-build PDF download, Playwright Chromium install, and **`gen:pdf`** steps; production PDF is always fetched on demand at the edge.
 
@@ -24,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`@yanai-sh/ui-system`** — **`@pandacss/dev`** raised to **`^1.11.0`** so presets match **`apps/site`** after **`npm-check-updates`** (fixes **`panda.config.ts`** Preset type errors).
 
-- **`scripts/sync-resume.ts`** — also reads **`RESUME_REPO_TOKEN`** when **`RESUME_GITHUB_TOKEN`** / **`GITHUB_TOKEN`** are unset (same PAT as the Worker / SOPS **`resume_repo_token`**).
+- **`scripts/sync-resume.ts`** — also reads **`RESUME_REPO_TOKEN`** when **`RESUME_GITHUB_TOKEN`** / **`GITHUB_TOKEN`** are unset (same PAT as the Worker **`resume_repo_token`** binding).
 
 ## [2.3.0] - 2026-05-06
 
@@ -68,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Runtime migrated** from **Cloudflare Pages** to **Cloudflare Workers with Static Assets** per the `@astrojs/cloudflare` v13 default output. Deploy command in CI is now **`wrangler deploy`** (project-pinned wrangler 4.x) against `apps/site/dist/server/wrangler.json`. Custom domain `yanai.sh` bound via Workers Custom Domain (Tofu-managed).
 - **Contact handler consolidated** into the site Worker as an Astro API route at **`/api/contact`** (replaces the standalone `yanai-sh-contact` Worker). Single ingress for `yanai.sh`; removes the per-route IAM scope and one deploy artifact.
 - **OpenTofu provider bumped** **`cloudflare/cloudflare ~> 4.0` → `~> 5.0`**. State migrated for D1, KV, Turnstile (state rm + re-import). New `cloudflare_workers_custom_domain.yanai_sh` resource declares the apex binding. Worker script content stays a CI/CD artifact, not Tofu-managed.
-- **Project secrets** moved into a SOPS-encrypted file at `infra/tofu/secrets.enc.json`, decrypted by Tofu via `carlpett/sops` and exposed locally via direnv (`.envrc`).
+- **Project secrets** live in a SOPS-encrypted file at `infra/tofu/secrets.enc.json`, exposed locally via direnv (`.envrc`) and pushed to Workers via `push-secrets`. OpenTofu uses gitignored `terraform.tfvars` and GitHub Actions secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) instead of decrypting SOPS on the runner.
 - **Resend sender domain** scoped to `send.yanai.sh` (verified subdomain) so the apex `yanai.sh` SPF record can stay dedicated to Cloudflare Email Routing without conflict.
 - **COOP/COEP headers** scoped to `/workspace` only (middleware + `_headers`) so the rest of the site doesn't pay the cross-origin-isolation cost.
 - **CI concurrency** — Deploy + Rollback queue (`cancel-in-progress: false`) so back-to-back merges don't cancel each other's deploys; CI keeps `cancel-in-progress: true` for stale-PR pushes.

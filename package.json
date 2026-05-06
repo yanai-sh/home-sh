@@ -13,7 +13,10 @@
   "engines": {
     "bun": ">=1.3.0"
   },
-  "workspaces": ["apps/site", "packages/ui-system"],
+  "workspaces": [
+    "apps/site",
+    "packages/ui-system"
+  ],
   "scripts": {
     "dev": "bun run --cwd apps/site dev",
     "build": "bun run sync:resume && bun run --cwd apps/site build",
@@ -24,6 +27,8 @@
     "verify": "bun run sync:resume && bun run --cwd apps/site verify",
     "preview": "bun run --cwd apps/site preview",
     "sync:resume": "bun scripts/sync-resume.ts",
+    "cf:list-access-apps": "bun scripts/cf-list-access-apps.ts",
+    "push-secrets": "bun scripts/push-secrets.ts",
     "prepare": "bun -e \"if (!process.env.CI) { const r = Bun.spawnSync(['bun','x','lefthook','install'],{stdio:['inherit','inherit','inherit']}); process.exit(r.exitCode ?? 0); }\""
   },
   "devDependencies": {

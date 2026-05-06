@@ -12,7 +12,10 @@ apps/
     canvas/    # Lyon canvas renderer — geometric node-lattice
     search/    # Nucleo fuzzy search — runs in Web Worker via Comlink
 infra/
+  README.md   # Infra ops: secrets layout, workflows, OpenTofu pointers
+  secrets/    # Worker secret *shape* (example JSON); real values gitignored + GitHub Actions
   migrations/ # D1 SQL migrations (telemetry schema; bind + apply via `apps/site/wrangler.jsonc`)
+  tofu/       # OpenTofu — `ACCESS_WORKERS.md` for optional Zero Trust on workers.dev
 ```
 
 ### Astro app (`apps/site/src/`)
@@ -47,8 +50,9 @@ Canonical values live in **`src/design/tokens.ts`**. **`buildRootCss()`** in **`
 
 ### GitHub Actions
 
-- **CI** (`.github/workflows/ci.yml`): **`pull_request`** to **`main`** only — job **`CI / verify`**.
-- **Deploy** (`.github/workflows/deploy.yml`): **`push`** to **`main`** — runs **`verify`**, then `wrangler deploy` of the site Worker via the project-pinned wrangler 4.x.
+- **CI** (`.github/workflows/ci.yml`): **`pull_request`** to **`main`** — job **`CI / verify`**.
+- **CI (dev)** (`.github/workflows/ci-dev.yml`): **`pull_request`** to **`dev`** — job **`CI (dev) / verify`** (same **`bun run verify`**; optional ruleset required check for the **`dev`** branch).
+- **Deploy** (`.github/workflows/deploy.yml`): **`push`** to **`dev`** or **`main`** (and **`workflow_dispatch`**) — runs **`verify`**, then **`wrangler versions upload`** (staging uses **`--name yanai-sh-staging`** on `dev`; production promotes on `main`). No **`pull_request`** trigger: avoids uploading twice when a PR merges into `dev`. Project-pinned wrangler 4.x; config from **`apps/site/dist/server/wrangler.json`** after build.
 
 ### Local hooks
 

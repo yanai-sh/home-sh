@@ -18,6 +18,10 @@
 name: Deploy
 
 on:
+  # Staging only on `push` to `dev` (not `pull_request`): a PR preview deploy
+  # plus the post-merge push would upload twice for the same merge. Every push
+  # updating `refs/heads/dev` runs staging + patch tag; `main` runs prod upload
+  # + promote + minor tag + release. No path filters.
   push:
     branches: [main, dev]
   workflow_dispatch:
@@ -26,6 +30,8 @@ permissions:
   # Auto-tagging pushes git tags back to the repository, so the workflow
   # needs write access to repo contents (default token has read-only).
   contents: write
+  # Staging: comment Version Preview URL on PRs that contain this commit.
+  pull-requests: write
 
 concurrency:
   group: workers-deploy-${{ github.ref }}
@@ -38,6 +44,8 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    outputs:
+      staging_preview_url: ${{ steps.upload.outputs.preview_url }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -114,6 +122,16 @@ jobs:
             exit 1
           fi
           echo "version_id=$VERSION_ID" >> "$GITHUB_OUTPUT"
+          # Immutable version preview (workers.dev). Omitted if previews are disabled for the account/subdomain.
+          PREVIEW_URL="$(printf '%s\n' "$OUTPUT" | grep -oP 'Version Preview URL:\s*\Khttps://\S+' | head -1 || true)"
+          if [ -z "$PREVIEW_URL" ]; then
+            PREVIEW_URL="$(printf '%s\n' "$OUTPUT" | grep -oP 'Version Preview Alias URL:\s*\Khttps://\S+' | head -1 || true)"
+          fi
+          if [ -n "$PREVIEW_URL" ]; then
+            echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+          else
+            echo "preview_url=" >> "$GITHUB_OUTPUT"
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -173,8 +191,42 @@ jobs:
               echo ""
               echo "Uploaded version \`${{ steps.upload.outputs.version_id }}\` to the **yanai-sh-staging** Worker. Production at https://yanai.sh is unchanged."
               echo ""
-              echo "QA the preview at the version-specific URL printed in the **Upload Worker version** step (Cloudflare logs \`Version Preview URL: https://...\`)."
+              if [ -n "${{ steps.upload.outputs.preview_url }}" ]; then
+                echo "**Version preview URL** (automation — same as Wrangler output):"
+                echo ""
+                echo "${{ steps.upload.outputs.preview_url }}"
+                echo ""
+                echo "Use this for manual QA or \`SMOKE_BASE_URL=...\` smoke runs. Preview URLs are **public by default**; lock them with [Cloudflare Access on the Worker](https://developers.cloudflare.com/workers/configuration/previews/#manage-access-to-preview-urls) if you need auth."
+              else
+                echo "Wrangler did not print a **Version Preview URL** (preview URLs may be disabled for this Worker). Open **Upload Worker version** logs above, or Cloudflare → **yanai-sh-staging** → **Deployments**."
+              fi
               echo ""
               echo "When ready, open a PR \`dev\` → \`main\` to promote."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Comment staging preview on linked PRs
+        if: github.ref != 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          PREVIEW_URL="${{ steps.upload.outputs.preview_url }}"
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "No preview URL parsed; skip PR comments."
+            exit 0
+          fi
+          BODY="$(printf '%s\n' \
+            '**Staging Worker preview** (**yanai-sh-staging**, immutable version):' \
+            '' \
+            "${PREVIEW_URL}" \
+            '' \
+            'Production **yanai.sh** is unchanged until **dev** → **main** merge.')"
+          mapfile -t prs < <(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq '.[].number')
+          if [ "${#prs[@]}" -eq 0 ]; then
+            echo "No PRs reference this commit; skip."
+            exit 0
+          fi
+          for pr in "${prs[@]}"; do
+            gh pr comment "$pr" --body "$BODY"
+          done

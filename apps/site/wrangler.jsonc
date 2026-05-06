@@ -27,8 +27,7 @@
   ],
   // Secrets bound from the account-level Workers Secrets Store
   // (yanai-sh-prod, id 02000d0490be49b09eed0e6d95c08e99). Values are
-  // pushed by `bun run scripts/push-secrets.ts` from the SOPS-encrypted
-  // source-of-truth at infra/tofu/secrets.enc.json.
+  // pushed by `bun run push-secrets` (local JSON or GitHub Actions — see infra/secrets/README.md).
   "secrets_store_secrets": [
     { "binding": "TURNSTILE_SECRET", "store_id": "02000d0490be49b09eed0e6d95c08e99", "secret_name": "TURNSTILE_SECRET" },
     { "binding": "RESEND_API_KEY",   "store_id": "02000d0490be49b09eed0e6d95c08e99", "secret_name": "RESEND_API_KEY" },

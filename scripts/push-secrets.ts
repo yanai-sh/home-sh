@@ -1,19 +1,10 @@
-// Pushes runtime secrets from the SOPS-encrypted source-of-truth
-// (infra/tofu/secrets.enc.json) into the Cloudflare Workers Secrets Store
-// for the yanai-sh-prod store. Idempotent: creates on first run, updates
-// on subsequent runs. Values are streamed in-memory only — never written
-// to argv (which would land in shell history) or to disk.
-//
-// Run via:  bun run scripts/push-secrets.ts
-// Requires: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID (loaded by direnv)
-// and the SOPS age key at $SOPS_AGE_KEY_FILE.
-
-import { spawnSync } from 'node:child_process';
+// Syncs the Cloudflare Workers Secrets Store (yanai-sh-prod). Idempotent.
+// Env: PUSH_SECRETS_FROM_ENV=1 reads binding names from process.env; else JSON at
+// WORKER_SECRETS_FILE (default infra/secrets/worker-secrets.local.json).
+// Requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 
 const STORE_ID = '02000d0490be49b09eed0e6d95c08e99';
-const SOPS_PATH = 'infra/tofu/secrets.enc.json';
 
-// SOPS-key (lowercase) → Worker binding name (UPPERCASE).
 const MANAGED: Record<string, string> = {
   turnstile_secret: 'TURNSTILE_SECRET',
   resend_api_key: 'RESEND_API_KEY',
@@ -22,12 +13,14 @@ const MANAGED: Record<string, string> = {
   resume_repo_token: 'RESUME_REPO_TOKEN',
 };
 
+const DEFAULT_SECRETS_FILE = 'infra/secrets/worker-secrets.local.json';
+
 type Secret = { id: string; name: string };
 
 const token = process.env.CLOUDFLARE_API_TOKEN;
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 if (!token || !accountId) {
-  console.error('CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set (direnv)');
+  console.error('CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set');
   process.exit(1);
 }
 
@@ -49,27 +42,48 @@ async function cf<T>(path: string, init?: RequestInit): Promise<T> {
   return json.result;
 }
 
-function decryptSops(): Record<string, string> {
-  const proc = spawnSync('sops', ['--decrypt', '--input-type', 'json', '--output-type', 'json', SOPS_PATH], {
-    encoding: 'utf8',
-  });
-  if (proc.status !== 0) {
-    throw new Error(`sops decrypt failed: ${proc.stderr}`);
+function loadFromEnv(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [jsonKey, bindingName] of Object.entries(MANAGED)) {
+    const v = process.env[bindingName];
+    if (typeof v === 'string' && v.length > 0) {
+      out[jsonKey] = v;
+    }
   }
-  return JSON.parse(proc.stdout) as Record<string, string>;
+  return out;
+}
+
+async function loadFromFile(): Promise<Record<string, string>> {
+  const path = process.env.WORKER_SECRETS_FILE ?? DEFAULT_SECRETS_FILE;
+  const f = Bun.file(path);
+  if (!(await f.exists())) {
+    console.error(
+      `Missing ${path}. Copy from infra/secrets/worker-secrets.example.json or set PUSH_SECRETS_FROM_ENV=1.`,
+    );
+    process.exit(1);
+  }
+  const raw = await f.text();
+  return JSON.parse(raw) as Record<string, string>;
+}
+
+async function loadWorkerSecrets(): Promise<Record<string, string>> {
+  if (process.env.PUSH_SECRETS_FROM_ENV === '1') {
+    return loadFromEnv();
+  }
+  return loadFromFile();
 }
 
 async function main(): Promise<void> {
-  const secrets = decryptSops();
+  const blob = await loadWorkerSecrets();
   const existing = await cf<Secret[]>('');
   const byName = new Map(existing.map((s) => [s.name, s]));
 
   const toCreate: { name: string; value: string; scopes: ['workers']; comment: string }[] = [];
 
-  for (const [sopsKey, bindingName] of Object.entries(MANAGED)) {
-    const value = secrets[sopsKey];
+  for (const [jsonKey, bindingName] of Object.entries(MANAGED)) {
+    const value = blob[jsonKey];
     if (typeof value !== 'string' || value.length === 0) {
-      console.warn(`skip ${bindingName}: missing in SOPS under '${sopsKey}'`);
+      console.warn(`skip ${bindingName}: missing or empty under '${jsonKey}'`);
       continue;
     }
 

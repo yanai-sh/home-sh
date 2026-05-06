@@ -1,0 +1,12 @@
+# Remote state (Terraform Cloud / Enterprise, or wire your own S3 backend).
+# Create a workspace, uncomment below, rename to backend.tf (or merge), then:
+#   tofu init -migrate-state
+#
+# terraform {
+#   cloud {
+#     organization = "your-org"
+#     workspaces {
+#       name = "yanai-sh-infra"
+#     }
+#   }
+# }

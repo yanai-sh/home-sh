@@ -47,10 +47,12 @@ Thumbs.db
 **/.terraform/
 # Glob covers terraform.tfstate, .backup, and timestamped backups (.<ts>.backup).
 *.tfstate*
-# Plaintext SOPS sources (decrypted versions). The .enc.* counterparts are committed.
+# OpenTofu / Worker secrets — never commit real values
 infra/tofu/secrets.json
 infra/tofu/secrets.tfvars.json
 infra/tofu/*.dec.json
+infra/tofu/secrets.enc.json
+infra/secrets/worker-secrets.local.json
 
 # --- RUST ---
 target/
