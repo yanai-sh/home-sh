@@ -12,8 +12,7 @@
     "typecheck": "bun run wrangler-types && astro check",
     "test": "bun test ./src",
     "verify": "bun run check && bun run typecheck && bun run test && bun run build",
-    "preview": "bun scripts/strip-dist-wrangler-assets-binding.ts && astro preview",
-    "deploy": "wrangler deploy --config dist/server/wrangler.json",
+    "preview": "astro preview",
     "version-upload": "wrangler versions upload --config dist/server/wrangler.json",
     "version-deploy": "wrangler versions deploy --config dist/server/wrangler.json"
   },

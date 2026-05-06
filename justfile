@@ -86,14 +86,6 @@ tf-destroy:
 tf-secrets:
     sops infra/tofu/secrets.enc.json
 
-# ── Local dev secret materialization ─────────────────────────────────────────
-# direnv loads SOPS-decrypted values into the shell automatically. These targets
-# materialize files for tools that don't read process env (Wrangler dev) or for
-# build-time inlining (Astro).
-
-# Write apps/site/.env from direnv-loaded env (PUBLIC_TURNSTILE_SITE_KEY)
-refresh-env:
-    ./scripts/refresh-site-env.sh
 
 # ── Full pipeline ────────────────────────────────────────────────────────────
 
