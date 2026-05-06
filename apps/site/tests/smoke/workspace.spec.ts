@@ -115,10 +115,10 @@ test('COOP/COEP headers present on /workspace, absent on /', async ({ request })
   // public/_headers + middleware rules. SSR preview server doesn't apply them,
   // so this test runs ONLY against SMOKE_BASE_URL when it's a real Worker URL.
   test.skip(!process.env.SMOKE_BASE_URL, 'header scope requires deployed Worker');
-  const ws = await request.get(`${process.env.SMOKE_BASE_URL}/workspace`);
+  const ws = await request.get(`${BASE}/workspace`);
   expect(ws.headers()['cross-origin-embedder-policy']).toBe('require-corp');
   expect(ws.headers()['cross-origin-opener-policy']).toBe('same-origin');
-  const root = await request.get(`${process.env.SMOKE_BASE_URL}/`);
+  const root = await request.get(`${BASE}/`);
   expect(root.headers()['cross-origin-embedder-policy']).toBeUndefined();
   expect(root.headers()['cross-origin-opener-policy']).toBeUndefined();
 });
