@@ -24,6 +24,7 @@
     "verify": "bun run sync:resume && bun run --cwd apps/site verify",
     "preview": "bun run --cwd apps/site preview",
     "sync:resume": "bun scripts/sync-resume.ts",
+    "gen:pdf": "bun scripts/generate-resume-pdf.ts",
     "prepare": "bun -e \"if (!process.env.CI) { const r = Bun.spawnSync(['bun','x','lefthook','install'],{stdio:['inherit','inherit','inherit']}); process.exit(r.exitCode ?? 0); }\""
   },
   "devDependencies": {
