@@ -60,6 +60,13 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: 'Invalid JSON' }, 400);
   }
 
+  if (typeof body.website === 'string' && body.website.trim().length > 0) {
+    // Honeypot tripped — bot filled the trap field. Return ok:true to confuse
+    // crawlers; the message is dropped silently.
+    console.log('contact: honeypot tripped', { ip: request.headers.get('CF-Connecting-IP') });
+    return json({ ok: true });
+  }
+
   const { name, email, message, token } = body;
 
   if (
