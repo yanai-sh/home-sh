@@ -166,15 +166,25 @@ async function mountCanvas(
   const drawFrame = (timeMs: number) => {
     const rect = canvas.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
-    const mxNorm = writers ? writers.readMouseX() / window.innerWidth : 0.5;
-    const myNorm = writers ? writers.readMouseY() / window.innerHeight : 0.5;
+    // `|| 1` guards against zero-sized viewports (headless / detached frames)
+    // that would otherwise NaN-poison the normalized coords.
+    const mxNorm = writers ? writers.readMouseX() / (window.innerWidth || 1) : 0.5;
+    const myNorm = writers ? writers.readMouseY() / (window.innerHeight || 1) : 0.5;
     mod.render_lattice(canvas, rect.width, rect.height, mxNorm, myNorm, timeMs);
   };
 
-  // First paint so the canvas is never empty even before the rAF loop starts
-  // (e.g. SAB unavailable, or pane briefly off-screen at mount).
-  drawFrame(performance.now());
-  setStatus(targets.canvas, 'ready');
+  // First paint so a frame is ready the moment the IntersectionObserver starts
+  // the loop. render_lattice can throw on canvas 2D context errors, so guard
+  // the call and surface a runtime-strip status rather than letting the
+  // promise reject silently.
+  try {
+    drawFrame(performance.now());
+    setStatus(targets.canvas, 'ready');
+  } catch (error) {
+    console.error('canvas: first paint failed', error);
+    setStatus(targets.canvas, 'error');
+    return;
+  }
 
   if (reducedMotion) return;
 
