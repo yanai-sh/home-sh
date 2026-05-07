@@ -36,15 +36,27 @@ function safeFilename(name: string): string {
 
 async function proxyResumePdf(): Promise<Response> {
   const token = await resumeRepoBearer();
+  if (!token) {
+    return new Response(
+      JSON.stringify({ error: 'release_unavailable', reason: 'missing_token' }),
+      {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  }
   const gHeaders = githubHeaders(token);
   const latestUrl = `https://api.github.com/repos/${OWNER}/${REPO}/releases/latest`;
 
   const relRes = await fetch(latestUrl, { headers: gHeaders });
   if (!relRes.ok) {
-    return new Response(JSON.stringify({ error: 'release_unavailable' }), {
+    return new Response(
+      JSON.stringify({ error: 'release_unavailable', reason: `github_${relRes.status}` }),
+      {
       status: 502,
       headers: { 'Content-Type': 'application/json' },
-    });
+      },
+    );
   }
 
   const relJson = (await relRes.json()) as { assets?: ReleaseAsset[] };
@@ -70,10 +82,13 @@ async function proxyResumePdf(): Promise<Response> {
   });
 
   if (!pdfRes.ok || !pdfRes.body) {
-    return new Response(JSON.stringify({ error: 'pdf_fetch_failed' }), {
+    return new Response(
+      JSON.stringify({ error: 'pdf_fetch_failed', reason: `github_${pdfRes.status}` }),
+      {
       status: 502,
       headers: { 'Content-Type': 'application/json' },
-    });
+      },
+    );
   }
 
   const filename = safeFilename(pdf.name);
