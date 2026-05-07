@@ -148,12 +148,16 @@ async function mountCanvas(
   // getBoundingClientRect to width=0/height=0, which we guard below).
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  const wasmStart = performance.now();
   let mod: CanvasModule;
   try {
     const moduleUrl = new URL('/wasm/canvas/canvas.js', globalThis.location.href).href;
     mod = (await import(/* @vite-ignore */ moduleUrl)) as unknown as CanvasModule;
     await mod.default();
     setStatus(targets.wasm, 'ready');
+    window.dispatchEvent(
+      new CustomEvent('telemetry:wasm-ready', { detail: { ms: performance.now() - wasmStart } }),
+    );
   } catch (error) {
     console.error('canvas: WASM load failed', error);
     setStatus(targets.wasm, 'error');

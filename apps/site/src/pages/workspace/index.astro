@@ -1,34 +1,11 @@
 ---
 import Background from "@components/Background.astro";
 import Hero from "@components/Hero.astro";
-import { NOW, PROJECTS, READING, STACK, USES } from "@config/workspace";
+import { NOW, PROJECTS, STACK, USES } from "@config/workspace";
 import Layout from "@layouts/Layout.astro";
-import rawResumeSnapshot from "../../../../../content/resume.generated.json";
+import { resumeSnapshotForPage } from "@lib/resume-page-snapshot";
 
-type ResumeSnapshot = {
-  source: {
-    url: string;
-    path: string;
-    commitSha: string | null;
-    fallback: boolean;
-  };
-  data: {
-    header: {
-      name: string;
-      headline: string;
-    };
-    summary: string;
-    experience: Array<{
-      company: string;
-      role: string;
-      period: string;
-      subtitle: string;
-      skills: string[];
-    }>;
-  };
-};
-
-const resumeSnapshot = rawResumeSnapshot as ResumeSnapshot;
+const resumeSnapshot = resumeSnapshotForPage(Astro.locals);
 const resume = resumeSnapshot.data;
 const panes = [
   { id: "projects", label: "Projects" },
@@ -170,22 +147,36 @@ const primaryExperience = resume.experience.slice(0, 3);
         <section class="pane" id="telemetry" data-pane aria-labelledby="telemetry-title">
           <p class="pane-kicker">telemetry</p>
           <h2 id="telemetry-title" tabindex="-1">local runtime proof</h2>
+          <p class="pane-summary">
+            Aggregate runtime data from /workspace visits over the last 30 days.
+            No identifiers, no ad networks; the page works the same with telemetry
+            blocked (DNT or <code>localStorage['telemetry:opt-out']='1'</code>).
+          </p>
           <div class="telemetry-grid">
             <article>
-              <h3>search corpus</h3>
-              <p>Workspace, resume, stack, uses, and project entries are indexed by Rust WASM.</p>
+              <h3>sessions</h3>
+              <p>
+                <strong data-telemetry-stat="total-sessions">—</strong>
+                {" "}total ·{" "}
+                <strong data-telemetry-stat="sessions-30d">—</strong>
+                {" "}in last 30 days
+              </p>
             </article>
             <article>
-              <h3>shared bridge</h3>
-              <p>SharedArrayBuffer is scoped to `/workspace` through COOP/COEP headers.</p>
+              <h3>performance</h3>
+              <p>
+                LCP <strong data-telemetry-stat="avg-lcp">—</strong> ·
+                avg fps <strong data-telemetry-stat="avg-fps">—</strong>
+              </p>
             </article>
             <article>
-              <h3>reading queue</h3>
-              <ul>
-                {READING.map((item) => (
-                  <li>{item.title} / {item.status}</li>
-                ))}
-              </ul>
+              <h3>geography &amp; device</h3>
+              <p>
+                <strong data-telemetry-stat="countries">—</strong>
+              </p>
+              <p>
+                <strong data-telemetry-stat="devices">—</strong>
+              </p>
             </article>
           </div>
         </section>
@@ -674,11 +665,19 @@ const primaryExperience = resume.experience.slice(0, 3);
 </style>
 
 <script>
+  import { mountTelemetry } from "@lib/telemetry-client";
+  import { mountTelemetryStats } from "@lib/telemetry-stats-client";
   import { mountWorkspaceWip } from "@lib/workspace-wip-client";
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", mountWorkspaceWip, { once: true });
-  } else {
+  function bootWorkspace() {
     mountWorkspaceWip();
+    mountTelemetry();
+    void mountTelemetryStats();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootWorkspace, { once: true });
+  } else {
+    bootWorkspace();
   }
 </script>

@@ -6,10 +6,6 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
     }
-    sops = {
-      source  = "carlpett/sops"
-      version = "~> 1.0"
-    }
   }
 
   # Uncomment to use a remote backend (recommended once secrets stop being
@@ -17,12 +13,9 @@ terraform {
   # backend "remote" { ... }
 }
 
-# All sensitive values come from SOPS-encrypted secrets.enc.json,
-# decrypted at plan/apply time using the local age key.
-data "sops_file" "secrets" {
-  source_file = "${path.module}/secrets.enc.json"
-}
-
+# Credentials: set in gitignored terraform.tfvars (local) or via
+# TF_VAR_cloudflare_api_token / TF_VAR_cloudflare_account_id (CI — GitHub
+# encrypted secrets). Do not commit real values.
 provider "cloudflare" {
-  api_token = data.sops_file.secrets.data["cloudflare_api_token"]
+  api_token = var.cloudflare_api_token
 }

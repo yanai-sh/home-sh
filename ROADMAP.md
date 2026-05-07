@@ -23,7 +23,7 @@ The site has four public surfaces:
 | --- | --- |
 | `/` | Progressive landing: SSR resume fallback first, WASM visual enhancement second. |
 | `/resume` | Full semantic HTML resume, readable, printable, no WASM required. |
-| `/resume.pdf` | Generated PDF artifact from the same resume source. |
+| `/resume.pdf` | LaTeX-built PDF from **`yanai-sh/resume`** releases, proxied at request time (not a repo static file). |
 | `/workspace` | Deeper opt-in systems demo: panes, search, canvas, telemetry. |
 
 The practical user flow is simple: see the technical signal, view the static
@@ -234,8 +234,7 @@ Purpose:
 
 Acceptance:
 
-- Generated from the same normalized resume source.
-- Build fails when PDF generation fails after this gate is enabled.
+- Sourced from **`yanai-sh/resume`** latest release asset (**`YanaiKlugman_CV_*.pdf`**), fetched by the site Worker (no committed or build-bundled PDF).
 - Opens cleanly in common PDF viewers.
 
 ### `/workspace`
@@ -313,7 +312,7 @@ Security and privacy:
 | P3 | Release Guardrails | Preview, CI, rollback, and smoke tests should harden before production Workers. |
 | P4 | Contact Pipeline | Contact depends on the public shell and release path. |
 | P5 | Workspace Alpha | Deeper interactive systems work follows the core landing/resume path. |
-| P6 | Telemetry | Telemetry depends on stable workspace panes and beacon payloads. |
+| ~~P6~~ | ~~Telemetry~~ | **Shipped v2.3.0** — coarse session beacon + aggregates in **`/workspace#telemetry`** on the site Worker bound to **`home-sh-telemetry`**. |
 
 ### Milestone 0: Consolidate Planning Docs
 
@@ -447,13 +446,15 @@ Acceptance criteria:
 
 ### Milestone 6: Telemetry
 
+**Shipped:** [2.3.0] (2026-05-06) — see **`CHANGELOG.md`**.
+
 Goal: show live operational data without turning the site into a tracking sink.
 
 Scope:
 
 - Decide exact beacon payload and keep it coarse.
 - Wire session creation, LCP, WASM init timing, and frame samples.
-- Deploy D1 migrations and bind read/write Workers.
+- ~~Deploy D1 migrations and bind read/write Workers~~ **Done:** **`DB`** binding + migrations folder on **`apps/site/wrangler.jsonc`**; endpoints live beside **`/api/contact`**.
 - Render aggregate telemetry in `/workspace#telemetry`.
 - Add cache and retention rules that match the privacy posture.
 
@@ -469,8 +470,7 @@ Acceptance criteria:
 High-value candidates:
 
 - RSS feed and blog route if writing becomes part of the site.
-- Playwright smoke tests for first viewport, reduced motion, and workspace hash
-  navigation.
+- Additional Playwright coverage beyond existing landing + **`workspace`** smoke (including telemetry slots and DNT beacons).
 - Lighthouse budgets for fallback and enhanced paths.
 - Worker tests with Miniflare or Wrangler test helpers.
 - OpenTofu documentation for Cloudflare resources after manual setup stops

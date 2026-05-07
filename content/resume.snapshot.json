@@ -17,7 +17,7 @@
       "phone": "+972 53-270-2380",
       "location": "Raanana, Israel"
     },
-    "summary": "Software developer with systems, integration, infrastructure, and DevOps experience across customer-facing engineering environments. Field work across six international customer sites covering discovery, on-site release, validation, customer-hardware tuning, and demo control software. Native English speaker, Hebrew fluent, Israeli security clearance. M.A. in Organizational Behavior supports customer interviews, executive conversations, and coordination with engineering teams.",
+    "summary": "Forward deployed software engineer at Kardome for automotive Voice AI customer programs with Hyundai, Toyota, and Renault. Field work across six international customer sites covering discovery, on-site release, vehicle validation, customer-hardware tuning, and demo control software. Native English speaker, Hebrew fluent, Israeli security clearance. M.A. in Organizational Behavior supports customer interviews, executive conversations, and coordination with engineering teams.",
     "links": [
       {
         "label": "yanai.sh",
@@ -39,7 +39,7 @@
         "period": "Dec 2024 - Present",
         "location": "Tel Aviv, IL",
         "summary": "",
-        "subtitle": "Systems Integration | Forward Deployment",
+        "subtitle": "Automotive Voice AI | Forward Deployment",
         "highlights": [
           "Validated and shipped Kardome's on-device Voice AI for the 2026 Hyundai ELEXIO customer program with Hyundai's China R&D center (HMTC), covering QA, field testing, library tuning on customer hardware, and release follow-up.",
           "Performed vehicle validation across Seoul, Yantai, Sydney, and Dubai, documenting capture quality, wake-up behavior, and in-cabin edge cases for Hyundai customer engineers.",
@@ -98,6 +98,16 @@
       }
     ],
     "projects": [
+      {
+        "name": "yanai.sh — personal site",
+        "description": "Architect & sole engineer",
+        "url": "",
+        "highlights": [
+          "Built an Astro + Rust/WebAssembly portfolio at yanai.sh with an interactive workspace pane and live edge-rendered content.",
+          "Owned the full deploy pipeline: infrastructure-as-code, encrypted secrets, isolated staging and production environments, auto-tagged versions, and one-click rollback."
+        ],
+        "skills": []
+      },
       {
         "name": "WinWS Slim ISO Builder",
         "description": "Developer",

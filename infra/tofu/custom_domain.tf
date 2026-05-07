@@ -10,7 +10,7 @@
 # untouched.
 
 resource "cloudflare_workers_custom_domain" "yanai_sh" {
-  account_id = data.sops_file.secrets.data["cloudflare_account_id"]
+  account_id = var.cloudflare_account_id
   hostname   = "yanai.sh"
   service    = "yanai-sh"
   zone_id    = var.cloudflare_zone_id

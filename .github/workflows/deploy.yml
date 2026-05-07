@@ -18,6 +18,10 @@
 name: Deploy
 
 on:
+  # Staging only on `push` to `dev` (not `pull_request`): a PR preview deploy
+  # plus the post-merge push would upload twice for the same merge. Every push
+  # updating `refs/heads/dev` runs staging + patch tag; `main` runs prod upload
+  # + promote + minor tag + release. No path filters.
   push:
     branches: [main, dev]
   workflow_dispatch:
@@ -26,6 +30,8 @@ permissions:
   # Auto-tagging pushes git tags back to the repository, so the workflow
   # needs write access to repo contents (default token has read-only).
   contents: write
+  # Staging: comment Version Preview URL on PRs that contain this commit.
+  pull-requests: write
 
 concurrency:
   group: workers-deploy-${{ github.ref }}
@@ -38,6 +44,9 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    outputs:
+      staging_preview_url: ${{ steps.upload.outputs.preview_url }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -60,15 +69,21 @@ jobs:
         env:
           # Embedded into the SSR'd HTML at build time so the contact form's
           # Turnstile widget renders. Public value (widget id), not a secret.
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
 
-      - name: Install Playwright chromium
-        run: bun x playwright install --with-deps chromium
-
-      - name: Generate resume.pdf
-        run: bun run gen:pdf
+      - name: Sync Worker runtime secrets (Secrets Store)
+        # Keep runtime bindings fresh for the version being tested.
+        # Reads values from GitHub Environment secrets when PUSH_SECRETS_FROM_ENV=1.
+        run: bun run push-secrets
         env:
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
+          PUSH_SECRETS_FROM_ENV: "1"
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CONTACT_FROM: ${{ secrets.CONTACT_FROM }}
+          CONTACT_TO: ${{ secrets.CONTACT_TO }}
+          RESUME_REPO_TOKEN: ${{ secrets.RESUME_REPO_TOKEN }}
 
       - name: Compute next version tag
         id: tag
@@ -122,9 +137,19 @@ jobs:
             exit 1
           fi
           echo "version_id=$VERSION_ID" >> "$GITHUB_OUTPUT"
+          # Immutable version preview (workers.dev). Omitted if previews are disabled for the account/subdomain.
+          PREVIEW_URL="$(printf '%s\n' "$OUTPUT" | grep -oP 'Version Preview URL:\s*\Khttps://\S+' | head -1 || true)"
+          if [ -z "$PREVIEW_URL" ]; then
+            PREVIEW_URL="$(printf '%s\n' "$OUTPUT" | grep -oP 'Version Preview Alias URL:\s*\Khttps://\S+' | head -1 || true)"
+          fi
+          if [ -n "$PREVIEW_URL" ]; then
+            echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+          else
+            echo "preview_url=" >> "$GITHUB_OUTPUT"
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Promote version to 100% production traffic
         if: github.ref == 'refs/heads/main'
@@ -136,7 +161,7 @@ jobs:
             --yes
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Push git tag
         run: |
@@ -181,8 +206,63 @@ jobs:
               echo ""
               echo "Uploaded version \`${{ steps.upload.outputs.version_id }}\` to the **yanai-sh-staging** Worker. Production at https://yanai.sh is unchanged."
               echo ""
-              echo "QA the preview at the version-specific URL printed in the **Upload Worker version** step (Cloudflare logs \`Version Preview URL: https://...\`)."
+              if [ -n "${{ steps.upload.outputs.preview_url }}" ]; then
+                echo "**Version preview URL** (automation — same as Wrangler output):"
+                echo ""
+                echo "${{ steps.upload.outputs.preview_url }}"
+                echo ""
+                echo "Use this for manual QA or \`SMOKE_BASE_URL=...\` smoke runs. Preview URLs are **public by default**; lock them with [Cloudflare Access on the Worker](https://developers.cloudflare.com/workers/configuration/previews/#manage-access-to-preview-urls) if you need auth."
+              else
+                echo "Wrangler did not print a **Version Preview URL** (preview URLs may be disabled for this Worker). Open **Upload Worker version** logs above, or Cloudflare → **yanai-sh-staging** → **Deployments**."
+              fi
               echo ""
               echo "When ready, open a PR \`dev\` → \`main\` to promote."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Comment staging preview on linked PRs
+        if: github.ref != 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          PREVIEW_URL="${{ steps.upload.outputs.preview_url }}"
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "No preview URL parsed; skip PR comments."
+            exit 0
+          fi
+          BODY="$(printf '%s\n' \
+            '**Staging Worker preview** (**yanai-sh-staging**, immutable version):' \
+            '' \
+            "${PREVIEW_URL}" \
+            '' \
+            'Production **yanai.sh** is unchanged until **dev** → **main** merge.')"
+          mapfile -t prs < <(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq '.[].number')
+          if [ "${#prs[@]}" -eq 0 ]; then
+            echo "No PRs reference this commit; skip."
+            exit 0
+          fi
+          for pr in "${prs[@]}"; do
+            gh pr comment "$pr" --body "$BODY"
+          done
+
+  smoke:
+    name: Smoke (preview URL)
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: staging
+    if: github.ref != 'refs/heads/main' && needs.publish.outputs.staging_preview_url != ''
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Smoke against staging preview URL
+        env:
+          SMOKE_BASE_URL: ${{ needs.publish.outputs.staging_preview_url }}
+          CF_ACCESS_CLIENT_ID: ${{ vars.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: bun run smoke
