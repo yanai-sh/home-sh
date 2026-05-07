@@ -27,7 +27,13 @@ test('resume.pdf returns a PDF', async ({ request }, testInfo) => {
     'Run this check against a deployed origin: set SMOKE_BASE_URL (staging/prod). Local `astro preview` does not faithfully emulate the Cloudflare Secrets Store binding for /resume.pdf.',
   );
   const res = await request.get(`${BASE}/resume.pdf`);
-  expect(res.status()).toBe(200);
+  if (res.status() !== 200) {
+    const body = await res.text();
+    throw new Error(
+      `GET /resume.pdf returned ${res.status()} (${res.headers()['content-type'] ?? 'unknown'})\n` +
+        body.slice(0, 400),
+    );
+  }
   expect(res.headers()['content-type']).toContain('application/pdf');
 });
 
