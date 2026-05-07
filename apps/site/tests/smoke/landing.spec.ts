@@ -1,6 +1,12 @@
 import { expect, test } from 'playwright/test';
+import { getPublicTurnstileSiteKey } from './smoke-worker-secrets';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:4321';
+if (BASE.includes('<') || BASE.includes('>')) {
+  throw new Error(
+    `SMOKE_BASE_URL looks like a placeholder: ${BASE}\nUse the *actual* preview URL from the deploy output, e.g. https://<hash>-yanai-sh-staging.yanaiklugman.workers.dev`,
+  );
+}
 
 test('first viewport shows resume CTAs', async ({ page }) => {
   await page.goto(`${BASE}/`);
@@ -17,8 +23,8 @@ test('resume route renders content', async ({ page }) => {
 
 test('resume.pdf returns a PDF', async ({ request }, testInfo) => {
   testInfo.skip(
-    !process.env.RESUME_REPO_TOKEN?.trim() && !process.env.SMOKE_BASE_URL,
-    'Set RESUME_REPO_TOKEN (PAT: contents read on yanai-sh/resume) for local proxy, or SMOKE_BASE_URL for deployed origin',
+    !process.env.SMOKE_BASE_URL,
+    'Run this check against a deployed origin: set SMOKE_BASE_URL (staging/prod). Local `astro preview` does not faithfully emulate the Cloudflare Secrets Store binding for /resume.pdf.',
   );
   const res = await request.get(`${BASE}/resume.pdf`);
   expect(res.status()).toBe(200);
@@ -46,7 +52,11 @@ test('reduced-motion: page still renders content', async ({ browser }) => {
   await ctx.close();
 });
 
-test('contact form renders sitekey', async ({ page }) => {
+test('contact form renders sitekey', async ({ page }, testInfo) => {
+  testInfo.skip(
+    !getPublicTurnstileSiteKey() && !process.env.SMOKE_BASE_URL,
+    'Set public_turnstile_site_key in infra/secrets/worker-secrets.local.json, PUBLIC_TURNSTILE_SITE_KEY in env, or SMOKE_BASE_URL for a deployed origin',
+  );
   await page.goto(`${BASE}/`);
   const form = page.locator('#contact-form');
   await expect(form).toBeVisible();

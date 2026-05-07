@@ -125,7 +125,7 @@ function logDevPatHintAndEmbed(hadToken: string | null, reason: string): ResumeS
   if (import.meta.env.DEV) {
     const hint =
       hadToken == null
-        ? 'Set RESUME_REPO_TOKEN in apps/site/.dev.vars (same PAT as resume_repo_token in SOPS) so the Worker can read private yanai-sh/resume resume.toml. Scopes: fine-grained Contents read on that repo, or classic repo scope.'
+        ? 'Set RESUME_REPO_TOKEN in apps/site/.dev.vars (or resume_repo_token in infra/secrets/worker-secrets.local.json with direnv) so the Worker can read private yanai-sh/resume resume.toml. Scopes: fine-grained Contents read on that repo, or classic repo scope.'
         : `Remote resume.toml unavailable (${reason}); using embedded resume.generated.json from last sync.`;
     console.warn(`[resume] ${hint}`);
   }

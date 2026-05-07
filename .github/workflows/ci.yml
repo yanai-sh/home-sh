@@ -20,6 +20,7 @@ jobs:
     # Must match branch ruleset required context exactly (see scripts/ruleset-protect-main.json).
     name: CI / verify
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - uses: actions/checkout@v6
 
@@ -36,3 +37,5 @@ jobs:
 
       - name: Verify
         run: bun run verify
+        env:
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}

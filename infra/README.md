@@ -23,9 +23,9 @@ infra/
 
 ## Secrets
 
-1. **GitHub Actions** — Repository secrets for deploy and automation. List: `secrets/README.md`.
+1. **GitHub Actions** — **Environments** (`staging`, `production`) are canonical. Secrets live under each environment (fallback: repo-level secrets). List: `secrets/README.md`.
 2. **Cloudflare** — [Secrets Store](https://developers.cloudflare.com/secrets-store/) holds values the Worker reads. Sync with `bun run push-secrets` or the **Push Worker secrets** workflow.
-3. **Local** — `apps/site/.dev.vars` and/or `infra/secrets/worker-secrets.local.json` (from `worker-secrets.example.json`).
+3. **Local** — `apps/site/.dev.vars` and/or `infra/secrets/worker-secrets.local.json` (from `worker-secrets.example.json`; see `secrets/README.md`).
 
 Do not commit ciphertext or plaintext secret bundles.
 
@@ -43,5 +43,5 @@ Do not commit ciphertext or plaintext secret bundles.
 ## Optional next steps
 
 - Remote OpenTofu state: [HCP Terraform](https://developer.hashicorp.com/terraform/cloud-docs) or S3 + DynamoDB lock; see `tofu/backend.tf.example`.
-- GitHub Environments for `production` / `staging` with protection rules.
+- GitHub Environments for `production` / `staging` with protection rules. (Recommended; Deploy already uses them.)
 - OIDC from GitHub to a cloud secret manager if you outgrow long-lived API tokens.

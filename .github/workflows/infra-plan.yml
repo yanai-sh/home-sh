@@ -35,6 +35,7 @@ jobs:
   tofu-plan:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - uses: actions/checkout@v6
 
@@ -46,11 +47,11 @@ jobs:
         working-directory: infra/tofu
         env:
           TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           if [ -z "${TF_VAR_cloudflare_api_token}" ] || [ -z "${TF_VAR_cloudflare_account_id}" ]; then
-            echo "::warning::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID unset — skipping tofu plan (add both in repo Settings → Secrets and variables → Actions)."
+            echo "::warning::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID unset — skipping tofu plan (set both on the GitHub Environment used by this job)."
             exit 0
           fi
           tofu init -input=false

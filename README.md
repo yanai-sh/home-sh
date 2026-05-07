@@ -28,12 +28,8 @@ Polished **brand SVGs** (mark, lockups, wordmark, OG cover, palette) live in [`p
 
 The site is a Worker with Static Assets. **Production** uses Worker **`yanai-sh`** on **`yanai.sh`**. **Staging** uses a separate Worker **`yanai-sh-staging`**. The [Deploy workflow](.github/workflows/deploy.yml) runs on **every push to `dev` or `main`** (not on PR synchronize — that would duplicate the upload when the PR merges into `dev`). It runs **`bun run verify`**, builds the site, then **`wrangler versions upload`** from `apps/site/dist/server/wrangler.json`. Pushes to **`dev`** upload to staging and add a patch **git** tag. Pushes to **`main`** upload, promote that version to 100% traffic, minor tag, and GitHub Release.
 
-PRs into **`dev`** run **CI (dev)** (`.github/workflows/ci-dev.yml`); PRs into **`main`** run **CI**. Locking **`workers.dev`** previews behind login is documented in **[infra/STAGING_PREVIEW_ACCESS.md](infra/STAGING_PREVIEW_ACCESS.md)**.
+PRs into **`dev`** run **CI (dev)** (`.github/workflows/ci-dev.yml`); PRs into **`main`** run **CI**. Staging deploys also run **Smoke** against the immutable preview URL; if the preview URL is protected by Cloudflare Access, CI uses a Service Token via headers.
 
-Configure these **repository secrets** in GitHub:
-
-- `CLOUDFLARE_API_TOKEN` — token with `Workers Scripts: Edit` (account-scoped). Add `User → User Details → Read` so the monthly token-expiry probe (`.github/workflows/token-expiry-check.yml`) can verify it.
-- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account id (visible at dash.cloudflare.com top-right).
-- `PUBLIC_TURNSTILE_SITE_KEY` — public Turnstile widget id (GitHub Actions secret for CI; embedded in the contact form HTML at build time). See **`infra/secrets/README.md`** for the full secrets layout.
+Secrets are managed via GitHub **Environments** (`staging`, `production`) and Cloudflare **Secrets Store**. See **`infra/secrets/README.md`**.
 
 Apex `yanai.sh` is bound to the Worker via a Workers Custom Domain (managed declaratively in `infra/tofu/custom_domain.tf`). Production URL and SEO metadata use **`SITE_URL`** in [`apps/site/src/config/site.ts`](apps/site/src/config/site.ts).

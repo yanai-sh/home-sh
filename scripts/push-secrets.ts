@@ -1,7 +1,8 @@
 // Syncs the Cloudflare Workers Secrets Store (yanai-sh-prod). Idempotent.
 // Env: PUSH_SECRETS_FROM_ENV=1 reads binding names from process.env; else JSON at
 // WORKER_SECRETS_FILE (default infra/secrets/worker-secrets.local.json).
-// Requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+// Requires CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID in env, or
+// cloudflare_api_token + cloudflare_account_id in that JSON (same as Bitwarden import).
 
 const STORE_ID = '02000d0490be49b09eed0e6d95c08e99';
 
@@ -17,16 +18,27 @@ const DEFAULT_SECRETS_FILE = 'infra/secrets/worker-secrets.local.json';
 
 type Secret = { id: string; name: string };
 
-const token = process.env.CLOUDFLARE_API_TOKEN;
-const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-if (!token || !accountId) {
-  console.error('CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set');
-  process.exit(1);
+function resolveCfCreds(
+  secretsBlob: Record<string, string> | null,
+): { token: string; accountId: string } | null {
+  const token =
+    process.env.CLOUDFLARE_API_TOKEN?.trim() ||
+    secretsBlob?.cloudflare_api_token?.trim() ||
+    '';
+  const accountId =
+    process.env.CLOUDFLARE_ACCOUNT_ID?.trim() ||
+    secretsBlob?.cloudflare_account_id?.trim() ||
+    '';
+  if (!token || !accountId) return null;
+  return { token, accountId };
 }
 
-const base = `https://api.cloudflare.com/client/v4/accounts/${accountId}/secrets_store/stores/${STORE_ID}/secrets`;
-
-async function cf<T>(path: string, init?: RequestInit): Promise<T> {
+async function cf<T>(
+  base: string,
+  token: string,
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   const res = await fetch(`${base}${path}`, {
     ...init,
     headers: {
@@ -75,7 +87,16 @@ async function loadWorkerSecrets(): Promise<Record<string, string>> {
 
 async function main(): Promise<void> {
   const blob = await loadWorkerSecrets();
-  const existing = await cf<Secret[]>('');
+  const creds = resolveCfCreds(process.env.PUSH_SECRETS_FROM_ENV === '1' ? null : blob);
+  if (!creds) {
+    console.error(
+      'CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID: set in env, or add cloudflare_api_token and cloudflare_account_id to worker-secrets JSON',
+    );
+    process.exit(1);
+  }
+  const base = `https://api.cloudflare.com/client/v4/accounts/${creds.accountId}/secrets_store/stores/${STORE_ID}/secrets`;
+
+  const existing = await cf<Secret[]>(base, creds.token, '');
   const byName = new Map(existing.map((s) => [s.name, s]));
 
   const toCreate: { name: string; value: string; scopes: ['workers']; comment: string }[] = [];
@@ -89,7 +110,7 @@ async function main(): Promise<void> {
 
     const found = byName.get(bindingName);
     if (found) {
-      await cf(`/${found.id}`, {
+      await cf(base, creds.token, `/${found.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ value, scopes: ['workers'] }),
       });
@@ -105,7 +126,7 @@ async function main(): Promise<void> {
   }
 
   if (toCreate.length > 0) {
-    await cf('', { method: 'POST', body: JSON.stringify(toCreate) });
+    await cf(base, creds.token, '', { method: 'POST', body: JSON.stringify(toCreate) });
     for (const s of toCreate) console.log(`created ${s.name}`);
   }
 

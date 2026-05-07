@@ -10,8 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **`infra/README.md`** + **`infra/secrets/`** — operator docs for secrets layout, workflows, and optional Terraform Cloud backend (`tofu/backend.tf.example`).
-- **`.github/workflows/push-worker-secrets.yml`** — `workflow_dispatch` to sync the Workers Secrets Store from repository secrets (no SOPS on the runner).
-- **`GET /resume.pdf`** as a site Worker route — streams **`YanaiKlugman_CV_*.pdf`** from **`yanai-sh/resume`**’s latest GitHub Release (API + asset download). Binding **`RESUME_REPO_TOKEN`** (Secrets Store via **`push-secrets`** / GitHub secrets).
+- **`scripts/optional/bitwarden-to-secrets.ts`** — optional Bitwarden CLI importer (not used by CI); run via **`bun run optional:bitwarden-to-secrets`**.
+- **`.github/workflows/push-worker-secrets.yml`** — `workflow_dispatch` to sync the Workers Secrets Store from GitHub **Environment** secrets (fallback: repo secrets).
+- **`GET /resume.pdf`** as a site Worker route — streams **`YanaiKlugman_CV_*.pdf`** from **`yanai-sh/resume`**’s latest GitHub Release (API + asset download). Binding **`RESUME_REPO_TOKEN`** (Secrets Store via **`push-secrets`** / GitHub Environment secrets).
 
 ### Removed
 
@@ -21,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Astro **content collection** for resume — **`getEntry('resume', 'current')`** replaced by **`Astro.locals.resumeSnapshot`** populated in middleware (`resume-remote.ts`).
 
 ### Changed
+
+- **Bitwarden helper** — moved to **`scripts/optional/`**; npm script is **`optional:bitwarden-to-secrets`**. CI and **`verify`** never invoke it; portable secrets remain GitHub Actions + gitignored JSON only.
 
 - **Secrets model** — **`scripts/push-secrets.ts`** reads **`infra/secrets/worker-secrets.local.json`** (gitignored) or **`PUSH_SECRETS_FROM_ENV`** in CI; **`.envrc`** loads the same JSON. Legacy committed **`infra/tofu/secrets.enc.json`** (SOPS) removed from version control.
 

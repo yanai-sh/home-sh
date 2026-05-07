@@ -18,6 +18,7 @@ jobs:
   verify:
     name: CI (dev) / verify
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - uses: actions/checkout@v6
 
@@ -34,4 +35,4 @@ jobs:
         run: bun run verify
         env:
           # Same as Deploy — embedded at build time for the Turnstile widget.
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}

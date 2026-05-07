@@ -26,9 +26,12 @@
     "test": "bun run --cwd apps/site test",
     "verify": "bun run sync:resume && bun run --cwd apps/site verify",
     "preview": "bun run --cwd apps/site preview",
+    "smoke": "bun run --cwd apps/site smoke",
     "sync:resume": "bun scripts/sync-resume.ts",
+    "env:copy-prod": "bun scripts/copy-gh-environment.ts --from staging --to production",
     "cf:list-access-apps": "bun scripts/cf-list-access-apps.ts",
     "push-secrets": "bun scripts/push-secrets.ts",
+    "optional:bitwarden-to-secrets": "bun scripts/optional/bitwarden-to-secrets.ts",
     "prepare": "bun -e \"if (!process.env.CI) { const r = Bun.spawnSync(['bun','x','lefthook','install'],{stdio:['inherit','inherit','inherit']}); process.exit(r.exitCode ?? 0); }\""
   },
   "devDependencies": {

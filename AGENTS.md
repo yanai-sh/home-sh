@@ -47,12 +47,18 @@ Canonical values live in **`src/design/tokens.ts`**. **`buildRootCss()`** in **`
 - **`bun run test`** — unit tests in `apps/site/src`
 - **`bun run verify`** — `check` → `typecheck` → `test` → `build` (same as PR CI and Deploy on `main`)
 - **`bun run preview`** — strips reserved `ASSETS` in `apps/site/dist/**/wrangler.json`, then **`astro preview`** (workerd; run **`build`** first)
+- **`bun run smoke`** — Playwright smoke tests (`apps/site/tests/smoke`; starts local preview unless **`SMOKE_BASE_URL`** is set)
 
 ### GitHub Actions
 
 - **CI** (`.github/workflows/ci.yml`): **`pull_request`** to **`main`** — job **`CI / verify`**.
 - **CI (dev)** (`.github/workflows/ci-dev.yml`): **`pull_request`** to **`dev`** — job **`CI (dev) / verify`** (same **`bun run verify`**; optional ruleset required check for the **`dev`** branch).
 - **Deploy** (`.github/workflows/deploy.yml`): **`push`** to **`dev`** or **`main`** (and **`workflow_dispatch`**) — runs **`verify`**, then **`wrangler versions upload`** (staging uses **`--name yanai-sh-staging`** on `dev`; production promotes on `main`). No **`pull_request`** trigger: avoids uploading twice when a PR merges into `dev`. Project-pinned wrangler 4.x; config from **`apps/site/dist/server/wrangler.json`** after build.
+  - Deploy uses GitHub **Environments** (`staging`/`production`) for CI secrets; staging also runs smoke against the immutable preview URL via Cloudflare Access service token headers.
+
+### Optional maintainer tooling
+
+- **`scripts/optional/`** — never run by CI or **`verify`**. Example: **`bun run optional:bitwarden-to-secrets`** (Bitwarden CLI → local JSON / `gh`). See **`scripts/optional/README.md`**.
 
 ### Local hooks
 

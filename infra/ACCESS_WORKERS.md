@@ -60,7 +60,7 @@ Cloudflare may also show a single **“Cloudflare Workers Preview URLs”** appl
 
 Workflow **`.github/workflows/infra-plan.yml`** runs **`tofu init` + `tofu plan`** when **`infra/tofu/**`** or **`infra/ACCESS_WORKERS.md`** changes.
 
-Add repository secrets (GitHub → **Settings → Secrets and variables → Actions**), the usual pattern for Terraform in CI:
+Preferred: add the creds as GitHub **Environment** secrets (this repo uses environments as canonical). Fallback: repo-level Actions secrets.
 
 | Secret | Purpose |
 |--------|---------|

@@ -64,6 +64,9 @@ target/
 test-results/
 playwright-report/
 
+# --- LOCAL SCRATCH ---
+openswarm/
+
 # --- AI AGENTS & EDITORS ---
 !.cursor/rules/**
 .cursor/

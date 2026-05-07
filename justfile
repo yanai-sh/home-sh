@@ -87,6 +87,14 @@ tf-secrets:
 push-secrets:
     bun run scripts/push-secrets.ts
 
+# Optional (not portable / not CI): Bitwarden → local JSON or gh. See scripts/optional/README.md
+optional-bitwarden-pull:
+    bun run optional:bitwarden-to-secrets -- --write
+optional-bitwarden-github:
+    bun run optional:bitwarden-to-secrets -- --gh
+optional-bitwarden-sync:
+    bun run optional:bitwarden-to-secrets -- --write --gh
+
 # ── Resume PDF ───────────────────────────────────────────────────────────────
 # Canonical CV is built in yanai-sh/resume (LaTeX → PDF) and attached to each
 # `vX.Y.Z` GitHub Release. Download lands in **gitignored** `artifacts/resume/`

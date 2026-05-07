@@ -38,6 +38,7 @@ permissions:
 jobs:
   cloudflare:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Verify CLOUDFLARE_API_TOKEN
         env:
@@ -105,13 +106,13 @@ jobs:
             gh issue create \
               --title "🚨 Cloudflare API token status: $status" \
               --body "$(cat <<EOF
-          The weekly token-expiry probe ran against \`secrets.CLOUDFLARE_API_TOKEN\` and got back \`status=$status\`.
+          The token-expiry probe ran against the **production environment** \`CLOUDFLARE_API_TOKEN\` and got back \`status=$status\`.
 
           **Action required:** rotate immediately. Deploy will fail at the next push.
 
           1. Generate a new token at https://dash.cloudflare.com/profile/api-tokens
              (use the same permissions as the existing one — *Workers Scripts: Edit* on the account, plus any zone scopes you've added)
-          2. Update the GH Actions secret:
+          2. Update the GitHub **Environment** secret (production) or repo secret:
              \`\`\`sh
              gh secret set CLOUDFLARE_API_TOKEN -b "<new-value>"
              \`\`\`
