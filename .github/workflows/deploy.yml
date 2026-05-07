@@ -262,6 +262,31 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Install Playwright chromium
         run: bun x playwright install --with-deps chromium
+      - name: Preflight (Access + origin sanity)
+        env:
+          SMOKE_BASE_URL: ${{ needs.publish.outputs.staging_preview_url }}
+          CF_ACCESS_CLIENT_ID: ${{ vars.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          bun -e '
+          const base = process.env.SMOKE_BASE_URL;
+          const id = process.env.CF_ACCESS_CLIENT_ID ?? "";
+          const secret = process.env.CF_ACCESS_CLIENT_SECRET ?? "";
+          if (!base) throw new Error("SMOKE_BASE_URL missing");
+          const headers = (id && secret)
+            ? { "CF-Access-Client-Id": id, "CF-Access-Client-Secret": secret }
+            : {};
+          const res = await fetch(`${base}/`, { redirect: "manual", headers });
+          const ct = res.headers.get("content-type") ?? "";
+          const body = await res.text();
+          const looksLikeAccess = /cloudflare access|access denied|cf-access/i.test(body) || (ct.includes("text/html") && body.includes("cf-access"));
+          console.log(`preflight: GET / -> ${res.status} ${ct}`);
+          if (res.status >= 300 && res.status < 400) console.log(`preflight: redirect location=${res.headers.get("location") ?? ""}`);
+          if (looksLikeAccess) {
+            throw new Error("Preflight looks like a Cloudflare Access login/deny page. Ensure the Access policy allows this Service Token, and CF_ACCESS_CLIENT_ID/SECRET match that token.");
+          }
+          '
       - name: Smoke against staging preview URL
         env:
           SMOKE_BASE_URL: ${{ needs.publish.outputs.staging_preview_url }}
