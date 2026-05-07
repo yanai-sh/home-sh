@@ -281,15 +281,17 @@ jobs:
           const ct = res.headers.get("content-type") ?? "";
           const body = await res.text();
           const title = (body.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? "").trim();
+          const location = res.headers.get("location") ?? "";
           const looksLikeAccess =
             /cloudflare access|access denied|cf-access|cloudflare\-access/i.test(body) ||
             /\/cdn-cgi\/access\//i.test(body) ||
-            (title && /access/i.test(title));
+            (title && /access/i.test(title)) ||
+            /cloudflareaccess\.com\/cdn-cgi\/access\/login/i.test(location);
           console.log(`preflight: GET / -> ${res.status} ${ct}`);
           if (title) console.log(`preflight: title="${title}"`);
           console.log(`preflight: cf-ray=${res.headers.get("cf-ray") ?? ""}`);
           console.log(`preflight: body_prefix=${JSON.stringify(body.slice(0, 220))}`);
-          if (res.status >= 300 && res.status < 400) console.log(`preflight: redirect location=${res.headers.get("location") ?? ""}`);
+          if (res.status >= 300 && res.status < 400) console.log(`preflight: redirect location=${location}`);
           if (looksLikeAccess) {
             throw new Error("Preflight looks like a Cloudflare Access login/deny page. Ensure the Access policy allows this Service Token, and CF_ACCESS_CLIENT_ID/SECRET match that token.");
           }
