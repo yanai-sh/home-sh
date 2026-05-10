@@ -13,7 +13,7 @@
 # Note: Cloudflare retains the last ~10 versions per Worker. Older deploys age
 # out of the rollback-eligible set.
 
-name: Rollback Worker
+name: yanai-sh / Rollback
 
 on:
   workflow_dispatch:
@@ -35,17 +35,20 @@ concurrency:
   # Share the deploy group — a rollback IS a deploy (different version pointer).
   # Mixing them in one group prevents a Deploy from racing a Rollback or
   # vice-versa, which could leave the Worker pointing at an unintended version.
-  group: workers-deploy-${{ github.ref }}
+  group: yanai-sh-deploy-${{ github.ref }}
   # Never cancel a rollback in progress — incident response is the highest
   # priority; if a rollback is running, anything else waits.
   cancel-in-progress: false
 
 jobs:
   rollback:
+    name: yanai-sh / rollback — promote
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: production
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           submodules: recursive
           token: ${{ secrets.RESUME_REPO_TOKEN }}
@@ -54,12 +57,12 @@ jobs:
 
       # Root `bun run build` runs `sync:resume` (pinned `resume/` submodule) then
       # Astro — emits dist/server/wrangler.json for wrangler version-deploy.
-      - name: Build (for wrangler.json)
+      - name: Build site (emit wrangler.json)
         run: bun run build
         env:
           PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
 
-      - name: Promote target version to 100%
+      - name: Promote rollback version to production (100%)
         run: |
           set -euo pipefail
           bun run --cwd apps/site version-deploy -- \
@@ -70,7 +73,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Smoke test
+      - name: Curl smoke (origin)
         run: |
           set -euo pipefail
           # Give the edge a few seconds to propagate the new active version.

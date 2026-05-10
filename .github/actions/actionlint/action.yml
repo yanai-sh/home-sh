@@ -1,15 +1,15 @@
-name: actionlint
+name: yanai-sh / setup — actionlint
 description: Install rhysd/actionlint (latest) and lint .github/workflows
 runs:
   using: composite
   steps:
-    - name: Install actionlint
+    - name: Download actionlint
       run: |
         set -euo pipefail
         mkdir -p .bin
         bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) latest .bin
         echo "${GITHUB_WORKSPACE}/.bin" >> "$GITHUB_PATH"
       shell: bash
-    - name: Run actionlint
+    - name: Lint workflow YAML
       run: actionlint -color
       shell: bash

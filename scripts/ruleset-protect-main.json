@@ -28,7 +28,10 @@
       "parameters": {
         "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false,
-        "required_status_checks": [{ "context": "CI / verify" }]
+        "required_status_checks": [
+          { "context": "yanai-sh / verify (ubuntu-latest)" },
+          { "context": "yanai-sh / verify (macos-latest)" }
+        ]
       }
     }
   ]

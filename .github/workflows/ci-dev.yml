@@ -1,6 +1,6 @@
-# PRs into `dev` — same `bun run verify` as CI for `main`, without uploading a Worker.
+# PRs into `dev` — same `bun run verify` as PR — main, without uploading a Worker.
 # Deploy remains push-only (avoids double upload when a PR merges into `dev`).
-name: CI (dev)
+name: yanai-sh / PR — dev
 
 on:
   pull_request:
@@ -10,32 +10,17 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-dev-${{ github.workflow }}-${{ github.event.pull_request.number }}
-  # Cancel stale runs when new commits are pushed to the same PR.
+  group: yanai-sh-pr-dev-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   verify:
-    name: CI (dev) / verify
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          submodules: recursive
-          token: ${{ secrets.RESUME_REPO_TOKEN }}
-
-      - uses: dorny/paths-filter@v4.0.1
-        id: paths
-        with:
-          filters: |
-            workflows:
-              - '.github/workflows/**'
-
-      - uses: ./.github/actions/actionlint
-        if: steps.paths.outputs.workflows == 'true'
-
-      - uses: ./.github/actions/bun-verify
-        with:
-          public_turnstile_site_key: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+    name: yanai-sh / verify — dev (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    uses: ./.github/workflows/reusable-verify.yml
+    with:
+      runs-on: ${{ matrix.os }}
+    secrets: inherit

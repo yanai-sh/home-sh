@@ -5,7 +5,7 @@
 # The widget secret is read by the site Worker's /api/contact route from the
 # TURNSTILE_SECRET binding (Secrets Store; sync via push-secrets).
 # After first apply, run `tofu output -raw turnstile_secret` and add it to GitHub
-# secrets + Push Worker secrets (or worker-secrets.local.json).
+# secrets + yanai-sh / Secrets — push workflow (or worker-secrets.local.json).
 
 resource "cloudflare_turnstile_widget" "contact" {
   account_id = var.cloudflare_account_id

@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`ROADMAP.md`** — documents submodule pipeline, HTML vs PDF split, revised milestones and risks.
 - **`README.md`**, **`CLAUDE.md`**, **`AGENTS.md`**, **`infra/secrets/README.md`**, **`.envrc`** — point to **`AGENTS.md`** for maintainer setup; **`PUBLIC_TURNSTILE_SITE_KEY`** / submodule notes.
 
-- **GitHub Actions** — **actionlint** runs inside **CI** / **CI (dev)** / **Deploy** only when `.github/workflows/**` changes (via **dorny/paths-filter**, pinned to **`v3.0.2`** SHA); shared **`.github/actions/bun-install`** + **`bun-verify`** dedupe Node/Bun/install (and **Deploy** smoke + **Rollback** install); **`playwright-chromium`** composite for **Deploy** smoke.
+- **GitHub Actions** — workflows use a **`yanai-sh / …`** naming scheme; **actionlint** runs on every PR and deploy; shared **`.github/actions/bun-install`**, **`bun-verify`**, **`playwright-chromium`**; **`dorny/paths-filter`** pinned by SHA.
 
 - **Deploy smoke preflight** — run inline **`bun`** script via heredoc so **actionlint** / shellcheck no longer flags SC2016 on **`deploy.yml`**.
 
