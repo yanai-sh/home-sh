@@ -1,0 +1,24 @@
+# Enables GitHub auto-merge (squash) on Dependabot PRs so they land when CI is green,
+# then deletes Dependabot's head branch (same-repo branches only; safe for these PRs).
+# Requires: Settings → General → "Allow auto-merge", and branch rules that allow it.
+name: yanai-sh / Deps — auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    name: yanai-sh / deps — enable auto-merge
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Enable auto-merge (squash, delete branch)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge "${{ github.event.pull_request.number }}" --auto --squash --delete-branch --repo "${{ github.repository }}"

@@ -22,15 +22,15 @@ Fallback (not recommended): repo-level Actions secrets (**Settings → Secrets a
 | `CLOUDFLARE_API_TOKEN` | Deploy, infra plan, token probe, push-secrets workflow |
 | `CLOUDFLARE_ACCOUNT_ID` | Deploy, infra plan, push-secrets workflow (environment variable) |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Deploy / verify (public site key; environment variable) |
-| `TURNSTILE_SECRET` | Push Worker secrets → Secrets Store |
-| `RESEND_API_KEY` | Push Worker secrets → Secrets Store |
-| `CONTACT_FROM` | Push Worker secrets → Secrets Store |
-| `CONTACT_TO` | Push Worker secrets → Secrets Store |
-| `RESUME_REPO_TOKEN` | Push Worker secrets → Secrets Store (PAT: private resume repo + Releases); **GitHub Actions** checkout uses the same secret to **`git clone`** the **`resume/`** submodule in CI / Deploy / Rollback |
+| `TURNSTILE_SECRET` | **yanai-sh / Secrets — push** → Secrets Store |
+| `RESEND_API_KEY` | **yanai-sh / Secrets — push** → Secrets Store |
+| `CONTACT_FROM` | **yanai-sh / Secrets — push** → Secrets Store |
+| `CONTACT_TO` | **yanai-sh / Secrets — push** → Secrets Store |
+| `RESUME_REPO_TOKEN` | **yanai-sh / Secrets — push** → Secrets Store (PAT: private resume repo + Releases); **GitHub Actions** checkout uses the same secret to **`git clone`** the **`resume/`** submodule in PR / Deploy / Rollback workflows |
 | `CF_ACCESS_CLIENT_ID` | Smoke against Access-protected preview URLs (Service Token; environment variable) |
 | `CF_ACCESS_CLIENT_SECRET` | Smoke against Access-protected preview URLs (Service Token secret) |
 
-After a rotation, run **Actions → Push Worker secrets** or **`bun run push-secrets`** locally with an updated `worker-secrets.local.json`. That script reads **`cloudflare_api_token`** and **`cloudflare_account_id`** from the same JSON when those env vars are unset (optional fields in **`worker-secrets.example.json`**).
+After a rotation, run **Actions → yanai-sh / Secrets — push** or **`bun run push-secrets`** locally with an updated `worker-secrets.local.json`. That script reads **`cloudflare_api_token`** and **`cloudflare_account_id`** from the same JSON when those env vars are unset (optional fields in **`worker-secrets.example.json`**).
 
 ## Local machine
 

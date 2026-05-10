@@ -20,7 +20,7 @@
 #
 # Cost: ~5 sec per run, once a month. Cloudflare API call is free.
 
-name: Token expiry health check
+name: yanai-sh / Ops — token expiry
 
 on:
   schedule:
@@ -37,7 +37,9 @@ permissions:
 
 jobs:
   cloudflare:
+    name: yanai-sh / ops — token check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: production
     steps:
       - name: Verify CLOUDFLARE_API_TOKEN
@@ -117,7 +119,7 @@ jobs:
              gh secret set CLOUDFLARE_API_TOKEN -b "<new-value>"
              \`\`\`
           3. Update **infra/tofu/terraform.tfvars** (\`cloudflare_api_token\`) for local OpenTofu.
-          4. Re-run this workflow to confirm: Actions → Token expiry health check → Run workflow.
+          4. Re-run this workflow to confirm: Actions → yanai-sh / Ops — token expiry → Run workflow.
           EOF
           )" \
               --label "security,infra,token-expiry"
@@ -160,7 +162,7 @@ jobs:
              gh secret set CLOUDFLARE_API_TOKEN -b "<new-value>" --repo $REPO
              \`\`\`
           3. Update **infra/tofu/terraform.tfvars** (\`cloudflare_api_token\`).
-          4. Re-run **Actions → Token expiry health check** to confirm clean.
+          4. Re-run **Actions → yanai-sh / Ops — token expiry** to confirm clean.
           5. Close this issue once \`days remaining\` is back above 14.
           EOF
           )"

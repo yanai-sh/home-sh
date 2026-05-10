@@ -1,5 +1,5 @@
 # Pull requests only — pushes to `main` are verified in the Deploy workflow.
-name: CI
+name: yanai-sh / PR — main
 
 on:
   pull_request:
@@ -9,37 +9,18 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  # Cancel stale PR runs. Inverse of Deploy's queue policy: each PR push
-  # supersedes the previous one (newer code under review = older test run is
-  # already obsolete). Saves CI minutes on rapid force-pushes during a PR.
+  group: yanai-sh-pr-main-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   verify:
-    # Must match branch ruleset required context exactly (see scripts/ruleset-protect-main.json).
-    name: CI / verify
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          submodules: recursive
-          # Private `yanai-sh/resume` submodule — default `GITHUB_TOKEN` cannot clone it.
-          token: ${{ secrets.RESUME_REPO_TOKEN }}
-
-      # Pinned to v3.0.2 release (supply chain); bump when changing filter behavior.
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
-        id: paths
-        with:
-          filters: |
-            workflows:
-              - '.github/workflows/**'
-
-      - uses: ./.github/actions/actionlint
-        if: steps.paths.outputs.workflows == 'true'
-
-      - uses: ./.github/actions/bun-verify
-        with:
-          public_turnstile_site_key: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+    # Required contexts for `main` ruleset — see scripts/ruleset-protect-main.json
+    name: yanai-sh / verify (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    uses: ./.github/workflows/reusable-verify.yml
+    with:
+      runs-on: ${{ matrix.os }}
+    secrets: inherit

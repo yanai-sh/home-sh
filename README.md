@@ -28,7 +28,7 @@ Polished **brand SVGs** (mark, lockups, wordmark, OG cover, palette) live in [`p
 
 The site is a Worker with Static Assets. **Production** uses Worker **`yanai-sh`** on **`yanai.sh`**. **Staging** uses a separate Worker **`yanai-sh-staging`**. The [Deploy workflow](.github/workflows/deploy.yml) runs on **every push to `dev` or `main`** (not on PR synchronize — that would duplicate the upload when the PR merges into `dev`). It runs **`bun run verify`**, builds the site, then **`wrangler versions upload`** from `apps/site/dist/server/wrangler.json`. Pushes to **`dev`** upload to staging and add a patch **git** tag. Pushes to **`main`** upload, promote that version to 100% traffic, minor tag, and GitHub Release.
 
-PRs into **`dev`** run **CI (dev)** (`.github/workflows/ci-dev.yml`); PRs into **`main`** run **CI**. Staging deploys also run **Smoke** against the immutable preview URL; if the preview URL is protected by Cloudflare Access, CI uses a Service Token via headers.
+PRs into **`dev`** / **`main`** run **`yanai-sh / PR — dev`** / **`yanai-sh / PR — main`** (`ci-dev.yml` / `ci.yml`), each matrixed on **`ubuntu-latest`** + **`macos-latest`** via **`reusable-verify.yml`**. Staging deploys (**`yanai-sh / Deploy`**) run **`yanai-sh / deploy — smoke`** against the immutable preview URL; if the preview URL is protected by Cloudflare Access, CI uses a Service Token via headers.
 
 Secrets are managed via GitHub **Environments** (`staging`, `production`) and Cloudflare **Secrets Store**. See **`infra/secrets/README.md`**.
 

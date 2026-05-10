@@ -1,8 +1,14 @@
-name: Playwright Chromium
+name: yanai-sh / setup — playwright-chromium
 description: Install Playwright Chromium browser + OS deps (requires Bun on PATH, e.g. after bun-install)
 runs:
   using: composite
   steps:
-    - name: Install Playwright chromium
+    - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-ms-playwright-${{ hashFiles('bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-ms-playwright-
+    - name: Install Playwright Chromium
       run: bun x playwright install --with-deps chromium
       shell: bash

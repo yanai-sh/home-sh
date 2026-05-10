@@ -5,7 +5,7 @@
 #   CLOUDFLARE_ACCOUNT_ID
 # No secrets file on the runner — OpenTofu uses TF_VAR_* from GitHub encrypted secrets.
 # Worker runtime secrets: infra/secrets/ + push-worker-secrets workflow (see infra/README.md).
-name: Infra plan
+name: yanai-sh / Infra — plan
 
 on:
   pull_request:
@@ -28,22 +28,26 @@ permissions:
   contents: read
 
 concurrency:
-  group: infra-plan-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: yanai-sh-infra-plan-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   tofu-plan:
+    name: yanai-sh / infra — tofu plan
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: staging
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - uses: opentofu/setup-opentofu@v1
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: 1.10.5
 
-      - name: OpenTofu init + plan
+      - name: OpenTofu init and plan
         working-directory: infra/tofu
         env:
           TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}

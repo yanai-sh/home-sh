@@ -1,4 +1,4 @@
-name: Bun verify
+name: yanai-sh / setup — bun-verify
 description: Bun install then bun run verify (expects repo checkout before this action)
 inputs:
   public_turnstile_site_key:
@@ -9,7 +9,7 @@ runs:
   using: composite
   steps:
     - uses: ./.github/actions/bun-install
-    - name: Verify
+    - name: Run monorepo verify
       run: bun run verify
       shell: bash
       env:

@@ -4,7 +4,7 @@
 // Secrets bind from the account-level Workers Secrets Store via
 // `secrets_store_secrets` in wrangler.jsonc. Each binding is a
 // `SecretsStoreSecret` whose value is fetched lazily through `.get()`.
-// Store values: `bun run push-secrets` or Actions workflow **Push Worker secrets**.
+// Store values: `bun run push-secrets` or Actions workflow **yanai-sh / Secrets — push**.
 //
 // Lives in the site Worker (single ingress for yanai.sh), not as a separate
 // Worker — avoids the per-route IAM scope and the operational tax of an extra

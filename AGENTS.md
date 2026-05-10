@@ -52,14 +52,23 @@ Canonical values live in **`src/design/tokens.ts`**. **`buildRootCss()`** in **`
 
 ### GitHub Actions
 
-- **CI** (`.github/workflows/ci.yml`): **`pull_request`** to **`main`** — job **`CI / verify`**.
-- **CI (dev)** (`.github/workflows/ci-dev.yml`): **`pull_request`** to **`dev`** — job **`CI (dev) / verify`** (same **`bun run verify`**; optional ruleset required check for the **`dev`** branch).
-- **Deploy** (`.github/workflows/deploy.yml`): **`push`** to **`dev`** or **`main`** (and **`workflow_dispatch`**) — runs **`verify`**, then **`wrangler versions upload`** (staging uses **`--name yanai-sh-staging`** on `dev`; production promotes on `main`). No **`pull_request`** trigger: avoids uploading twice when a PR merges into `dev`. Project-pinned wrangler 4.x; config from **`apps/site/dist/server/wrangler.json`** after build.
-  - Deploy uses GitHub **Environments** (`staging`/`production`) for CI secrets; staging also runs smoke against the immutable preview URL via Cloudflare Access service token headers.
+Workflow and job names use a **`yanai-sh / …`** prefix so the Actions tab and branch checks read consistently.
+
+- **PR — main** (`ci.yml`, workflow **`yanai-sh / PR — main`**): **`pull_request`** to **`main`** — matrix **`ubuntu-latest`** + **`macos-latest`** calling **`reusable-verify.yml`** (**`yanai-sh / Verify (reusable)`**). Required check contexts: **`yanai-sh / verify (ubuntu-latest)`** and **`yanai-sh / verify (macos-latest)`** — see **`scripts/ruleset-protect-main.json`**; re-run **`./scripts/gh-protect-main.sh`** after renaming checks.
+- **PR — dev** (`ci-dev.yml`, **`yanai-sh / PR — dev`**): **`pull_request`** to **`dev`** — same reusable verify matrix (**`yanai-sh / verify — dev (…)`**); optional ruleset required checks on **`dev`**.
+- **Deploy** (`deploy.yml`, **`yanai-sh / Deploy`**): **`push`** to **`dev`** / **`main`** and **`workflow_dispatch`** (**`skip_smoke: 'true'`** skips staging smoke). Jobs: **`yanai-sh / deploy — publish`**, **`yanai-sh / deploy — version tag`**, **`yanai-sh / deploy — GitHub release`**, **`yanai-sh / deploy — smoke`**. No **`pull_request`** on deploy. Project-pinned wrangler 4.x; config from **`apps/site/dist/server/wrangler.json`** after build.
+  - Uses GitHub **Environments** (`staging`/`production`); staging smoke uses Cloudflare Access service token headers when set.
+- **Deps — auto-merge** (`dependabot-auto-merge.yml`, **`yanai-sh / Deps — auto-merge`**) — for **`dependabot[bot]`** PRs: **`gh pr merge --auto --squash --delete-branch`** (merges when required checks are green, then removes Dependabot’s head branch). Enable **Settings → General → Allow auto-merge** and keep branch rules compatible.
+- **Caches** — composite **`bun-install`** restores **`~/.bun/install/cache`**; **`playwright-chromium`** restores **`~/.cache/ms-playwright`** (keyed off **`bun.lock`**). Key third-party actions use **commit SHAs** (comments note the tag).
+- **Path filters** — **`dorny/paths-filter`** drives an informational summary; **actionlint** runs every PR/Deploy. **`bun run verify`** still runs on every PR (both OSes).
+- **Other workflows** — **`yanai-sh / Rollback`**, **`yanai-sh / Infra — plan`**, **`yanai-sh / Secrets — push`**, **`yanai-sh / Ops — token expiry`** (`rollback.yml`, `infra-plan.yml`, `push-worker-secrets.yml`, `token-expiry-check.yml`).
+- **Auth** — Wrangler **`versions upload` / `deploy`** use **`CLOUDFLARE_API_TOKEN`** from the Environment. GitHub OIDC for Workers deploy is not a drop-in replacement yet; keep the token until upstream supports it, then migrate.
 
 ### Workflow (`dev` / `main`)
 
 Two long-lived branches, two Workers: **`yanai-sh-staging`** on **`dev`**, **`yanai-sh`** on **`main`** (same `apps/site/wrangler.jsonc`; deploy passes **`--name yanai-sh-staging`** on **`dev`**). **Deploy** runs on **`push`** to **`dev`** or **`main`**, not on **`pull_request`** into **`dev`** (avoids uploading twice when a PR merges). Auto-tags: **patch** on **`dev`**, **minor** on **`main`**; **major** tags stay manual.
+
+**Solo loop (three beats):** (1) **`bun run verify`** locally before every push. (2) Open PRs to **`main`** (CI) and merge work into **`dev`**; each **`push`** to **`dev`** runs **Deploy** → staging Worker + optional smoke on the version preview URL. (3) When staging looks right, PR **`dev` → `main`** → production upload + promote + release. Secrets and Environment names: **`infra/README.md`**.
 
 Day-to-day: **`git checkout dev && git pull`** → **`git submodule update --init --recursive`** if **`resume/`** is empty → topic branch → **`bun run verify`** → PR → **`dev`** → QA staging preview (smoke supports Cloudflare Access via **`CF_ACCESS_CLIENT_ID`** / **`CF_ACCESS_CLIENT_SECRET`** on the **`staging`** Environment) → PR **`dev` → `main`**. **`CHANGELOG`**: keep **`[Unreleased]`** on **`dev`**; cut a dated **`[vX.(Y+1).0]`** section in a chore PR before **`dev` → `main`**. **`./scripts/gh-protect-main.sh`** (see **`README.md`**) documents **`main`** ruleset expectations.
 
@@ -75,7 +84,7 @@ A production release is whatever lands on **`main`** (Deploy auto-tags the next 
 
 ### Commits, dependencies, style
 
-Use clear messages; **Conventional Commits** are optional. **Dependabot**: **`.github/dependabot.yml`** — monthly **Bun** + **GitHub Actions** (disable under repo security settings if you want fully manual bumps). **Biome** is the source of truth for JS/TS style (**`bun run fix`**). Astro: follow existing patterns under **`apps/site/src/components/`**.
+Use clear messages; **Conventional Commits** are optional. **Dependabot**: **`.github/dependabot.yml`** — weekly **Bun** + grouped weekly **GitHub Actions** bumps (disable under repo security settings if you want fully manual bumps). **Biome** is the source of truth for JS/TS style (**`bun run fix`**). Astro: follow existing patterns under **`apps/site/src/components/`**.
 
 ### Optional maintainer tooling
 

@@ -5,7 +5,7 @@
   // generated dist/server/wrangler.json which is what `wrangler deploy` consumes.
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "yanai-sh",
-  "compatibility_date": "2026-04-21",
+  "compatibility_date": "2026-05-07",
   "compatibility_flags": [
     "nodejs_compat"
   ],
