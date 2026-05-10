@@ -22,7 +22,7 @@ Public source for my personal site. The code is under the [MIT License](LICENSE)
 
 Polished **brand SVGs** (mark, lockups, wordmark, OG cover, palette) live in [`public/brand/`](public/brand/) with a machine-readable [`manifest.json`](public/brand/manifest.json).
 
-[CONTRIBUTING](CONTRIBUTING.md) and [ARCHITECTURE](ARCHITECTURE.md) describe how to work in the repository and the main design choices.
+[AGENTS.md](AGENTS.md) and [ARCHITECTURE.md](ARCHITECTURE.md) describe layout, commands, maintainer workflow, and design choices.
 
 ## Deployment (Cloudflare Workers)
 

@@ -46,17 +46,16 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          token: ${{ secrets.RESUME_REPO_TOKEN }}
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: ./.github/actions/bun-install
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      # Astro emits dist/server/wrangler.json — wrangler needs the file path,
-      # but it doesn't need to match the version being rolled back to. Any
-      # current-shape wrangler.json points at the Worker by name.
+      # Root `bun run build` runs `sync:resume` (pinned `resume/` submodule) then
+      # Astro — emits dist/server/wrangler.json for wrangler version-deploy.
       - name: Build (for wrangler.json)
-        run: bun run --cwd apps/site build
+        run: bun run build
         env:
           PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
 

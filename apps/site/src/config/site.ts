@@ -22,3 +22,7 @@ export const SITE_BRAND = {
   prefix: 'yanai',
   suffix: '.sh',
 } as const;
+
+/** Homepage resume (#resume) section — short deck under the chapter kicker. */
+export const HOME_RESUME_SECTION_DECK =
+  'Career timeline, selective projects, and the technical stacks I rely on day to day.';

@@ -1,79 +1,69 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
-import { Buffer } from 'node:buffer';
+import { join } from 'node:path';
 import { TOML } from 'bun';
 import { normalizeToml } from './lib/sync-resume-normalize';
-import type { ResumeSnapshot } from '../apps/site/src/content/resume-schema';
+import { ResumeSnapshotSchema, type ResumeSnapshot } from '../apps/site/src/content/resume-schema';
 
 const OWNER = 'yanai-sh';
 const REPO = 'resume';
 const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
-const API_VERSION = '2026-03-10';
-
 const RESUME_SOURCE_PATH = 'resume.toml';
 
-const SNAPSHOT_PATH = 'content/resume.snapshot.json';
-const GENERATED_PATH = 'content/resume.generated.json';
+const REPO_ROOT = join(import.meta.dir, '..');
+const SUBMODULE_DIR = join(REPO_ROOT, 'resume');
+const TOML_PATH = join(SUBMODULE_DIR, RESUME_SOURCE_PATH);
 
-type GitHubContent = {
-  type?: string;
-  name?: string;
-  path?: string;
-  sha?: string;
-  content?: string;
-  encoding?: string;
-};
+const SNAPSHOT_PATH = join(REPO_ROOT, 'content', 'resume.snapshot.json');
+const GENERATED_PATH = join(REPO_ROOT, 'content', 'resume.generated.json');
 
-async function fetchResume(): Promise<ResumeSnapshot | null> {
-  const token =
-    process.env.RESUME_GITHUB_TOKEN ??
-    process.env.GITHUB_TOKEN ??
-    process.env.RESUME_REPO_TOKEN;
-  const headers = new Headers({
-    Accept: 'application/vnd.github.object+json',
-    'X-GitHub-Api-Version': API_VERSION,
-    'User-Agent': 'yanai-sh-resume-sync',
+function submoduleGitHead(): string | null {
+  const result = Bun.spawnSync(['git', '-C', SUBMODULE_DIR, 'rev-parse', 'HEAD'], {
+    stdout: 'pipe',
+    stderr: 'pipe',
   });
-
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${RESUME_SOURCE_PATH}`;
-  const response = await fetch(url, { headers });
-
-  if (!response.ok) {
-    console.warn(`resume sync: GitHub returned ${response.status}; using fallback snapshot`);
+  if (!result.success) {
     return null;
   }
+  return new TextDecoder().decode(result.stdout).trim() || null;
+}
 
-  const body = (await response.json()) as GitHubContent;
-  if (body.type !== 'file' || body.encoding !== 'base64' || !body.content) {
-    return null;
+function readTomlFromSubmodule(): ResumeSnapshot {
+  if (!existsSync(TOML_PATH)) {
+    console.error(
+      `resume sync: missing ${TOML_PATH}\n` +
+        'Initialize the submodule:  git submodule update --init --recursive',
+    );
+    process.exit(1);
   }
 
-  const text = Buffer.from(body.content, 'base64').toString('utf8');
+  const commitSha = submoduleGitHead();
+  const text = readFileSync(TOML_PATH, 'utf8');
+  const rawTables = TOML.parse(text) as Record<string, unknown>;
+  const data = normalizeToml(rawTables);
 
-  return {
+  const snapshot = ResumeSnapshotSchema.parse({
     source: {
       owner: OWNER,
       repo: REPO,
       path: RESUME_SOURCE_PATH,
-      url: `${REPO_URL}/blob/main/${RESUME_SOURCE_PATH}`,
+      url:
+        commitSha != null
+          ? `${REPO_URL}/blob/${commitSha}/${RESUME_SOURCE_PATH}`
+          : `${REPO_URL}/blob/main/${RESUME_SOURCE_PATH}`,
       fetchedAt: new Date().toISOString(),
-      commitSha: body.sha ?? null,
+      commitSha,
       fallback: false,
     },
     format: 'home-sh-resume-v1',
-    data: normalizeToml(TOML.parse(text) as Record<string, unknown>),
-  };
-}
+    data,
+  });
 
-async function readSnapshot(): Promise<ResumeSnapshot> {
-  return (await Bun.file(SNAPSHOT_PATH).json()) as ResumeSnapshot;
+  return snapshot;
 }
 
 async function writeSnapshot(snapshot: ResumeSnapshot): Promise<void> {
-  await mkdir('content', { recursive: true });
+  await mkdir(join(REPO_ROOT, 'content'), { recursive: true });
   const generatedText = `${JSON.stringify(snapshot, null, 2)}\n`;
   const fallbackText = `${JSON.stringify(
     {
@@ -95,28 +85,10 @@ async function writeSnapshot(snapshot: ResumeSnapshot): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  let snapshot: ResumeSnapshot | null = null;
-
-  try {
-    snapshot = await fetchResume();
-  } catch (error) {
-    console.warn(`resume sync: GitHub fetch failed; using fallback snapshot`);
-    if (error instanceof Error) {
-      console.warn(`resume sync: ${error.message}`);
-    }
-  }
-
-  if (!snapshot) {
-    snapshot = await readSnapshot();
-    snapshot.source.fallback = true;
-  }
-
+  const snapshot = readTomlFromSubmodule();
   await writeSnapshot(snapshot);
-
-  const mode = snapshot.source.fallback ? 'fallback' : 'synced';
-  console.log(
-    `resume sync: ${mode} ${snapshot.source.owner}/${snapshot.source.repo}:${snapshot.source.path}`,
-  );
+  const sha = snapshot.source.commitSha?.slice(0, 7) ?? 'unknown';
+  console.log(`resume sync: submodule ${OWNER}/${REPO} @ ${sha} → content/resume.generated.json`);
 }
 
 await main();

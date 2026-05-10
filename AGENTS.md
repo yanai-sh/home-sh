@@ -5,6 +5,7 @@
 ### Monorepo layout
 
 ```
+resume/      # git submodule → yanai-sh/resume (canonical resume.toml; bump pointer to ship CV changes)
 apps/
   site/        # Astro 6 app (Cloudflare adapter) — the deployed site
   wasm/
@@ -55,6 +56,26 @@ Canonical values live in **`src/design/tokens.ts`**. **`buildRootCss()`** in **`
 - **CI (dev)** (`.github/workflows/ci-dev.yml`): **`pull_request`** to **`dev`** — job **`CI (dev) / verify`** (same **`bun run verify`**; optional ruleset required check for the **`dev`** branch).
 - **Deploy** (`.github/workflows/deploy.yml`): **`push`** to **`dev`** or **`main`** (and **`workflow_dispatch`**) — runs **`verify`**, then **`wrangler versions upload`** (staging uses **`--name yanai-sh-staging`** on `dev`; production promotes on `main`). No **`pull_request`** trigger: avoids uploading twice when a PR merges into `dev`. Project-pinned wrangler 4.x; config from **`apps/site/dist/server/wrangler.json`** after build.
   - Deploy uses GitHub **Environments** (`staging`/`production`) for CI secrets; staging also runs smoke against the immutable preview URL via Cloudflare Access service token headers.
+
+### Workflow (`dev` / `main`)
+
+Two long-lived branches, two Workers: **`yanai-sh-staging`** on **`dev`**, **`yanai-sh`** on **`main`** (same `apps/site/wrangler.jsonc`; deploy passes **`--name yanai-sh-staging`** on **`dev`**). **Deploy** runs on **`push`** to **`dev`** or **`main`**, not on **`pull_request`** into **`dev`** (avoids uploading twice when a PR merges). Auto-tags: **patch** on **`dev`**, **minor** on **`main`**; **major** tags stay manual.
+
+Day-to-day: **`git checkout dev && git pull`** → **`git submodule update --init --recursive`** if **`resume/`** is empty → topic branch → **`bun run verify`** → PR → **`dev`** → QA staging preview (smoke supports Cloudflare Access via **`CF_ACCESS_CLIENT_ID`** / **`CF_ACCESS_CLIENT_SECRET`** on the **`staging`** Environment) → PR **`dev` → `main`**. **`CHANGELOG`**: keep **`[Unreleased]`** on **`dev`**; cut a dated **`[vX.(Y+1).0]`** section in a chore PR before **`dev` → `main`**. **`./scripts/gh-protect-main.sh`** (see **`README.md`**) documents **`main`** ruleset expectations.
+
+### Resume submodule and `RESUME_REPO_TOKEN`
+
+HTML **`/resume`**, home resume, and **`/workspace`** search use **`content/resume.generated.json`**, produced by **`bun run sync:resume`** from the pinned **`resume/`** submodule (**`yanai-sh/resume`**, **`resume.toml`**). Bump the submodule pointer to ship upstream CV changes, then **`bun run verify`**.
+
+**`/resume.pdf`** (GitHub Releases proxy) and local **`astro dev`** / **`preview`** when you need PDFs require **`RESUME_REPO_TOKEN`** — same PAT string as the **`staging`/`production`** GitHub Environment (Deploy syncs it to Cloudflare Secrets Store). Put it in **`apps/site/.dev.vars`** or as **`resume_repo_token`** in gitignored **`infra/secrets/worker-secrets.local.json`** (direnv); full secret shape: **`infra/secrets/README.md`**. **`/resume.pdf`** smoke only makes sense with **`SMOKE_BASE_URL`** on a deployed origin; local **`astro preview`** does not emulate Secrets Store bindings reliably.
+
+### Releases and rollback
+
+A production release is whatever lands on **`main`** (Deploy auto-tags the next **minor**). Before **`dev` → `main`**: move **`CHANGELOG`** **`[Unreleased]`** into **`## [vX.(Y+1).0] - YYYY-MM-DD`**, leave a fresh **`[Unreleased]`**. For a **major**, tag manually after merge (**`git tag -a vX.0.0`** …). Watch deploy: **`gh run watch`**. Smoke prod: **`bun run --cwd apps/site smoke`** with **`SMOKE_BASE_URL=https://yanai.sh`** when needed. If prod is wrong, **`ARCHITECTURE.md`** documents Worker rollback.
+
+### Commits, dependencies, style
+
+Use clear messages; **Conventional Commits** are optional. **Dependabot**: **`.github/dependabot.yml`** — monthly **Bun** + **GitHub Actions** (disable under repo security settings if you want fully manual bumps). **Biome** is the source of truth for JS/TS style (**`bun run fix`**). Astro: follow existing patterns under **`apps/site/src/components/`**.
 
 ### Optional maintainer tooling
 

@@ -1,3 +1,3 @@
-// Resume markup reads live `resume.toml` from yanai-sh/resume via middleware (`resume-remote.ts`)
-// plus `resume.generated.json` as fallback. No Astro content collections are used for resume.
+// Resume HTML is built from `content/resume.generated.json` (see `bun run sync:resume`, pinned `resume/` submodule).
+// No Astro content collections are used for resume.
 export const collections = {};

@@ -26,7 +26,7 @@ Fallback (not recommended): repo-level Actions secrets (**Settings → Secrets a
 | `RESEND_API_KEY` | Push Worker secrets → Secrets Store |
 | `CONTACT_FROM` | Push Worker secrets → Secrets Store |
 | `CONTACT_TO` | Push Worker secrets → Secrets Store |
-| `RESUME_REPO_TOKEN` | Push Worker secrets → Secrets Store (PAT: private resume repo + Releases) |
+| `RESUME_REPO_TOKEN` | Push Worker secrets → Secrets Store (PAT: private resume repo + Releases); **GitHub Actions** checkout uses the same secret to **`git clone`** the **`resume/`** submodule in CI / Deploy / Rollback |
 | `CF_ACCESS_CLIENT_ID` | Smoke against Access-protected preview URLs (Service Token; environment variable) |
 | `CF_ACCESS_CLIENT_SECRET` | Smoke against Access-protected preview URLs (Service Token secret) |
 
@@ -39,7 +39,7 @@ cp infra/secrets/worker-secrets.example.json infra/secrets/worker-secrets.local.
 # edit values; never commit this file
 ```
 
-With direnv allowed, `.envrc` exports keys from that JSON as `UPPER_SNAKE_CASE`. For Astro dev, prefer `apps/site/.dev.vars` (see `CONTRIBUTING.md`).
+With direnv allowed, `.envrc` exports keys from that JSON as `UPPER_SNAKE_CASE`. For Astro dev, prefer `apps/site/.dev.vars` (see `AGENTS.md`).
 
 **`resume_repo_token`:** paste the **same** PAT string as the **`RESUME_REPO_TOKEN`** GitHub Actions secret (the one **`push-secrets`** pushes to the Worker). One token for prod and local avoids “works in deploy / 502 in smoke” drift.
 

@@ -5,7 +5,7 @@ import { NOW, PROJECTS, STACK, USES } from "@config/workspace";
 import Layout from "@layouts/Layout.astro";
 import { resumeSnapshotForPage } from "@lib/resume-page-snapshot";
 
-const resumeSnapshot = resumeSnapshotForPage(Astro.locals);
+const resumeSnapshot = resumeSnapshotForPage();
 const resume = resumeSnapshot.data;
 const panes = [
   { id: "projects", label: "Projects" },

@@ -1,6 +1,6 @@
 # Roadmap
 
-Status date: 2026-05-04
+Status date: 2026-05-10
 
 This is the planning source of truth for `yanai.sh`. It consolidates the old
 split design and execution notes into one document. `ARCHITECTURE.md` records
@@ -79,7 +79,8 @@ The current thesis is a hybrid delivery model:
 - A Cloudflare Worker (Workers with Static Assets) serves the site.
 - Cloudflare Workers handle contact and telemetry.
 - D1 stores coarse aggregate telemetry.
-- Structured content feeds all resume surfaces.
+- Structured resume content feeds HTML surfaces from a **pinned git submodule**
+  plus build artifacts; the PDF path uses **GitHub Releases** separately.
 
 Boundary decisions:
 
@@ -109,20 +110,18 @@ Shipped foundation:
 
 Near-term gaps, in priority order:
 
-- Content sources need schemas, real data, and route integration.
-- Resume data should come from `https://github.com/yanai-sh/resume`, with
-  `yanai-sh` as the GitHub owner.
-- `/` needs a progressive landing contract: SSR fallback first, feature-detected
-  WASM layer second.
-- `/resume.pdf` must move from backlog to launch requirement because the first
-  viewport will expose `Download resume`.
-- Brand assets, README references, and current public paths need a consistency
-  pass.
-- End-to-end checks need to cover Cloudflare preview behavior, not only unit
-  tests and Astro diagnostics.
-- Contact Worker needs production hardening before relying on it.
-- `/workspace` needs pane navigation, reduced-motion/list view, and real content.
-- Telemetry needs production wiring after `/workspace` has a stable pane model.
+- **`/` progressive contract** — SSR resume block is solid; keep WASM/canvas as
+  lazy enhancement with strict size and motion budgets.
+- **Brand / path consistency** — README, OG assets, and public routes occasionally
+  drift; periodic pass.
+- **Preview and smoke** — extend Playwright beyond landing + workspace where ROI
+  is clear (telemetry slots, DNT paths).
+- **Contact** — prod-only origin by design; document and keep Turnstile + Resend
+  + rate limit monitored.
+- **`/workspace`** — pane navigation, reduced-motion / list view, and richer pane
+  content remain the main interactive milestone.
+- **Telemetry** — coarse aggregates shipped; tune retention and copy in-pane as
+  usage grows.
 
 ## Operating Rules
 
@@ -140,41 +139,41 @@ Near-term gaps, in priority order:
 
 ## Content Pipeline
 
-Resume information comes from the canonical upstream repository:
-
-```text
-https://github.com/yanai-sh/resume
-```
+Resume **HTML** (home band, `/resume`, `/workspace` search index input) comes
+from the canonical upstream repo as a **git submodule** at `resume/` →
+`yanai-sh/resume` on a **pinned commit**.
 
 Build-time flow:
 
 ```text
-yanai-sh/resume:resume.toml
-  -> sync script
-  -> checked-in fallback snapshot
-  -> local normalized resume data
-  -> Astro content/schema validation
-  -> homepage fallback summary
-  -> /resume
-  -> /resume.pdf
-  -> search index entries
+resume/resume.toml (submodule pin)
+  -> bun run sync:resume (scripts/sync-resume.ts)
+  -> normalizeToml + Zod (ResumeSnapshotSchema)
+  -> content/resume.generated.json   # bundled SSR + client search
+  -> content/resume.snapshot.json      # redacted-source test fixture
+  -> /, /resume, /workspace search
 ```
+
+**`/resume.pdf`** is **not** the same artifact path: the Worker proxies the
+latest **`yanai-sh/resume`** GitHub **Release** asset matching
+`YanaiKlugman_CV_*.pdf`, using **`RESUME_REPO_TOKEN`**. HTML and PDF can
+therefore differ until a release is cut for a given TOML revision — that is an
+explicit product choice.
 
 Rules:
 
-- The site must build when GitHub is unavailable if the fallback snapshot is
-  valid.
-- The upstream resume repository is a Rust/TOML/Tectonic project. Consume
-  `resume.toml` from the repository root; do not infer JSON Resume unless the
-  upstream repo changes format.
-- The sync path must be portable. Do not prefer a local checkout; use GitHub
-  first, then the checked-in fallback snapshot.
-- The synced data must normalize into one local schema before rendering.
-- `/resume`, `/resume.pdf`, and homepage fallback content must use the same
-  normalized source.
-- PDF generation should be deterministic and run in CI once enabled.
-- Local content can supplement the resume source, but duplicated resume facts
-  should be avoided.
+- **`git submodule update --init --recursive`** is required on clone and in CI
+  (`submodules: recursive` on checkout). **`bun run verify`** runs
+  **`sync:resume`** first; a missing submodule fails the build (no silent stale
+  HTML). For a **private** `yanai-sh/resume`, CI/deploy/rollback checkouts pass
+  **`token: ${{ secrets.RESUME_REPO_TOKEN }}`** so the runner can clone the
+  submodule (same PAT as **`push-secrets`** / Worker **`RESUME_REPO_TOKEN`**).
+- The upstream repo is Rust/TOML/Tectonic. Consume **`resume.toml`** at the repo
+  root; do not infer JSON Resume unless upstream changes format.
+- One **normalized** schema (`home-sh-resume-v1`) before any Astro render or
+  bundle import.
+- Local site copy (e.g. **`HOME_RESUME_SECTION_DECK`**) may supplement layout
+  copy; avoid duplicating resume **facts** outside `resume.toml`.
 
 ## Route Model
 
@@ -216,13 +215,15 @@ Layout direction:
 - Desktop: compact identity/provenance rail plus main chronological content.
 - Mobile: single column with anchor navigation.
 - Sections: summary, experience, projects/evidence, skills, education, links.
-- Provenance: source repo, last sync date, fallback snapshot indicator.
+- Provenance: submodule URL at pinned SHA (from `resume.generated.json`), or
+  redacted “fallback snapshot” when using the stripped test fixture only.
 
 Acceptance:
 
 - Works without JavaScript.
 - Prints cleanly.
-- Uses the same normalized resume source as PDF.
+- Uses the same normalized resume source as the homepage HTML band; PDF
+  remains the Release proxy described above.
 - Avoids decorative template chrome.
 
 ### `/resume.pdf`
@@ -307,7 +308,7 @@ Security and privacy:
 | Priority | Milestone | Why it comes here |
 | --- | --- | --- |
 | P0 | Consolidate Planning Docs | One roadmap avoids conflicting implementation instructions. |
-| P1 | Content and Resume Sync | Resume data must exist before fallback, `/resume`, and PDF can ship. |
+| P1 | Content and Resume Sync | **Largely shipped** — submodule + `sync:resume` + Zod + `resume.generated.json`; keep pins fresh and docs aligned. |
 | P2 | WASM Landing and Static Resume Fallback | The first screen defines the product while keeping resume access reliable. |
 | P3 | Release Guardrails | Preview, CI, rollback, and smoke tests should harden before production Workers. |
 | P4 | Contact Pipeline | Contact depends on the public shell and release path. |
@@ -334,25 +335,31 @@ Acceptance criteria:
 
 ### Milestone 1: Content and Resume Sync
 
-Goal: make structured content the source of truth for the site and future PDF.
+**Status:** shipped for HTML (submodule + `sync:resume` + bundled snapshot).
+Optional follow-ups remain (workspace pane TOML/JSON, extra content collections).
 
-Scope:
+Goal: structured **`resume.toml`** drives all **HTML** resume surfaces from one
+normalized snapshot per deploy.
 
-- Add Astro content schemas for site metadata, resume, workspace panes, and any
-  project entries.
-- Add a build-time resume sync from `https://github.com/yanai-sh/resume`.
-- Normalize pulled resume data into the local schema.
-- Keep a checked-in fallback snapshot.
-- Fill `content/site.toml` and `content/workspace/*.toml` with useful data.
-- Generate data for homepage fallback, `/resume`, `/resume.pdf`, and search.
-- Add focused tests for schema transforms if custom parsing appears.
+Scope (done):
+
+- **`resume/`** git submodule → **`yanai-sh/resume`**, pinned per site commit.
+- **`bun run sync:resume`** reads **`resume.toml`**, normalizes, validates with
+  **`ResumeSnapshotSchema`**, writes **`content/resume.generated.json`** and
+  **`content/resume.snapshot.json`**.
+- **`embeddedResumeSnapshot()`** — no per-request GitHub Contents fetch for HTML.
+- Unit coverage for schema + embedded snapshot.
+
+Scope (optional / later):
+
+- Astro **content collections** for non-resume structured content if/when
+  panes deserve first-class files (`content/site.toml`, workspace data, etc.).
+- More tests around edge cases in **`normalizeToml`** if upstream schema grows.
 
 Acceptance criteria:
 
-- Invalid content fails `bun run typecheck` or a focused test.
-- Resume sync uses GitHub owner `yanai-sh` and repository `resume`.
-- Failed GitHub fetch does not fail the build when the fallback snapshot is
-  valid.
+- Invalid **`resume.toml`** fails **`bun run sync:resume`** / **`verify`**.
+- CI checks out **`submodules: recursive`** so **`verify`** always sees the pin.
 - Empty optional sections render as absent UI, not blank panels.
 
 ### Milestone 2: WASM Landing and Static Resume Fallback
@@ -368,8 +375,9 @@ Scope:
 - Lazy-load the WASM visual scene only after feature detection passes.
 - Keep the scene graceful under unsupported WASM, unsupported JS,
   `prefers-reduced-motion`, small screens, and no-script browsing.
-- Render `/resume` from the synced snapshot.
-- Generate or stage `/resume.pdf` from the same snapshot.
+- Render `/resume` from the bundled snapshot (same pin as **`sync:resume`**).
+- **`/resume.pdf`** continues to stream from **GitHub Releases** (not the TOML
+  snapshot file).
 - Align README paths with current repo layout and public assets.
 - Audit `Layout.astro`, `middleware.ts`, and client script loading for CSP.
 
@@ -493,7 +501,8 @@ Defer for now:
 | Homepage WASM forces broader COOP/COEP scope | Prefer a non-SAB homepage scene; make shared-memory headers an explicit decision if needed. |
 | `/workspace` becomes redundant | Keep `/workspace` focused on deeper panes, search, telemetry, and inspectable systems behavior. |
 | SharedArrayBuffer headers break third-party assets | Scope COOP/COEP to `/workspace` unless a documented decision changes it. |
-| GitHub resume fetch fails | Build from checked-in fallback snapshot. |
+| Submodule not initialized | **`verify`** fails until `git submodule update --init --recursive`; CI must use `submodules: recursive`. |
+| HTML vs PDF version skew | Cut a **`yanai-sh/resume`** release when the PDF should match a new TOML pin. |
 | Contact endpoint attracts spam | Use Turnstile, rate limiting, honeypot fields, and short retention. |
 | Telemetry becomes invasive | Store aggregates and coarse client data only; avoid IPs and full UA strings. |
 | Design drifts into template styling | Use project tokens, 1px borders, dense layout, and restrained actions. |
