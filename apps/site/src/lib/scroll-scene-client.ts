@@ -135,6 +135,7 @@ export function mountScrollScene(): void {
 
   function onWheelChapterHint(event: WheelEvent) {
     if (hasResumeFlow) return;
+    if (event.defaultPrevented) return;
     if (Math.abs(event.deltaY) < 0.5) return;
     const now = performance.now();
     const elapsed = Math.max(1, now - lastGestureTime);
