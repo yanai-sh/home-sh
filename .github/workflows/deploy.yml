@@ -44,6 +44,11 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Explicit so tag push + release use the job token even when `checkout`
+    # used a different PAT for private submodules.
+    permissions:
+      contents: write
+      pull-requests: write
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     outputs:
       staging_preview_url: ${{ steps.upload.outputs.preview_url }}
@@ -166,8 +171,14 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Push git tag
+        env:
+          TAG_PUSH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # checkout used RESUME_REPO_TOKEN for submodules; that remote must not
+          # be used for pushes to this repo (fine-grained PATs often lack
+          # contents:write here → 403 on git push).
+          git remote set-url origin "https://x-access-token:${TAG_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git config user.email "deploy@yanai.sh"
           git config user.name "deploy-bot"
           git tag -a "${{ steps.tag.outputs.next }}" -m "${{ steps.tag.outputs.next }}"
@@ -181,7 +192,7 @@ jobs:
         # current release. Dev tags are intentionally skipped — staging
         # versions aren't releases.
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           gh release create "${{ steps.tag.outputs.next }}" \
@@ -225,7 +236,7 @@ jobs:
       - name: Comment staging preview on linked PRs
         if: github.ref != 'refs/heads/main'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           PREVIEW_URL="${{ steps.upload.outputs.preview_url }}"
