@@ -7,10 +7,10 @@
 #
 #   Push to `main` → uploads + promotes to 100% on the production Worker
 #   (yanai-sh, bound to yanai.sh via Custom Domain). Git tag + GitHub Release
-#   use **`v0.X.Y.Z`** only: leading **0** = epoch reset; **X.Y.Z** carry the
-#   prior marketing triple from legacy **`vX.Y.Z`** tags. Next tag after **`v2.7.0`**
-#   is **`v0.2.7.1`**. Ongoing **patch** bumps **Z**; **workflow_dispatch** can
-#   set **minor** (bump **Y**, Z=0) or **major** (bump **X**, Y=Z=0).
+#   use **SemVer** on the **0.y.z pre-1.0** line: next tag after any legacy **`v1+.*`**
+#   release (e.g. **`v2.7.0`**) is **`v0.1.0`** (intentional hard reset). Then
+#   **patch** bumps the patch digit; **workflow_dispatch** **minor** / **major**
+#   bump **0.minor** or promote to **`v1.0.0`**.
 #
 # Each Worker has its own ~10-version retention, so dev pushes never
 # displace prod rollback options. Rollback (.github/workflows/rollback.yml)
@@ -23,7 +23,7 @@ on:
   # Staging only on `push` to `dev` (not `pull_request`): a PR preview deploy
   # plus the post-merge push would upload twice for the same merge. Every push
   # updating `refs/heads/dev` runs staging (Worker label only); `main` runs prod
-  # upload + promote + `v0.*.*.*` git tag + release. No path filters.
+  # upload + promote + SemVer `v0.y.z` (or `v1.0.0`+) git tag + release. No path filters.
   push:
     branches: [main, dev]
   workflow_dispatch:
@@ -34,7 +34,7 @@ on:
         default: "false"
         type: string
       version_bump:
-        description: "Production bump for v0.X.Y.Z (main only; pushes = patch on Z)"
+        description: "SemVer bump (main only; pushes = patch on 0.y.z)"
         required: false
         default: patch
         type: choice
@@ -146,15 +146,17 @@ jobs:
 
       - name: Compute next version tag
         id: tag
-        # See file header: `v0.X.Y.Z` vs legacy `vM.m.p`, dev `dev-<run_id>`.
+        # SemVer `v0.y.z` on main; legacy `v1+.*` → next `v0.1.0`; dev → `dev-<run_id>`.
         env:
           VERSION_BUMP: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.version_bump || 'patch' }}
         run: |
           set -euo pipefail
-          LAST4="$(git tag -l | grep -E '^v0\.[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
-          LEGACY="$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -Ev '^v0\.[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
-          if [ -n "$LAST4" ]; then
-            LAST="$LAST4"
+          # Pre-1.0 line only: v0.MINOR.PATCH (three segments, leading 0).
+          LAST0="$(git tag -l | grep -E '^v0\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
+          # Legacy bloated line: v1.0.0, v2.7.0, … (never v0.x.y — that is the modern line).
+          LEGACY="$(git tag -l | grep -E '^v[1-9][0-9]*\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
+          if [ -n "$LAST0" ]; then
+            LAST="$LAST0"
           elif [ -n "$LEGACY" ]; then
             LAST="$LEGACY"
           else
@@ -171,20 +173,18 @@ jobs:
             exit 0
           fi
 
-          if [ -n "$LAST4" ]; then
-            VERSION="${LAST#v}"
-            IFS='.' read -r _E A B C <<< "$VERSION"
+          if [ -n "$LAST0" ]; then
+            VERSION="${LAST0#v}"
+            IFS='.' read -r _Z MINOR PATCH <<< "$VERSION"
             case "${VERSION_BUMP}" in
-              major) NEXT="v0.$((A + 1)).0.0" ;;
-              minor) NEXT="v0.${A}.$((B + 1)).0" ;;
-              *) NEXT="v0.${A}.${B}.$((C + 1))" ;;
+              major) NEXT="v1.0.0" ;;
+              minor) NEXT="v0.$((MINOR + 1)).0" ;;
+              *) NEXT="v0.${MINOR}.$((PATCH + 1))" ;;
             esac
           elif [ -n "$LEGACY" ]; then
-            VERSION="${LEGACY#v}"
-            IFS='.' read -r M m p <<< "$VERSION"
-            NEXT="v0.${M}.${m}.$((p + 1))"
+            NEXT="v0.1.0"
           else
-            NEXT="v0.0.0.1"
+            NEXT="v0.1.0"
           fi
 
           PREV="${LAST:-<none>}"
@@ -199,7 +199,7 @@ jobs:
         # apps/site/package.json. Extra args after `--` are forwarded to
         # wrangler. `--message` annotates each version with the commit
         # subject so the Cloudflare dashboard's version history is
-        # human-readable. `--tag` records the new version (e.g. v0.2.7.4 or dev-…).
+        # human-readable. `--tag` records the new version (e.g. v0.1.3 or dev-…).
         # On dev pushes, `--name yanai-sh-staging` overrides the Worker
         # name so the upload lands on a separate script with its own
         # ~10-version retention. Bindings (KV, Secrets Store, D1, rate
