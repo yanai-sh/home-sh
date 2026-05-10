@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Removed
+
+### Changed
+
+## [2.6.0] - 2026-05-10
+
+### Added
+
 - **Home hero Rust lattice** — lazy-loaded **`/wasm/canvas`** behind the headline (idle after load, visibility-gated rAF, coarse-pointer frame skip); shared **`loadCanvasWasm()`** with **`/workspace`** so the module warms once per session.
 - **Panda `heroCta` recipe** + **`colors.hero.*`** tokens — homepage resume CTAs use generated classes from **`@yanai-sh/ui-system`**.
 - **Opt-in `ClientRouter`** on **`/`** only (Astro view transitions / client routing without affecting **`/workspace`** focus smoke).
