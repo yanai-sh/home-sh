@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Home hero Rust lattice** — lazy-loaded **`/wasm/canvas`** behind the headline (idle after load, visibility-gated rAF, coarse-pointer frame skip); shared **`loadCanvasWasm()`** with **`/workspace`** so the module warms once per session.
+- **Panda `heroCta` recipe** + **`colors.hero.*`** tokens — homepage resume CTAs use generated classes from **`@yanai-sh/ui-system`**.
+- **Opt-in `ClientRouter`** on **`/`** only (Astro view transitions / client routing without affecting **`/workspace`** focus smoke).
+
 - **`infra/README.md`** + **`infra/secrets/`** — operator docs for secrets layout, workflows, and optional Terraform Cloud backend (`tofu/backend.tf.example`).
 - **`scripts/optional/bitwarden-to-secrets.ts`** — optional Bitwarden CLI importer (not used by CI); run via **`bun run optional:bitwarden-to-secrets`**.
 - **`.github/workflows/push-worker-secrets.yml`** — `workflow_dispatch` to sync the Workers Secrets Store from GitHub **Environment** secrets (fallback: repo secrets).
@@ -22,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Astro **content collection** for resume — **`getEntry('resume', 'current')`** replaced by **`Astro.locals.resumeSnapshot`** populated in middleware (`resume-remote.ts`).
 
 ### Changed
+
+- **Contact section** — higher fixed anchor with scroll scene, stronger panel/field contrast, Panda contact surface tokens tweaked.
+- **Hero wordmark** — accent segment uses **`var(--colors-accent)`** instead of a hard-coded hex.
 
 - **Bitwarden helper** — moved to **`scripts/optional/`**; npm script is **`optional:bitwarden-to-secrets`**. CI and **`verify`** never invoke it; portable secrets remain GitHub Actions + gitignored JSON only.
 

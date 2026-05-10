@@ -1,17 +1,6 @@
+import { loadCanvasWasm } from '@lib/load-canvas-wasm';
 import type { SearchHit } from '@lib/search-client';
 import { createSharedState } from '@lib/shared-state';
-
-interface CanvasModule {
-  default(input?: RequestInfo | URL | WebAssembly.Module): Promise<unknown>;
-  render_lattice(
-    canvas: HTMLCanvasElement,
-    width: number,
-    height: number,
-    mouseXNorm: number,
-    mouseYNorm: number,
-    timeMs: number,
-  ): number;
-}
 
 interface BridgeModule {
   default(input?: RequestInfo | URL | WebAssembly.Module): Promise<unknown>;
@@ -149,11 +138,9 @@ async function mountCanvas(
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const wasmStart = performance.now();
-  let mod: CanvasModule;
+  let mod: Awaited<ReturnType<typeof loadCanvasWasm>>;
   try {
-    const moduleUrl = new URL('/wasm/canvas/canvas.js', globalThis.location.href).href;
-    mod = (await import(/* @vite-ignore */ moduleUrl)) as unknown as CanvasModule;
-    await mod.default();
+    mod = await loadCanvasWasm();
     setStatus(targets.wasm, 'ready');
     window.dispatchEvent(
       new CustomEvent('telemetry:wasm-ready', { detail: { ms: performance.now() - wasmStart } }),
