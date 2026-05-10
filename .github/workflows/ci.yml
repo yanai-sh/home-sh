@@ -29,8 +29,8 @@ jobs:
           # Private `yanai-sh/resume` submodule — default `GITHUB_TOKEN` cannot clone it.
           token: ${{ secrets.RESUME_REPO_TOKEN }}
 
-      # Pinned to v3.0.2 release (supply chain); bump when changing filter behavior.
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+      # Pinned release (supply chain); v4+ uses Actions node24 runtime (node20 deprecated).
+      - uses: dorny/paths-filter@v4.0.1
         id: paths
         with:
           filters: |
