@@ -17,6 +17,8 @@ Preferred: **GitHub Environments** to scope deploy credentials.
 
 Fallback (not recommended): repo-level Actions secrets (**Settings → Secrets and variables → Actions**) if you don't use environments.
 
+**Dependabot PRs** (version bumps to `main`) only receive **Dependabot** secrets, not Actions or environment secrets ([docs](https://docs.github.com/en/code-security/dependabot/troubleshooting-dependabot/troubleshooting-dependabot-on-github-actions#accessing-secrets)). Add **`RESUME_REPO_TOKEN`** again under **Settings → Secrets and variables → Dependabot** (same PAT as `staging` / `production`) so **`yanai-sh / Verify (reusable)** can clone the private **`resume/`** submodule. Optional: add **`PUBLIC_TURNSTILE_SITE_KEY`** as a Dependabot **repository variable** if verify needs it and it is only defined on an environment today.
+
 | Secret | Used by |
 |--------|---------|
 | `CLOUDFLARE_API_TOKEN` | Deploy, infra plan, token probe, push-secrets workflow |

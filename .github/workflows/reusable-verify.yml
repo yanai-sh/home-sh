@@ -24,7 +24,10 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-          token: ${{ secrets.RESUME_REPO_TOKEN }}
+          # Dependabot PRs only see Dependabot secrets (not Actions/Environment). Add `RESUME_REPO_TOKEN`
+          # under Settings → Secrets and variables → Dependabot (same PAT as staging). Otherwise fall back
+          # to `github.token` so checkout is valid; private `resume/` may still need the Dependabot secret.
+          token: ${{ secrets.RESUME_REPO_TOKEN || github.token }}
 
       - name: Detect changed paths
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
