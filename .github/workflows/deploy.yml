@@ -269,7 +269,7 @@ jobs:
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
-          bun -e '
+          bun - <<'EOF'
           const base = process.env.SMOKE_BASE_URL;
           const id = process.env.CF_ACCESS_CLIENT_ID ?? "";
           const secret = process.env.CF_ACCESS_CLIENT_SECRET ?? "";
@@ -295,7 +295,7 @@ jobs:
           if (looksLikeAccess) {
             throw new Error("Preflight looks like a Cloudflare Access login/deny page. Ensure the Access policy allows this Service Token, and CF_ACCESS_CLIENT_ID/SECRET match that token.");
           }
-          '
+          EOF
       - name: Smoke against staging preview URL
         env:
           SMOKE_BASE_URL: ${{ needs.publish.outputs.staging_preview_url }}

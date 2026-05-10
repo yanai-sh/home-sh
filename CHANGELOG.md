@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Deploy smoke preflight** — run inline **`bun`** script via heredoc so **actionlint** / shellcheck no longer flags SC2016 on **`deploy.yml`**.
+
 ## [2.6.0] - 2026-05-10
 
 ### Added
