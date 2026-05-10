@@ -18,11 +18,11 @@
     "version-deploy": "wrangler versions deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^13.3.1",
+    "@astrojs/cloudflare": "^13.5.0",
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "@fontsource/ibm-plex-serif": "^5.2.7",
     "@yanai-sh/ui-system": "workspace:*",
-    "astro": "^6.2.2",
+    "astro": "^6.3.1",
     "gsap": "^3.15.0",
     "three": "^0.184.0"
   },
