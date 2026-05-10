@@ -3,9 +3,13 @@
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) for **library** dependencies. **Site release tags** use SemVer **`v0.y.z`** (pre-1.0); the first tag after any legacy **`v1+.*`** line is **`v0.1.0`** (hard reset).
 
 ## [Unreleased]
+
+### Changed
+
+- **Deploy** — production **git**/**GitHub Release** tags are SemVer **`v0.y.z`**. The next tag after any legacy **`v1+.*`** release (e.g. **`v2.7.0`**) is **`v0.1.0`** (hard reset). **Staging** uploads use **`dev-<run_id>`** only (no git tags on **`dev`**). **`workflow_dispatch`** on **`main`**: **patch** / **minor** on **`0.y.z`**, or **major** → **`v1.0.0`**. If an experimental **four-part** **`v0.*.*.*`** tag exists locally or on the remote, delete it so **`git tag -l`** ordering stays unambiguous.
 
 ## [2.7.0] - 2026-05-10
 
