@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Deploy** — **`dev`** uploads label Worker versions as **`dev-<run_id>`** (no git tags on staging). **`main`** deploys use **patch** semver tags (`vX.Y.(Z+1)`) + GitHub Release instead of always bumping **minor**; **workflow_dispatch** on **`main`** adds **`version_bump`** (**patch** / **minor** / **major**) for intentional story releases.
+- **Dependabot** — **monthly** schedule, **Bun** updates grouped (runtime / tooling / root scripts), lower concurrent PR limits.
+
 ## [2.7.0] - 2026-05-10
 
 ### Added

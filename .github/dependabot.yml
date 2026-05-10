@@ -1,20 +1,39 @@
 # Native GitHub dependency PRs (no Renovate / third-party app).
-# Weekly bumps + grouped Actions PRs keep a solo maintainer inbox small.
-# Security advisories still surface in the Security tab.
+# Monthly cadence + Bun groups keep PR volume low; security advisories
+# still surface in the Security tab.
 version: 2
 updates:
   - package-ecosystem: bun
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 8
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      runtime-ui:
+        patterns:
+          - "astro"
+          - "@astrojs/*"
+          - "three"
+          - "gsap"
+          - "@fontsource/*"
+      tool-types-lint:
+        patterns:
+          - "wrangler"
+          - "@biomejs/*"
+          - "@pandacss/*"
+          - "@types/*"
+          - "typescript"
+      root-scripts:
+        patterns:
+          - "lefthook"
+          - "playwright"
     labels:
       - dependencies
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 3
+      interval: monthly
+    open-pull-requests-limit: 2
     groups:
       github-actions:
         patterns:
