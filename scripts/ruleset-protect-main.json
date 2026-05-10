@@ -29,8 +29,12 @@
         "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false,
         "required_status_checks": [
-          { "context": "yanai-sh / verify (ubuntu-latest)" },
-          { "context": "yanai-sh / verify (macos-latest)" }
+          {
+            "context": "yanai-sh / verify (ubuntu-latest) / yanai-sh / verify — run"
+          },
+          {
+            "context": "yanai-sh / verify (macos-latest) / yanai-sh / verify — run"
+          }
         ]
       }
     }

@@ -8,7 +8,7 @@
 # Requires: gh CLI, admin on repo, `repo` scope.
 
 set -euo pipefail
-REPO="${GITHUB_REPOSITORY:-yanai-sh/yanai-sh.github.io}"
+REPO="${GITHUB_REPOSITORY:-yanai-sh/home-sh}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> POST rulesets on ${REPO}"
