@@ -1,21 +1,61 @@
 ---
+/** Homepage resume band — section rhythm inspired by career timeline / project grid patterns (e.g. nbakh16/career-portfolio-template); copy and data from `resume.toml` via snapshot. */
+import { HOME_RESUME_SECTION_DECK } from "@config/site";
 import { resumeSnapshotForPage } from "@lib/resume-page-snapshot";
 
-const resume = resumeSnapshotForPage(Astro.locals).data;
+const resume = resumeSnapshotForPage().data;
 const primaryExperience = resume.experience.slice(0, 4);
-const skillGroups = Object.entries(resume.skills).slice(0, 6);
-const fitSnapshot = [
-  "Systems integration",
-  "Infrastructure & DevOps",
-  "Python / C++ / Linux",
-  "Forward deployment",
-  "Customer-facing engineering",
-];
+const skillGroups = Object.entries(resume.skills);
+
+/** Skill pillars from `resume.toml` plus distinct role tags — no orphaned hard-coded fit copy. */
+const skillGroupNames = Object.keys(resume.skills);
+const seenChip = new Set<string>(skillGroupNames.map((s) => s.toLowerCase()));
+const focusChips: string[] = [...skillGroupNames];
+for (const job of primaryExperience) {
+  if (focusChips.length >= 8) break;
+  for (const tag of job.skills) {
+    if (focusChips.length >= 8) break;
+    const key = tag.toLowerCase();
+    if (seenChip.has(key)) continue;
+    seenChip.add(key);
+    focusChips.push(tag.charAt(0).toUpperCase() + tag.slice(1));
+  }
+}
+
 const slugify = (value: string) =>
   value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+
+function truncateTeaser(text: string, max: number): string {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > Math.floor(max * 0.55) ? cut.slice(0, lastSpace) : cut).trim()}…`;
+}
+
+type Job = (typeof resume.experience)[number];
+
+function jobPresentation(job: Job): { teaser: string; bullets: string[] } {
+  const hs = job.highlights ?? [];
+  const summary = job.summary.trim();
+  if (summary) {
+    return { teaser: truncateTeaser(summary, 240), bullets: hs };
+  }
+  if (!hs.length) return { teaser: "", bullets: [] };
+  const lead = hs[0] ?? "";
+  return {
+    teaser: truncateTeaser(lead, 240),
+    bullets: hs.slice(1),
+  };
+}
+
+/** Social / profile links from resume payload (drops self-site pill). */
+const linkPills = resume.links.filter((l) => l.label.trim() && l.url.trim() && !/yanai\.sh/i.test(l.label));
+
+const showcasedProjects = resume.projects.slice(0, 2);
 ---
 
 <section
@@ -30,102 +70,184 @@ const slugify = (value: string) =>
   <div class="resume-inner">
     <header class="resume-intro">
       <p class="chapter-kicker">02 / resume</p>
+      <p class="resume-section-deck">{HOME_RESUME_SECTION_DECK}</p>
       <h2 id="resume-showcase-title">{resume.header.name}</h2>
       <p class="headline">{resume.header.headline}</p>
       <p class="summary">{resume.summary}</p>
 
-      <ul class="fit-snapshot" aria-label="Candidate fit snapshot">
-        {fitSnapshot.map((item) => <li>{item}</li>)}
+      <ul class="fit-snapshot" aria-label="Technical focus derived from résumé">
+        {focusChips.map((item) => (
+          <li>{item}</li>
+        ))}
       </ul>
 
-      <dl class="resume-meta" aria-label="Resume metadata">
-        <div>
-          <dt class="sr-only">Location</dt>
-          <dd>{resume.header.location}</dd>
-        </div>
-        <div>
-          <dt class="sr-only">Email</dt>
-          <dd><a href={`mailto:${resume.header.email}`}>{resume.header.email}</a></dd>
-        </div>
-      </dl>
+      <div class="resume-intro-footer">
+        <dl class="resume-meta" aria-label="Résumé contact">
+          <div>
+            <dt class="sr-only">Location</dt>
+            <dd>{resume.header.location}</dd>
+          </div>
+          <div>
+            <dt class="sr-only">Email</dt>
+            <dd>
+              <a href={`mailto:${resume.header.email}`}>{resume.header.email}</a>
+            </dd>
+          </div>
+        </dl>
+
+        {
+          linkPills.length ? (
+            <nav class="resume-quick-links" aria-label="Profiles and links">
+              <ul>
+                {linkPills.map((link) => (
+                  <li>
+                    <a href={link.url} rel="noopener noreferrer" target="_blank">
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ) : null
+        }
+      </div>
     </header>
 
-    <ol class="resume-timeline" aria-label="Career timeline">
-      {primaryExperience.map((job, index) => (
-        <li class={`career-card ${index % 2 === 0 ? "career-card--left" : "career-card--right"}`}>
-          <article>
-            <span class="timeline-dot" aria-hidden="true"></span>
-            <div class="career-card-body">
-              <p class="period">{job.period}</p>
-              <h3>{job.role}</h3>
-              <p class="company-line">
-                {job.company}
-                {job.location ? <span class="company-location"> / {job.location}</span> : null}
-              </p>
-              {job.subtitle ? <p class="flavor-line">{job.subtitle}</p> : null}
-              <ul class="career-highlights">
-                {job.highlights.slice(0, 3).map((highlight) => (
-                  <li>{highlight}</li>
-                ))}
-              </ul>
-              {job.skills.length > 0 ? (
-                <div class="tag-list" aria-label={`${job.company} skills`}>
-                  {job.skills.map((skill) => <span>{skill}</span>)}
-                </div>
-              ) : null}
-            </div>
-          </article>
-        </li>
-      ))}
-    </ol>
+    <section class="resume-timeline-shell" aria-labelledby="resume-career-heading">
+      <div class="resume-timeline-heading">
+        <p class="timeline-eyebrow">Experience</p>
+        <h3 id="resume-career-heading">Roles & impact</h3>
+        <p class="timeline-deck muted">Representative engagements — full detail on <a href="/resume">the résumé page</a>.</p>
+      </div>
+
+      <ol class="resume-timeline" aria-label="Career timeline">
+        {
+          primaryExperience.map((job, index) => {
+            const { teaser, bullets } = jobPresentation(job);
+            return (
+              <li class={`career-card ${index % 2 === 0 ? "career-card--left" : "career-card--right"}`}>
+                <article>
+                  <span class="timeline-dot" aria-hidden="true" />
+                  <div class="career-card-body">
+                    <p class="period">{job.period}</p>
+                    <h3>{job.role}</h3>
+                    <p class="company-line">
+                      {job.company}
+                      {job.location ? <span class="company-location"> / {job.location}</span> : null}
+                    </p>
+                    {job.subtitle ? <p class="flavor-line">{job.subtitle}</p> : null}
+                    {teaser ? <p class="job-teaser">{teaser}</p> : null}
+                    {
+                      bullets.length ? (
+                        <ul class="career-highlights">
+                          {bullets.slice(0, 5).map((highlight) => (
+                            <li>{highlight}</li>
+                          ))}
+                        </ul>
+                      ) : null
+                    }
+                    {
+                      job.skills.length ? (
+                        <div class="tag-list" aria-label={`${job.company} skills`}>
+                          {job.skills.map((skill) => (
+                            <span>{skill}</span>
+                          ))}
+                        </div>
+                      ) : null
+                    }
+                  </div>
+                </article>
+              </li>
+            );
+          })
+        }
+      </ol>
+    </section>
 
     <div class="resume-lower">
-      {resume.projects.length > 0 ? (
-        <section class="resume-panel" aria-labelledby="resume-project-title">
-          <p class="panel-index">03</p>
-          <h3 id="resume-project-title">Projects</h3>
-          {resume.projects.slice(0, 1).map((project) => (
-            <article>
-              <h4>{project.name}</h4>
-              {project.description ? <p class="meta">{project.description}</p> : null}
-              <ul>
-                {project.highlights.map((highlight) => (
-                  <li>{highlight}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
-        </section>
-      ) : null}
+      {
+        showcasedProjects.length ? (
+          <section class="resume-panel resume-panel--projects" aria-labelledby="resume-project-title">
+            <p class="panel-index">03</p>
+            <div class="panel-heading">
+              <h3 id="resume-project-title">Projects</h3>
+              <p class="panel-deck muted">Shipped systems and tooling called out on the canonical CV.</p>
+            </div>
+            <div class="project-grid">
+              {
+                showcasedProjects.map((project) => (
+                  <article class="project-card">
+                    <h4>{project.name}</h4>
+                    {project.description ? <p class="project-role">{project.description}</p> : null}
+                    <ul class="project-highlights">
+                      {project.highlights.map((highlight) => (
+                        <li>{highlight}</li>
+                      ))}
+                    </ul>
+                  </article>
+                ))
+              }
+            </div>
+          </section>
+        ) : null
+      }
 
-      <section class="resume-panel" aria-labelledby="resume-skills-title">
-        <p class="panel-index">04</p>
-        <h3 id="resume-skills-title">Working set</h3>
+      <section class="resume-panel resume-panel--skills" aria-labelledby="resume-skills-title">
+        <p class="panel-index">{showcasedProjects.length ? "04" : "03"}</p>
+        <div class="panel-heading">
+          <h3 id="resume-skills-title">Technical profile</h3>
+          <p class="panel-deck muted">Grouped competencies from <code class="resume-code">resume.toml</code>.</p>
+        </div>
         <div class="skill-grid">
-          {skillGroups.map(([group, items]) => (
-            <section class="skill-group" aria-labelledby={`home-skill-${slugify(group)}`}>
-              <h4 id={`home-skill-${slugify(group)}`}>{group}</h4>
-              <ul class="skill-list" aria-label={`${group} skills`}>
-                {items.slice(0, 6).map((item) => <li>{item}</li>)}
-              </ul>
-            </section>
-          ))}
+          {
+            skillGroups.map(([group, items]) => (
+              <section class="skill-group" aria-labelledby={`home-skill-${slugify(group)}`}>
+                <h4 id={`home-skill-${slugify(group)}`}>{group}</h4>
+                <ul class="skill-list" aria-label={`${group} skills`}>
+                  {items.slice(0, 6).map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+              </section>
+            ))
+          }
         </div>
       </section>
 
       <section class="resume-panel resume-panel--compact" aria-labelledby="resume-education-title">
-        <p class="panel-index">05</p>
-        <h3 id="resume-education-title">Education & training</h3>
-        {[...resume.training, ...resume.education].slice(0, 4).map((entry) => (
-          <article class="education-line">
-            <p class="period">{entry.period}</p>
-            <h4>{entry.degree}</h4>
-            <p class="meta">
-              {entry.institution}
-              {entry.location ? ` / ${entry.location}` : ""}
-            </p>
-          </article>
-        ))}
+        <p class="panel-index">{showcasedProjects.length ? "05" : "04"}</p>
+        <div class="panel-heading">
+          <h3 id="resume-education-title">Education, training & languages</h3>
+          <p class="panel-deck muted">Formal study and certifications alongside working languages.</p>
+        </div>
+
+        {
+          resume.languages.length ? (
+            <ul class="lang-chips" aria-label="Languages">
+              {resume.languages.map((lang) => (
+                <li>
+                  <span class="lang-name">{lang.name}</span>
+                  <span class="lang-level">{lang.proficiency}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null
+        }
+
+        <div class="education-stack">
+          {
+            [...resume.training, ...resume.education].slice(0, 4).map((entry) => (
+              <article class="education-line">
+                <p class="period">{entry.period}</p>
+                <h4>{entry.degree}</h4>
+                <p class="meta">
+                  {entry.institution}
+                  {entry.location ? ` / ${entry.location}` : ""}
+                </p>
+              </article>
+            ))
+          }
+        </div>
       </section>
     </div>
   </div>
@@ -171,7 +293,8 @@ const slugify = (value: string) =>
   .chapter-kicker,
   .period,
   .meta,
-  .panel-index {
+  .panel-index,
+  .timeline-eyebrow {
     margin: 0;
     color: color-mix(in srgb, var(--colors-muted) 86%, transparent);
     font-size: 0.75rem;
@@ -179,6 +302,15 @@ const slugify = (value: string) =>
     line-height: 1.35;
     letter-spacing: 0.09em;
     text-transform: uppercase;
+  }
+
+  .resume-section-deck {
+    margin: calc(var(--spacing-4) * -1) 0 0;
+    max-width: 42rem;
+    color: color-mix(in srgb, var(--colors-fg) 62%, transparent);
+    font-size: clamp(0.9375rem, 1.2vw, 1.0625rem);
+    font-weight: 600;
+    line-height: 1.45;
   }
 
   .resume-intro h2 {
@@ -211,15 +343,15 @@ const slugify = (value: string) =>
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-8);
-    margin: var(--spacing-8) 0 0;
+    margin: var(--spacing-12) 0 0;
     padding: 0;
     list-style: none;
   }
 
   .fit-snapshot li {
-    border: 1px solid color-mix(in srgb, var(--colors-warning) 26%, transparent);
-    padding: 0.32rem 0.58rem;
-    color: color-mix(in srgb, var(--colors-warning) 72%, var(--colors-fg));
+    border: 1px solid color-mix(in srgb, var(--colors-accent) 28%, transparent);
+    padding: 0.38rem 0.65rem;
+    color: color-mix(in srgb, var(--colors-accent) 78%, var(--colors-fg));
     font-size: 0.6875rem;
     font-weight: 800;
     letter-spacing: 0.07em;
@@ -227,12 +359,20 @@ const slugify = (value: string) =>
     text-transform: uppercase;
   }
 
+  .resume-intro-footer {
+    display: grid;
+    gap: var(--spacing-16);
+    margin-top: var(--spacing-8);
+    padding-top: var(--spacing-16);
+    border-top: 1px solid rgba(245, 245, 247, 0.1);
+    max-width: 48rem;
+  }
+
   .resume-meta {
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-8) var(--spacing-16);
     margin: 0;
-    padding-top: var(--spacing-8);
     color: color-mix(in srgb, var(--colors-fg) 68%, transparent);
     font-size: 0.8125rem;
     line-height: 1.4;
@@ -249,6 +389,77 @@ const slugify = (value: string) =>
     text-underline-offset: 0.22em;
   }
 
+  .resume-quick-links ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .resume-quick-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    border: 1px solid rgba(245, 245, 247, 0.12);
+    padding: 0.35rem 0.65rem;
+    color: color-mix(in srgb, var(--colors-fg) 74%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    transition:
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .resume-quick-links a:hover,
+  .resume-quick-links a:focus-visible {
+    border-color: color-mix(in srgb, var(--colors-accent) 45%, transparent);
+    color: var(--colors-fg);
+  }
+
+  /* --- Timeline shell (portfolio-style section header) --- */
+  .resume-timeline-shell {
+    display: grid;
+    gap: var(--spacing-32);
+    min-width: 0;
+  }
+
+  .resume-timeline-heading {
+    display: grid;
+    gap: var(--spacing-8);
+    max-width: 40rem;
+  }
+
+  .resume-timeline-heading h3 {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2.125rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: 0;
+    color: var(--colors-fg);
+  }
+
+  .timeline-deck,
+  .panel-deck {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+
+  .timeline-deck.muted,
+  .panel-deck.muted {
+    color: color-mix(in srgb, var(--colors-muted) 88%, var(--colors-fg));
+  }
+
+  .timeline-deck a {
+    color: color-mix(in srgb, var(--colors-accent) 78%, var(--colors-fg));
+    text-underline-offset: 0.2em;
+  }
+
+  /* --- Timeline --- */
   .resume-timeline {
     position: relative;
     display: grid;
@@ -366,6 +577,21 @@ const slugify = (value: string) =>
     color: color-mix(in srgb, var(--colors-accent) 76%, var(--colors-fg));
   }
 
+  .job-teaser {
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-fg) 76%, transparent);
+    font-family: var(--fonts-serif);
+    font-size: 0.9rem;
+    line-height: 1.62;
+    text-align: inherit;
+  }
+
+  .career-card--left .job-teaser,
+  .career-card--left .career-highlights {
+    margin-left: auto;
+    max-width: 38rem;
+  }
+
   .career-card ul,
   .resume-panel ul {
     display: grid;
@@ -377,6 +603,17 @@ const slugify = (value: string) =>
     font-size: 0.875rem;
     line-height: 1.62;
     text-align: left;
+  }
+
+  .career-card--left ul.career-highlights {
+    text-align: right;
+    direction: rtl;
+    padding-left: 0;
+    padding-right: 1.1rem;
+  }
+
+  .career-card--left ul.career-highlights > li {
+    direction: ltr;
   }
 
   .career-card li::marker,
@@ -404,10 +641,24 @@ const slugify = (value: string) =>
     text-transform: uppercase;
   }
 
+  /* --- Lower grid --- */
   .resume-lower {
     display: grid;
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
     gap: var(--spacing-24);
+    align-items: start;
+  }
+
+  .resume-panel--projects {
+    grid-column: 1;
+  }
+
+  .resume-panel--skills {
+    grid-column: 2;
+  }
+
+  .resume-lower:not(:has(.resume-panel--projects)) .resume-panel--skills {
+    grid-column: 1 / -1;
   }
 
   .resume-panel {
@@ -422,14 +673,64 @@ const slugify = (value: string) =>
   }
 
   .resume-panel h3 {
+    margin: 0;
     font-size: 1rem;
     line-height: 1.35;
     text-transform: uppercase;
   }
 
+  .panel-heading {
+    display: grid;
+    gap: var(--spacing-4);
+    min-width: 0;
+  }
+
   .resume-panel h4 {
     font-size: 0.95rem;
     line-height: 1.35;
+  }
+
+  .resume-code {
+    font-family: var(--fonts-mono);
+    font-size: 0.8em;
+    font-weight: 600;
+    color: color-mix(in srgb, var(--colors-accent) 75%, var(--colors-fg));
+  }
+
+  .project-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-16);
+  }
+
+  .project-card {
+    display: grid;
+    gap: var(--spacing-8);
+    min-width: 0;
+    padding: var(--spacing-16);
+    border-radius: 6px;
+    border: 1px solid rgba(245, 245, 247, 0.08);
+    background: rgba(245, 247, 250, 0.04);
+  }
+
+  .project-card h4 {
+    font-size: 1rem;
+  }
+
+  .project-role {
+    margin: calc(var(--spacing-4) * -1) 0 0;
+    color: color-mix(in srgb, var(--colors-muted) 88%, transparent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .project-highlights {
+    margin: 0 !important;
+    padding-left: 1.05rem !important;
+    font-size: 0.8125rem !important;
+    line-height: 1.55 !important;
   }
 
   .skill-grid {
@@ -450,9 +751,9 @@ const slugify = (value: string) =>
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-8);
-    margin: 0;
-    padding: 0;
-    list-style: none;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
   }
 
   .skill-list li {
@@ -465,11 +766,52 @@ const slugify = (value: string) =>
     letter-spacing: 0.04em;
   }
 
+  .lang-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-8);
+    margin: 0 0 var(--spacing-8);
+    padding: 0;
+    list-style: none;
+  }
+
+  .lang-chips li {
+    display: grid;
+    gap: 2px;
+    border: 1px solid rgba(245, 245, 247, 0.1);
+    padding: 0.45rem 0.65rem;
+    min-width: 7rem;
+  }
+
+  .lang-name {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: var(--colors-fg);
+  }
+
+  .lang-level {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--colors-muted) 88%, transparent);
+  }
+
+  .education-stack {
+    display: grid;
+    gap: 0;
+  }
+
   .education-line {
     display: grid;
     gap: var(--spacing-4);
     padding-top: var(--spacing-12);
     border-top: 1px solid rgba(245, 245, 247, 0.08);
+  }
+
+  .education-line:first-child {
+    padding-top: 0;
+    border-top: none;
   }
 
   .resume-roll-index {
@@ -490,6 +832,15 @@ const slugify = (value: string) =>
   @media (max-width: 860px) {
     .resume-showcase {
       padding-top: var(--spacing-64);
+    }
+
+    .resume-intro-footer {
+      border-top-width: 0;
+      padding-top: var(--spacing-8);
+    }
+
+    .resume-timeline-shell {
+      gap: var(--spacing-24);
     }
 
     .resume-timeline {
@@ -521,8 +872,25 @@ const slugify = (value: string) =>
       justify-content: flex-start;
     }
 
+    .career-card--left .job-teaser,
+    .career-card--left .career-highlights {
+      margin-left: 0;
+      max-width: none;
+    }
+
+    .career-card--left ul.career-highlights {
+      text-align: left;
+      direction: ltr;
+      padding-left: 1.1rem;
+      padding-right: 0;
+    }
+
     .career-card-body {
       gap: var(--spacing-8);
+    }
+
+    .job-teaser {
+      font-size: 0.8625rem;
     }
 
     .career-card .career-highlights,
@@ -535,7 +903,16 @@ const slugify = (value: string) =>
       left: -1rem;
     }
 
-    .resume-lower,
+    .resume-lower {
+      grid-template-columns: 1fr;
+    }
+
+    .resume-panel--projects,
+    .resume-panel--skills {
+      grid-column: 1;
+    }
+
+    .project-grid,
     .skill-grid {
       grid-template-columns: 1fr;
     }

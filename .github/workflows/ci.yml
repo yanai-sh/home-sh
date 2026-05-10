@@ -23,19 +23,21 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@v6
-
-      # Astro 6 `astro check` uses Node; ubuntu-latest default is still 20.x.
-      - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          fetch-depth: 0
+          submodules: recursive
 
-      # Resolves Bun from package.json `packageManager` / `engines` (setup-bun default).
-      - uses: oven-sh/setup-bun@v2
+      # Pinned to v3.0.2 release (supply chain); bump when changing filter behavior.
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+        id: paths
+        with:
+          filters: |
+            workflows:
+              - '.github/workflows/**'
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: ./.github/actions/actionlint
+        if: steps.paths.outputs.workflows == 'true'
 
-      - name: Verify
-        run: bun run verify
-        env:
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+      - uses: ./.github/actions/bun-verify
+        with:
+          public_turnstile_site_key: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}

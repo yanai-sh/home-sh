@@ -7,11 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-05-10
+
 ### Added
+
+- **`resume/`** git submodule (**`yanai-sh/resume`**) — HTML resume surfaces pin upstream **`resume.toml`**; **`bun run sync:resume`** writes **`content/resume.generated.json`** with **Zod** validation.
+- **`.github/actions/*`** composites — **`bun-install`**, **`bun-verify`**, **`actionlint`**, **`playwright-chromium`** shared across **CI**, **Deploy**, and **Rollback**.
 
 ### Removed
 
+- **`CONTRIBUTING.md`** — maintainer workflow folded into **`AGENTS.md`**.
+- **`.github/workflows/lint-workflows.yml`** — **actionlint** runs from **CI** / **Deploy** via **paths-filter** instead.
+- **Per-request GitHub Contents fetch** for resume HTML — no middleware hydration; **`resume-remote.ts`** is **`embeddedResumeSnapshot()`** only.
+- Direct **`smol-toml`** dependency on **`apps/site`** (sync script uses **Bun** **`TOML.parse`**).
+
 ### Changed
+
+- **CI / Deploy / Rollback** — **`actions/checkout`** with **`submodules: recursive`** so **`verify`** always runs **`sync:resume`** against the pinned submodule.
+- **`scripts/sync-resume.ts`** — reads **`resume/resume.toml`** only; records submodule **SHA** in **`resume.generated.json`** provenance.
+- **`Rollback` workflow** — root **`bun run build`** (runs **`sync:resume`** + Astro) before **`wrangler versions deploy`**.
+- **`ResumeShowcase.astro`** — data-driven focus chips, section decks, quick links from **`resume.links`**, two-column project grid, languages row; **`HOME_RESUME_SECTION_DECK`** in **`apps/site/src/config/site.ts`**.
+- **`ROADMAP.md`** — documents submodule pipeline, HTML vs PDF split, revised milestones and risks.
+- **`README.md`**, **`CLAUDE.md`**, **`AGENTS.md`**, **`infra/secrets/README.md`**, **`.envrc`** — point to **`AGENTS.md`** for maintainer setup; **`PUBLIC_TURNSTILE_SITE_KEY`** / submodule notes.
+
+- **GitHub Actions** — **actionlint** runs inside **CI** / **CI (dev)** / **Deploy** only when `.github/workflows/**` changes (via **dorny/paths-filter**, pinned to **`v3.0.2`** SHA); shared **`.github/actions/bun-install`** + **`bun-verify`** dedupe Node/Bun/install (and **Deploy** smoke + **Rollback** install); **`playwright-chromium`** composite for **Deploy** smoke.
 
 - **Deploy smoke preflight** — run inline **`bun`** script via heredoc so **actionlint** / shellcheck no longer flags SC2016 on **`deploy.yml`**.
 
@@ -88,7 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Versioned Worker deploys** — CI runs `wrangler versions upload` then `versions deploy <id>@100%`, tagging each version with the commit SHA.
 - **Manual rollback workflow** (`.github/workflows/rollback.yml`) — `workflow_dispatch` accepts a target version id, promotes it to 100%, and smoke-checks `/` and `/resume`.
 - **Monthly token-expiry probe** (`.github/workflows/token-expiry-check.yml`) — opens a GitHub issue when the Cloudflare API token has ≤30 days remaining; gracefully no-ops when the `User Details: Read` scope is missing.
-- **Documented release + rollback procedures** in `ARCHITECTURE.md` (Worker rollback paths, adjacent failure modes) and `CONTRIBUTING.md` (changelog → tag → push → smoke checklist).
+- **Documented release + rollback procedures** in `ARCHITECTURE.md` (Worker rollback paths, adjacent failure modes) and maintainer workflow in `AGENTS.md` (changelog → tag → push → smoke checklist).
 - **Branch protection ruleset** on `main` — PRs required, CI/`verify` status check gates merges, no force-push.
 
 ### Changed

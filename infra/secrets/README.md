@@ -39,7 +39,7 @@ cp infra/secrets/worker-secrets.example.json infra/secrets/worker-secrets.local.
 # edit values; never commit this file
 ```
 
-With direnv allowed, `.envrc` exports keys from that JSON as `UPPER_SNAKE_CASE`. For Astro dev, prefer `apps/site/.dev.vars` (see `CONTRIBUTING.md`).
+With direnv allowed, `.envrc` exports keys from that JSON as `UPPER_SNAKE_CASE`. For Astro dev, prefer `apps/site/.dev.vars` (see `AGENTS.md`).
 
 **`resume_repo_token`:** paste the **same** PAT string as the **`RESUME_REPO_TOKEN`** GitHub Actions secret (the one **`push-secrets`** pushes to the Worker). One token for prod and local avoids “works in deploy / 502 in smoke” drift.
 

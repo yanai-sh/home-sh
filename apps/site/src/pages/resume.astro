@@ -5,7 +5,7 @@ import Layout from "@layouts/Layout.astro";
 import { footerEdgeProps } from "@lib/footer-edge";
 import { resumeSnapshotForPage } from "@lib/resume-page-snapshot";
 
-const snapshot = resumeSnapshotForPage(Astro.locals);
+const snapshot = resumeSnapshotForPage();
 const resume = snapshot.data;
 const source = snapshot.source;
 const footer = footerEdgeProps(Astro.request);
@@ -13,7 +13,7 @@ const pageTitle = `${resume.header.name} — resume`;
 const pageDescription = `${resume.header.name}, ${resume.header.headline}.`;
 const primaryExperience = resume.experience.slice(0, 3);
 const skillGroups = Object.entries(resume.skills);
-const sourceLabel = source.fallback ? "fallback snapshot" : "live from GitHub";
+const sourceLabel = source.fallback ? "fallback snapshot" : "pinned resume submodule";
 const sourceDetail = source.commitSha ? source.commitSha.slice(0, 7) : source.path;
 ---
 

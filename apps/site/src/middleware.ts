@@ -1,24 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 
-import { loadResumeSnapshotForRequest } from '@lib/resume-remote';
-
-function pathNeedsHydratedResume(pathname: string): boolean {
-  if (pathname.startsWith('/api/')) {
-    return false;
-  }
-  return (
-    pathname === '/' ||
-    pathname === '/resume' ||
-    pathname === '/workspace' ||
-    pathname.startsWith('/workspace/')
-  );
-}
-
 export const onRequest = defineMiddleware(async (context, next) => {
-  if (pathNeedsHydratedResume(context.url.pathname)) {
-    context.locals.resumeSnapshot = await loadResumeSnapshotForRequest();
-  }
-
   const start = performance.now();
   const response = await next();
   const duration = (performance.now() - start).toFixed(3);

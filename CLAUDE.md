@@ -4,7 +4,7 @@
 
 ## Cold-start essentials
 
-- **Bun monorepo** — Astro 6 SSR as a Cloudflare Worker with Static Assets + Rust/WASM (`apps/wasm/*`); `/api/contact`, `/api/telemetry/*`, **`/resume`/home resume** (GitHub Contents → `resume.toml`), and **`/resume.pdf`** (Release proxy) on the site Worker (`DB` = D1 telemetry; **`RESUME_REPO_TOKEN`** reads private **`yanai-sh/resume`**).
+- **Bun monorepo** — Astro 6 SSR as a Cloudflare Worker with Static Assets + Rust/WASM (`apps/wasm/*`); `/api/contact`, `/api/telemetry/*`, **`/resume`/home resume** (pinned **`resume/`** git submodule → `sync:resume` → `resume.generated.json`), and **`/resume.pdf`** (Release proxy; **`RESUME_REPO_TOKEN`** for private **`yanai-sh/resume`** releases) on the site Worker (`DB` = D1 telemetry).
 - **Bun only** — `bun install`, `bun run`, `bun test`, `bunx`. No npm/yarn/pnpm. `.env` auto-loaded.
 - **Verify before claiming done:** `bun run verify` (= check → typecheck → test → build; mirrors CI). **`bun run smoke`** — Playwright smoke (`apps/site`).
 - **Polyglot tasks:** `just --list` (WASM, Workers, OpenTofu). Infra: **[infra/README.md](infra/README.md)**.

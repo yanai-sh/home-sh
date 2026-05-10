@@ -1,0 +1,8 @@
+name: Playwright Chromium
+description: Install Playwright Chromium browser + OS deps (requires Bun on PATH, e.g. after bun-install)
+runs:
+  using: composite
+  steps:
+    - name: Install Playwright chromium
+      run: bun x playwright install --with-deps chromium
+      shell: bash
