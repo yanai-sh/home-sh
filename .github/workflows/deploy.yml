@@ -3,12 +3,14 @@
 #   Push to `dev` → uploads an immutable Worker version to the staging
 #   Worker (yanai-sh-staging, set via `--name` override at upload time
 #   against the shared apps/site/wrangler.jsonc). Production at yanai.sh
-#   is unaffected. Auto-tags the commit with a patch bump (vX.Y.Z+1) so
-#   dev iterations are addressable.
+#   is unaffected. Wrangler `--tag` uses **`dev-<run_id>`** (no git tag on dev).
 #
 #   Push to `main` → uploads + promotes to 100% on the production Worker
-#   (yanai-sh, bound to yanai.sh via Custom Domain). Auto-tags with a
-#   minor bump (vX.(Y+1).0).
+#   (yanai-sh, bound to yanai.sh via Custom Domain). Git tag + GitHub Release
+#   use **`v0.X.Y.Z`** only: leading **0** = epoch reset; **X.Y.Z** carry the
+#   prior marketing triple from legacy **`vX.Y.Z`** tags. Next tag after **`v2.7.0`**
+#   is **`v0.2.7.1`**. Ongoing **patch** bumps **Z**; **workflow_dispatch** can
+#   set **minor** (bump **Y**, Z=0) or **major** (bump **X**, Y=Z=0).
 #
 # Each Worker has its own ~10-version retention, so dev pushes never
 # displace prod rollback options. Rollback (.github/workflows/rollback.yml)
@@ -20,8 +22,8 @@ name: yanai-sh / Deploy
 on:
   # Staging only on `push` to `dev` (not `pull_request`): a PR preview deploy
   # plus the post-merge push would upload twice for the same merge. Every push
-  # updating `refs/heads/dev` runs staging + patch tag; `main` runs prod upload
-  # + promote + minor tag + release. No path filters.
+  # updating `refs/heads/dev` runs staging (Worker label only); `main` runs prod
+  # upload + promote + `v0.*.*.*` git tag + release. No path filters.
   push:
     branches: [main, dev]
   workflow_dispatch:
@@ -31,6 +33,15 @@ on:
         required: false
         default: "false"
         type: string
+      version_bump:
+        description: "Production bump for v0.X.Y.Z (main only; pushes = patch on Z)"
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   # Auto-tagging pushes git tags back to the repository, so the workflow
@@ -135,24 +146,51 @@ jobs:
 
       - name: Compute next version tag
         id: tag
-        # Convention:
-        #   - dev push → patch bump (vX.Y.Z → vX.Y.Z+1)
-        #   - main push → minor bump (vX.Y.Z → vX.(Y+1).0)
-        # Major bumps are intentional and remain manual.
+        # See file header: `v0.X.Y.Z` vs legacy `vM.m.p`, dev `dev-<run_id>`.
+        env:
+          VERSION_BUMP: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.version_bump || 'patch' }}
         run: |
           set -euo pipefail
-          LAST="$(git tag -l --sort=-v:refname 'v[0-9]*.[0-9]*.[0-9]*' | head -1 || true)"
-          if [ -z "$LAST" ]; then LAST="v0.0.0"; fi
-          VERSION="${LAST#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
-            NEXT="v${MAJOR}.$((MINOR + 1)).0"
+          LAST4="$(git tag -l | grep -E '^v0\.[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
+          LEGACY="$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -Ev '^v0\.[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
+          if [ -n "$LAST4" ]; then
+            LAST="$LAST4"
+          elif [ -n "$LEGACY" ]; then
+            LAST="$LEGACY"
           else
-            NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+            LAST=""
           fi
-          echo "previous=$LAST"
+
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            NEXT="dev-${GITHUB_RUN_ID}"
+            PREV="${LAST:-<none>}"
+            echo "previous=$PREV"
+            echo "next=$NEXT"
+            echo "previous=$PREV" >> "$GITHUB_OUTPUT"
+            echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -n "$LAST4" ]; then
+            VERSION="${LAST#v}"
+            IFS='.' read -r _E A B C <<< "$VERSION"
+            case "${VERSION_BUMP}" in
+              major) NEXT="v0.$((A + 1)).0.0" ;;
+              minor) NEXT="v0.${A}.$((B + 1)).0" ;;
+              *) NEXT="v0.${A}.${B}.$((C + 1))" ;;
+            esac
+          elif [ -n "$LEGACY" ]; then
+            VERSION="${LEGACY#v}"
+            IFS='.' read -r M m p <<< "$VERSION"
+            NEXT="v0.${M}.${m}.$((p + 1))"
+          else
+            NEXT="v0.0.0.1"
+          fi
+
+          PREV="${LAST:-<none>}"
+          echo "previous=$PREV"
           echo "next=$NEXT"
-          echo "previous=$LAST" >> "$GITHUB_OUTPUT"
+          echo "previous=$PREV" >> "$GITHUB_OUTPUT"
           echo "next=$NEXT" >> "$GITHUB_OUTPUT"
 
       - name: Upload Worker version (wrangler)
@@ -161,7 +199,7 @@ jobs:
         # apps/site/package.json. Extra args after `--` are forwarded to
         # wrangler. `--message` annotates each version with the commit
         # subject so the Cloudflare dashboard's version history is
-        # human-readable. `--tag` records the new version (e.g. v2.3.1).
+        # human-readable. `--tag` records the new version (e.g. v0.2.7.4 or dev-…).
         # On dev pushes, `--name yanai-sh-staging` overrides the Worker
         # name so the upload lands on a separate script with its own
         # ~10-version retention. Bindings (KV, Secrets Store, D1, rate
@@ -220,7 +258,9 @@ jobs:
             {
               echo "### Staging deploy (yanai-sh-staging)"
               echo ""
-              echo "Tagged \`${{ steps.tag.outputs.next }}\` (previous: \`${{ steps.tag.outputs.previous }}\`)."
+              echo "Worker version label \`${{ steps.tag.outputs.next }}\` (no git tag on **\`dev\`**)."
+              echo ""
+              echo "Latest release tag for reference: \`${{ steps.tag.outputs.previous }}\`."
               echo ""
               echo "Uploaded version \`${{ steps.upload.outputs.version_id }}\` to the **yanai-sh-staging** Worker. Production at https://yanai.sh is unchanged."
               echo ""
@@ -269,6 +309,7 @@ jobs:
   # 403 even when workflow `permissions.contents` is write at the file level.
   push_git_tag:
     name: yanai-sh / deploy — version tag
+    if: github.ref == 'refs/heads/main'
     needs: publish
     runs-on: ubuntu-latest
     timeout-minutes: 10
