@@ -19,7 +19,6 @@
         "@yanai-sh/ui-system": "workspace:*",
         "astro": "^6.2.2",
         "gsap": "^3.15.0",
-        "lenis": "^1.3.23",
         "three": "^0.184.0",
       },
       "devDependencies": {
@@ -808,8 +807,6 @@
     "lefthook-windows-arm64": ["lefthook-windows-arm64@2.1.6", "", { "os": "win32", "cpu": "arm64" }, "sha512-lD8yFWY4Csuljd0Rqs7EQaySC0VvDf7V3rN1FhRMUISTRDHutebIom1Loc8ckQPvKYGC6mftT9k0GvipsS+Brw=="],
 
     "lefthook-windows-x64": ["lefthook-windows-x64@2.1.6", "", { "os": "win32", "cpu": "x64" }, "sha512-q4z2n3xucLscoWiyMwFViEj3N8MDSkPulMwcJYuCYFHoPhP1h+icqNu7QRLGYj6AnVrCQweiUJY3Tb2X+GbD/A=="],
-
-    "lenis": ["lenis@1.3.23", "", { "peerDependencies": { "@nuxt/kit": ">=3.0.0", "react": ">=17.0.0", "vue": ">=3.0.0" }, "optionalPeers": ["@nuxt/kit", "react", "vue"] }, "sha512-YxYq3TJqj9sJNv0V9SkyQHejt14xwyIwgDaaMK89Uf9SxQfIszu+gTQSSphh6BWlLTNVKvvXAGkg+Zf+oFIevg=="],
 
     "lightningcss": ["lightningcss@1.25.1", "", { "dependencies": { "detect-libc": "^1.0.3" }, "optionalDependencies": { "lightningcss-darwin-arm64": "1.25.1", "lightningcss-darwin-x64": "1.25.1", "lightningcss-freebsd-x64": "1.25.1", "lightningcss-linux-arm-gnueabihf": "1.25.1", "lightningcss-linux-arm64-gnu": "1.25.1", "lightningcss-linux-arm64-musl": "1.25.1", "lightningcss-linux-x64-gnu": "1.25.1", "lightningcss-linux-x64-musl": "1.25.1", "lightningcss-win32-x64-msvc": "1.25.1" } }, "sha512-V0RMVZzK1+rCHpymRv4URK2lNhIRyO8g7U7zOFwVAhJuat74HtkjIQpQRKNCwFEYkRGpafOpmXXLoaoBcyVtBg=="],
 

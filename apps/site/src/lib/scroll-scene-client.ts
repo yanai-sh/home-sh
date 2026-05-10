@@ -1,13 +1,6 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import Lenis, { type VirtualScrollData } from 'lenis';
-import 'lenis/dist/lenis.css';
 import type { WarpScene, WarpSceneState } from './scene/warp-scene';
-
-type LenisScrollEvent = {
-  direction?: number;
-  velocity?: number;
-};
 
 type SceneRegistry = typeof globalThis & {
   __yanaiScrollSceneCleanup?: () => void;
@@ -26,6 +19,10 @@ interface FrameStats {
 
 function canUseScene() {
   return globalThis.innerWidth >= 900 && globalThis.innerHeight >= 520;
+}
+
+function maxScrollY(): number {
+  return Math.max(0, document.documentElement.scrollHeight - globalThis.innerHeight);
 }
 
 function setSceneClass(active: boolean) {
@@ -69,7 +66,6 @@ export function mountScrollScene(): void {
   gsap.registerPlugin(ScrollTrigger);
 
   let scene: WarpScene | undefined;
-  let lenis: Lenis | undefined;
   let timeline: gsap.core.Timeline | undefined;
   let scrollTrigger: ScrollTrigger | undefined;
   let rafActive = false;
@@ -82,7 +78,21 @@ export function mountScrollScene(): void {
   let lastGestureSpeed = 0;
   let lastGestureTime = 0;
   let lastFrameTime = 0;
+  let lastScrollY = 0;
+  let lastScrollTime = 0;
   let setupTicket = 0;
+
+  function onPageShowBfcache(event: PageTransitionEvent) {
+    if (!event.persisted) return;
+    ScrollTrigger.refresh(true);
+    scene?.resize();
+  }
+
+  function onVisibilityResume() {
+    if (document.visibilityState !== 'visible') return;
+    ScrollTrigger.refresh();
+    scene?.resize();
+  }
   const debugFrames = new URLSearchParams(globalThis.location.search).has('scrollStats');
   const frameStats: FrameStats = {
     frames: 0,
@@ -94,9 +104,6 @@ export function mountScrollScene(): void {
   if (debugFrames) {
     registry.__yanaiScrollSceneStats = frameStats;
   }
-  const tickLenis = (time: number) => {
-    lenis?.raf(time * 1000);
-  };
   const state: WarpSceneState = {
     direction: 1,
     progress: 0,
@@ -104,6 +111,46 @@ export function mountScrollScene(): void {
     velocity: 0,
   };
   const domElements = requiredElements as Element[];
+
+  function resetScrollTracking() {
+    lastScrollY = globalThis.scrollY;
+    lastScrollTime = performance.now();
+  }
+
+  function onNativeScroll() {
+    const y = globalThis.scrollY;
+    const now = performance.now();
+    const dy = y - lastScrollY;
+    const dt = Math.max(1, now - lastScrollTime);
+    const rawVel = (dy / dt) * 18;
+    state.velocity = state.velocity * 0.82 + rawVel * 0.18;
+    if (dy !== 0) {
+      state.direction = Math.sign(dy);
+    }
+    lastScrollY = y;
+    lastScrollTime = now;
+    ScrollTrigger.update();
+    requestSceneRender();
+  }
+
+  function onWheelChapterHint(event: WheelEvent) {
+    if (hasResumeFlow) return;
+    if (Math.abs(event.deltaY) < 0.5) return;
+    const now = performance.now();
+    const elapsed = Math.max(1, now - lastGestureTime);
+    lastGestureDirection = Math.sign(event.deltaY);
+    gestureDistance += event.deltaY;
+    lastGestureSpeed = Math.max(lastGestureSpeed, Math.abs(event.deltaY) / elapsed);
+    lastGestureTime = now;
+
+    if (snapTimer) {
+      globalThis.clearTimeout(snapTimer);
+    }
+    snapTimer = globalThis.setTimeout(() => {
+      snapTimer = undefined;
+      snapToRestingChapter();
+    }, 340);
+  }
 
   function teardown() {
     setupTicket += 1;
@@ -119,15 +166,14 @@ export function mountScrollScene(): void {
       globalThis.clearTimeout(idleTimer);
       idleTimer = undefined;
     }
-    gsap.ticker.remove(tickLenis);
+    globalThis.removeEventListener('scroll', onNativeScroll);
+    globalThis.removeEventListener('wheel', onWheelChapterHint);
     gsap.ticker.remove(renderScene);
     scrollTrigger?.kill();
     timeline?.kill();
-    lenis?.destroy();
     scene?.dispose();
     scrollTrigger = undefined;
     timeline = undefined;
-    lenis = undefined;
     scene = undefined;
     lastFrameTime = 0;
     rafActive = false;
@@ -178,12 +224,12 @@ export function mountScrollScene(): void {
     }
     idleTimer = globalThis.setTimeout(() => {
       idleTimer = undefined;
-      if (Math.abs(state.velocity) < 0.015) {
+      if (Math.abs(state.velocity) < 0.018) {
         stopRenderTicker();
       } else {
         requestSceneRender();
       }
-    }, 720);
+    }, 560);
   }
 
   function setContactAvailable(available: boolean) {
@@ -199,47 +245,32 @@ export function mountScrollScene(): void {
   }
 
   function snapToRestingChapter() {
-    if (hasResumeFlow || !lenis || !canUseScene()) return;
+    if (hasResumeFlow || !canUseScene()) return;
 
-    const progress = lenis.progress;
+    const limit = maxScrollY();
+    if (limit <= 0) return;
+
+    const scroll = globalThis.scrollY;
+    const progress = scroll / limit;
     const movedQuickly = Math.abs(gestureDistance) >= 260 || lastGestureSpeed >= 1.05;
-    let target = progress >= 0.5 ? lenis.limit : 0;
+    let target = progress >= 0.5 ? limit : 0;
     if (lastGestureDirection > 0) {
-      target = progress >= (movedQuickly ? 0.14 : 0.24) ? lenis.limit : 0;
+      target = progress >= (movedQuickly ? 0.14 : 0.24) ? limit : 0;
     } else if (lastGestureDirection < 0) {
-      target = progress <= (movedQuickly ? 0.86 : 0.76) ? 0 : lenis.limit;
+      target = progress <= (movedQuickly ? 0.86 : 0.76) ? 0 : limit;
     }
 
     frameStats.lastSnapTarget = target === 0 ? 'home' : 'contact';
     gestureDistance = 0;
     lastGestureSpeed = 0;
 
-    if (Math.abs(target - lenis.scroll) < 2) return;
+    if (Math.abs(target - scroll) < 2) return;
 
-    lenis.scrollTo(target, {
-      duration: 1.28,
-      easing: (t) => 1 - (1 - t) ** 4,
-      lock: false,
-      userData: { initiator: 'chapter-idle-snap' },
-    });
-  }
-
-  function scheduleChapterSnap(event: VirtualScrollData) {
-    if (!lenis || Math.abs(event.deltaY) < 0.5) return;
-    const now = performance.now();
-    const elapsed = Math.max(1, now - lastGestureTime);
-    lastGestureDirection = Math.sign(event.deltaY);
-    gestureDistance += event.deltaY;
-    lastGestureSpeed = Math.max(lastGestureSpeed, Math.abs(event.deltaY) / elapsed);
-    lastGestureTime = now;
-
-    if (snapTimer) {
-      globalThis.clearTimeout(snapTimer);
+    if (reduceMotionQuery?.matches) {
+      globalThis.scrollTo(0, target);
+      return;
     }
-    snapTimer = globalThis.setTimeout(() => {
-      snapTimer = undefined;
-      snapToRestingChapter();
-    }, 340);
+    globalThis.scrollTo({ behavior: 'smooth', top: target });
   }
 
   async function setup() {
@@ -264,27 +295,14 @@ export function mountScrollScene(): void {
 
     setSceneClass(true);
     rafActive = true;
+    resetScrollTracking();
 
-    lenis = new Lenis({
-      autoRaf: false,
-      lerp: 0.095,
-      smoothWheel: true,
-      syncTouch: false,
-      touchMultiplier: 1,
-      wheelMultiplier: 1.08,
-    });
-    lenis.on('scroll', (event: LenisScrollEvent) => {
-      state.velocity = event.velocity ?? state.velocity;
-      state.direction = event.direction ?? state.direction;
-      ScrollTrigger.update();
-      requestSceneRender();
-    });
+    globalThis.addEventListener('scroll', onNativeScroll, { passive: true });
     if (!hasResumeFlow) {
-      lenis.on('virtual-scroll', scheduleChapterSnap);
+      globalThis.addEventListener('wheel', onWheelChapterHint, { passive: true });
     }
 
     gsap.ticker.lagSmoothing(0);
-    gsap.ticker.add(tickLenis);
 
     if (!hasResumeFlow) {
       setContactAvailable(false);
@@ -340,7 +358,7 @@ export function mountScrollScene(): void {
           setContactAvailable(self.progress > 0.34);
           requestSceneRender();
         },
-        scrub: 0.22,
+        scrub: 0.32,
         start: 'top top',
         trigger: hasResumeFlow ? '.chapter--home' : '.page-shell',
       },
@@ -370,6 +388,7 @@ export function mountScrollScene(): void {
     scene.render(state);
     requestSceneRender();
     ScrollTrigger.refresh();
+    onNativeScroll();
   }
 
   function scheduleResize() {
@@ -388,10 +407,14 @@ export function mountScrollScene(): void {
 
   setup();
   globalThis.addEventListener('resize', scheduleResize, { passive: true });
+  globalThis.addEventListener('pageshow', onPageShowBfcache);
+  document.addEventListener('visibilitychange', onVisibilityResume);
   reduceMotionQuery?.addEventListener('change', setup);
 
   registry.__yanaiScrollSceneCleanup = () => {
     globalThis.removeEventListener('resize', scheduleResize);
+    globalThis.removeEventListener('pageshow', onPageShowBfcache);
+    document.removeEventListener('visibilitychange', onVisibilityResume);
     reduceMotionQuery?.removeEventListener('change', setup);
     teardown();
     delete registry.__yanaiScrollSceneStats;
