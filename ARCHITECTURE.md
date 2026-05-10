@@ -60,7 +60,7 @@ Short rationale for choices a reviewer or interviewer might ask about. (Drafting
 |-----------|------------|
 | **Before M0 alpha candidate** | A missing `origin` is intentional. Keep work local until `bun run verify` and the manual alpha deployment smoke test pass. |
 | **Alpha candidate accepted** | Set `origin` to **`yanai-sh/home-sh`**, push the branch/tag, then ensure the Deploy workflow secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `PUBLIC_TURNSTILE_SITE_KEY`) are set on the repo so pushes to **`dev`** / **`main`** can upload Workers versions. |
-| **`main` push rejected** | Expected when rulesets require PRs. Push a **topic branch**, open **PR → `main`**, merge when **both** **`yanai-sh / verify (ubuntu-latest)`** and **`yanai-sh / verify (macos-latest)`** are green. |
+| **`main` push rejected** | Expected when rulesets require PRs. Push a **topic branch**, open **PR → `main`**, merge when both required checks **`yanai-sh / verify (ubuntu-latest) / yanai-sh / verify — run`** and **`yanai-sh / verify (macos-latest) / yanai-sh / verify — run`** are green. |
 | **Local `main` ahead of `origin/main`** | Usually means unpushed merges or local commits—publish via PR; avoid **`git push origin main`** if rulesets forbid it. |
 | **CI badge** | README tracks **`main`** (same branch as deploy). |
 
