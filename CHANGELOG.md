@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`apps/site` typecheck** — runs **`panda codegen`** before **`astro check`** so CI resolves imports from gitignored **`styled-system/`** on a clean checkout.
+
 - **Contact section** — higher fixed anchor with scroll scene, stronger panel/field contrast, Panda contact surface tokens tweaked.
 - **Hero wordmark** — accent segment uses **`var(--colors-accent)`** instead of a hard-coded hex.
 

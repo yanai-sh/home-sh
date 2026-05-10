@@ -9,7 +9,7 @@
     "build": "bun run wrangler-types && panda codegen && astro build",
     "check": "biome check ./src ./scripts astro.config.mjs package.json",
     "fix": "biome check --write ./src ./scripts astro.config.mjs package.json",
-    "typecheck": "bun run wrangler-types && astro check",
+    "typecheck": "bun run wrangler-types && panda codegen && astro check",
     "test": "bun test ./src",
     "verify": "bun run check && bun run typecheck && bun run test && bun run build",
     "preview": "astro preview",
