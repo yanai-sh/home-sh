@@ -44,14 +44,14 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Explicit so tag push + release use the job token even when `checkout`
-    # used a different PAT for private submodules.
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     outputs:
       staging_preview_url: ${{ steps.upload.outputs.preview_url }}
+      next_tag: ${{ steps.tag.outputs.next }}
+      previous_tag: ${{ steps.tag.outputs.previous }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -170,36 +170,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Push git tag
-        env:
-          TAG_PUSH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          # checkout used RESUME_REPO_TOKEN for submodules; that remote must not
-          # be used for pushes to this repo (fine-grained PATs often lack
-          # contents:write here → 403 on git push).
-          git remote set-url origin "https://x-access-token:${TAG_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git config user.email "deploy@yanai.sh"
-          git config user.name "deploy-bot"
-          git tag -a "${{ steps.tag.outputs.next }}" -m "${{ steps.tag.outputs.next }}"
-          git push origin "${{ steps.tag.outputs.next }}"
-
-      - name: Create GitHub Release (production only)
-        if: github.ref == 'refs/heads/main'
-        # `gh release create --generate-notes` uses the categories declared in
-        # .github/release.yml to group merged PRs between this tag and the
-        # previous one. Marked `--latest` so github.com surfaces it as the
-        # current release. Dev tags are intentionally skipped — staging
-        # versions aren't releases.
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh release create "${{ steps.tag.outputs.next }}" \
-            --title "${{ steps.tag.outputs.next }}" \
-            --generate-notes \
-            --latest
-
       - name: Annotate run summary
         run: |
           set -euo pipefail
@@ -258,6 +228,48 @@ jobs:
           for pr in "${prs[@]}"; do
             gh pr comment "$pr" --body "$BODY"
           done
+
+  # Git tag + release must not run inside `environment:` jobs: GitHub can
+  # supply a read-only `GITHUB_TOKEN` there, so `git push` for tags fails with
+  # 403 even when workflow `permissions.contents` is write at the file level.
+  push_git_tag:
+    name: Push version tag
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Create and push annotated tag
+        env:
+          TAG: ${{ needs.publish.outputs.next_tag }}
+        run: |
+          set -euo pipefail
+          git config user.email "deploy@yanai.sh"
+          git config user.name "deploy-bot"
+          git tag -a "${TAG}" -m "${TAG}"
+          git push origin "${TAG}"
+
+  github_release:
+    name: Create GitHub Release
+    needs: [publish, push_git_tag]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub Release (production only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "${{ needs.publish.outputs.next_tag }}" \
+            --title "${{ needs.publish.outputs.next_tag }}" \
+            --generate-notes \
+            --latest
 
   smoke:
     name: Smoke (preview URL)
