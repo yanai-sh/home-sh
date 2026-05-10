@@ -165,7 +165,9 @@ Rules:
 - **`git submodule update --init --recursive`** is required on clone and in CI
   (`submodules: recursive` on checkout). **`bun run verify`** runs
   **`sync:resume`** first; a missing submodule fails the build (no silent stale
-  HTML).
+  HTML). For a **private** `yanai-sh/resume`, CI/deploy/rollback checkouts pass
+  **`token: ${{ secrets.RESUME_REPO_TOKEN }}`** so the runner can clone the
+  submodule (same PAT as **`push-secrets`** / Worker **`RESUME_REPO_TOKEN`**).
 - The upstream repo is Rust/TOML/Tectonic. Consume **`resume.toml`** at the repo
   root; do not infer JSON Resume unless upstream changes format.
 - One **normalized** schema (`home-sh-resume-v1`) before any Astro render or

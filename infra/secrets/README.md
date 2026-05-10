@@ -26,7 +26,7 @@ Fallback (not recommended): repo-level Actions secrets (**Settings → Secrets a
 | `RESEND_API_KEY` | Push Worker secrets → Secrets Store |
 | `CONTACT_FROM` | Push Worker secrets → Secrets Store |
 | `CONTACT_TO` | Push Worker secrets → Secrets Store |
-| `RESUME_REPO_TOKEN` | Push Worker secrets → Secrets Store (PAT: private resume repo + Releases) |
+| `RESUME_REPO_TOKEN` | Push Worker secrets → Secrets Store (PAT: private resume repo + Releases); **GitHub Actions** checkout uses the same secret to **`git clone`** the **`resume/`** submodule in CI / Deploy / Rollback |
 | `CF_ACCESS_CLIENT_ID` | Smoke against Access-protected preview URLs (Service Token; environment variable) |
 | `CF_ACCESS_CLIENT_SECRET` | Smoke against Access-protected preview URLs (Service Token secret) |
 

@@ -55,6 +55,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           submodules: recursive
+          token: ${{ secrets.RESUME_REPO_TOKEN }}
 
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
         id: paths

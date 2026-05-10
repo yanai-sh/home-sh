@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **CI / Deploy / Rollback** — **`actions/checkout`** with **`submodules: recursive`** so **`verify`** always runs **`sync:resume`** against the pinned submodule.
+- **CI / Deploy / Rollback** — **`actions/checkout`** with **`submodules: recursive`** and **`token: ${{ secrets.RESUME_REPO_TOKEN }}`** so runners can clone the **private** **`resume`** submodule; **`verify`** always runs **`sync:resume`** against the pin.
 - **`scripts/sync-resume.ts`** — reads **`resume/resume.toml`** only; records submodule **SHA** in **`resume.generated.json`** provenance.
 - **`Rollback` workflow** — root **`bun run build`** (runs **`sync:resume`** + Astro) before **`wrangler versions deploy`**.
 - **`ResumeShowcase.astro`** — data-driven focus chips, section decks, quick links from **`resume.links`**, two-column project grid, languages row; **`HOME_RESUME_SECTION_DECK`** in **`apps/site/src/config/site.ts`**.
