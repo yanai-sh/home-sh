@@ -45,26 +45,22 @@ wasm-lint:
 
 # Generate TypeScript types from wrangler bindings (run after changing wrangler.jsonc)
 worker-types:
-    wrangler types --config infra/workers/telemetry-write/wrangler.jsonc --output-path infra/workers/telemetry-write/worker-configuration.d.ts
-    wrangler types --config infra/workers/telemetry-read/wrangler.jsonc  --output-path infra/workers/telemetry-read/worker-configuration.d.ts
-
-# Deploy telemetry Workers (staging)
-deploy-telemetry:
-    wrangler deploy --config infra/workers/telemetry-write/wrangler.jsonc
-    wrangler deploy --config infra/workers/telemetry-read/wrangler.jsonc
+    cd apps/site && bun run wrangler-types
 
 # Run D1 migrations against local dev database
 migrate-local:
-    wrangler d1 migrations apply home-sh-telemetry --local --config infra/workers/telemetry-write/wrangler.jsonc
+    cd apps/site && bunx wrangler d1 migrations apply home-sh-telemetry --local
 
 # Run D1 migrations against remote database (production — use carefully)
 migrate-remote:
-    wrangler d1 migrations apply home-sh-telemetry --config infra/workers/telemetry-write/wrangler.jsonc
+    cd apps/site && bunx wrangler d1 migrations apply home-sh-telemetry --remote
 
 # ── OpenTofu / Infrastructure ────────────────────────────────────────────────
-# Secrets are read from infra/tofu/secrets.enc.json via the carlpett/sops provider
-# at plan/apply time. No shell-level secret injection needed — your age key at
-# ~/.config/sops/age/keys.txt is the only requirement.
+# OpenTofu reads cloudflare_api_token + cloudflare_account_id from gitignored
+# infra/tofu/terraform.tfvars (copy terraform.tfvars.example). CI uses GitHub
+# encrypted secrets CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID instead.
+# Worker runtime secrets: gitignored infra/secrets/worker-secrets.local.json
+# (see infra/secrets/README.md) + optional GitHub workflow push-worker-secrets.yml.
 
 # Initialize OpenTofu — run once after checkout or after adding providers
 tf-init:
@@ -82,16 +78,34 @@ tf-apply:
 tf-destroy:
     cd infra/tofu && tofu destroy
 
-# Edit the encrypted secrets file in-place (sops opens $EDITOR; saves re-encrypt automatically)
+# Edit local worker secrets (gitignored JSON — never commit)
 tf-secrets:
-    sops infra/tofu/secrets.enc.json
+    @echo "Edit infra/secrets/worker-secrets.local.json (copy from worker-secrets.example.json)"
 
-# Push runtime secrets from SOPS into the Workers Secrets Store. Idempotent —
-# run after editing infra/tofu/secrets.enc.json. Worker reads them via the
-# `secrets_store_secrets` bindings declared in apps/site/wrangler.jsonc.
+# Push runtime secrets into the Workers Secrets Store. Idempotent. Worker reads
+# them via `secrets_store_secrets` in apps/site/wrangler.jsonc.
 push-secrets:
     bun run scripts/push-secrets.ts
 
+# Optional (not portable / not CI): Bitwarden → local JSON or gh. See scripts/optional/README.md
+optional-bitwarden-pull:
+    bun run optional:bitwarden-to-secrets -- --write
+optional-bitwarden-github:
+    bun run optional:bitwarden-to-secrets -- --gh
+optional-bitwarden-sync:
+    bun run optional:bitwarden-to-secrets -- --write --gh
+
+# ── Resume PDF ───────────────────────────────────────────────────────────────
+# Canonical CV is built in yanai-sh/resume (LaTeX → PDF) and attached to each
+# `vX.Y.Z` GitHub Release. Download lands in **gitignored** `artifacts/resume/`
+# (outside Astro `public/` so it never shadows the SSR **`/resume.pdf`** route).
+
+sync-resume-pdf:
+    mkdir -p artifacts/resume
+    gh release download --repo yanai-sh/resume \
+        --pattern 'YanaiKlugman_CV_*.pdf' \
+        --output artifacts/resume/YanaiKlugman_CV.pdf \
+        --clobber
 
 # ── Full pipeline ────────────────────────────────────────────────────────────
 

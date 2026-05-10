@@ -8,6 +8,6 @@
     ".": "./index.ts"
   },
   "devDependencies": {
-    "@pandacss/dev": "^0.53.0"
+    "@pandacss/dev": "^1.11.0"
   }
 }

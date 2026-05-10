@@ -1,0 +1,51 @@
+---
+/**
+ * Rust Lyon lattice (same module as /workspace) behind hero copy.
+ * Client defers WASM until after window load + idle; skips entirely when
+ * prefers-reduced-motion.
+ */
+---
+
+<div class="home-lattice" aria-hidden="true">
+  <canvas id="home-lattice-canvas" class="home-lattice__canvas" width="800" height="600"></canvas>
+</div>
+
+<style>
+  .home-lattice {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .home-lattice__canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0.42;
+    mix-blend-mode: screen;
+  }
+
+  @media (max-width: 700px) {
+    .home-lattice__canvas {
+      opacity: 0.36;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-lattice {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { mountHomeLattice } from "@lib/home-lattice-client";
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => mountHomeLattice(), { once: true });
+  } else {
+    mountHomeLattice();
+  }
+</script>

@@ -1,5 +1,6 @@
 import { definePreset } from '@pandacss/dev';
 import { borderRecipe } from './recipes/border';
+import { heroCtaRecipe } from './recipes/hero-cta';
 import { paneRecipe } from './recipes/pane';
 import { monoRecipe, serifRecipe } from './recipes/text';
 import { telemetryRecipe } from './recipes/telemetry';
@@ -19,9 +20,16 @@ const uiPreset = definePreset({
         },
         surface: {
           base: { value: '#202733' },
-          contact: { value: 'rgba(28,34,44,0.92)' },
-          contactLift: { value: 'rgba(245,247,250,0.11)' },
-          contactField: { value: 'rgba(245,247,250,0.075)' },
+          contact: { value: 'rgba(22,28,38,0.97)' },
+          contactLift: { value: 'rgba(245,247,250,0.14)' },
+          contactField: { value: 'rgba(245,247,250,0.13)' },
+        },
+        hero: {
+          ctaPrimaryBorder: { value: 'rgba(47,107,255,0.72)' },
+          ctaPrimaryBg: { value: 'rgba(47,107,255,0.22)' },
+          ctaPrimaryBgHover: { value: 'rgba(47,107,255,0.30)' },
+          ctaOutlineBorder: { value: 'rgba(47,107,255,0.58)' },
+          ctaOutlineBgHover: { value: 'rgba(47,107,255,0.14)' },
         },
       },
       spacing: {
@@ -66,6 +74,7 @@ const uiPreset = definePreset({
     },
     recipes: {
       border: borderRecipe,
+      heroCta: heroCtaRecipe,
       pane: paneRecipe,
       mono: monoRecipe,
       serif: serifRecipe,

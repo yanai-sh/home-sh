@@ -1,9 +1,7 @@
 ---
-import { getEntry } from "astro:content";
+import { resumeSnapshotForPage } from "@lib/resume-page-snapshot";
 
-const entry = await getEntry("resume", "current");
-if (!entry) throw new Error("missing 'resume.current' content entry");
-const resume = entry.data;
+const resume = resumeSnapshotForPage(Astro.locals).data;
 const primaryExperience = resume.experience.slice(0, 4);
 const skillGroups = Object.entries(resume.skills).slice(0, 6);
 const fitSnapshot = [

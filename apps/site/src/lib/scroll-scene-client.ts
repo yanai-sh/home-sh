@@ -294,8 +294,8 @@ export function mountScrollScene(): void {
         pointerEvents: 'none',
         rotateX: -8,
         scale: 0.97,
-        transformOrigin: '50% 16%',
-        y: 84,
+        transformOrigin: '50% 8%',
+        y: 64,
         yPercent: -50,
         z: 0,
       });

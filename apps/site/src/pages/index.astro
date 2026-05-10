@@ -4,6 +4,7 @@ import ContactForm from "@components/ContactForm.astro";
 import EmailPill from "@components/EmailPill.astro";
 import Footer from "@components/Footer.astro";
 import Hero from "@components/Hero.astro";
+import HomeLattice from "@components/HomeLattice.astro";
 import Lede from "@components/Lede.astro";
 import ResumeShowcase from "@components/ResumeShowcase.astro";
 import SceneCanvas from "@components/SceneCanvas.astro";
@@ -15,12 +16,13 @@ import { footerEdgeProps } from "@lib/footer-edge";
 const footer = footerEdgeProps(Astro.request);
 ---
 
-<Layout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+<Layout title={SITE_TITLE} description={SITE_DESCRIPTION} clientRouter>
   <Background />
   <SceneCanvas />
   <main class="page-shell" id="main-content" tabindex="-1">
     <section class="chapter chapter--home" data-bg-variant="home" aria-labelledby="hero-title">
       <div class="home-motion">
+        <HomeLattice />
         <span class="roll-index" aria-hidden="true">01</span>
         <p class="chapter-kicker" aria-hidden="true">01 / home</p>
         <div class="hero-headline-slot">
@@ -81,6 +83,8 @@ const footer = footerEdgeProps(Astro.request);
   }
 
   .home-motion {
+    position: relative;
+    isolation: isolate;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -91,6 +95,13 @@ const footer = footerEdgeProps(Astro.request);
       max(var(--spacing-16), min(var(--spacing-48), 5vi))
       calc(clamp(var(--spacing-48), 9vh, var(--spacing-96)) + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
+  }
+
+  .home-motion .chapter-kicker,
+  .home-motion .hero-headline-slot,
+  .home-motion .home-actions {
+    position: relative;
+    z-index: 2;
   }
 
   :global(html.has-scroll-scene) .home-motion {
@@ -123,7 +134,7 @@ const footer = footerEdgeProps(Astro.request);
     position: absolute;
     top: clamp(var(--spacing-24), 7vh, var(--spacing-64));
     right: max(var(--spacing-16), min(var(--spacing-64), 6vi));
-    z-index: -1;
+    z-index: 1;
     color: rgba(245, 247, 250, 0.095);
     font-size: clamp(8rem, 28vi, 24rem);
     font-weight: 800;
@@ -341,7 +352,7 @@ const footer = footerEdgeProps(Astro.request);
         animation: fallback-contact-reveal linear both;
         animation-timeline: view(block);
         animation-range: entry 0% cover 46%;
-        transform-origin: 50% 16%;
+        transform-origin: 50% 8%;
       }
 
       :global(html:not(.has-scroll-scene) .resume-showcase) {

@@ -1,5 +1,6 @@
 {
   "extends": "astro/tsconfigs/strict",
+  "exclude": ["public/wasm/**/*.js", "dist"],
   "compilerOptions": {
     "plugins": [
       {
@@ -24,11 +25,7 @@
         "src/*"
       ]
     },
-    "types": [
-      "@astrojs/cloudflare",
-      "@cloudflare/workers-types",
-      "bun"
-    ],
+    "types": ["@astrojs/cloudflare", "bun", "node"],
     "strict": true,
     "skipLibCheck": true,
     "module": "ESNext",

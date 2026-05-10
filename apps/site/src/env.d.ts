@@ -11,9 +11,15 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+declare namespace App {
+  interface Locals {
+    resumeSnapshot?: import('./content/resume-schema').ResumeSnapshot;
+  }
+}
+
 declare global {
   interface Request {
     /** Present on Cloudflare; absent in some dev environments. */
-    cf?: import('@cloudflare/workers-types').CfProperties;
+    cf?: CfProperties;
   }
 }

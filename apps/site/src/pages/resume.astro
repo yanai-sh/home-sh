@@ -1,22 +1,19 @@
 ---
-import { getEntry } from "astro:content";
 import Background from "@components/Background.astro";
 import Footer from "@components/Footer.astro";
 import Layout from "@layouts/Layout.astro";
 import { footerEdgeProps } from "@lib/footer-edge";
-import type { ResumeSnapshot } from "@/content/resume-schema";
-import generated from "../../../../content/resume.generated.json";
+import { resumeSnapshotForPage } from "@lib/resume-page-snapshot";
 
-const entry = await getEntry("resume", "current");
-if (!entry) throw new Error("missing 'resume.current' content entry");
-const resume = entry.data;
-const source = generated.source as ResumeSnapshot["source"];
+const snapshot = resumeSnapshotForPage(Astro.locals);
+const resume = snapshot.data;
+const source = snapshot.source;
 const footer = footerEdgeProps(Astro.request);
 const pageTitle = `${resume.header.name} — resume`;
 const pageDescription = `${resume.header.name}, ${resume.header.headline}.`;
 const primaryExperience = resume.experience.slice(0, 3);
 const skillGroups = Object.entries(resume.skills);
-const sourceLabel = source.fallback ? "fallback snapshot" : "synced source";
+const sourceLabel = source.fallback ? "fallback snapshot" : "live from GitHub";
 const sourceDetail = source.commitSha ? source.commitSha.slice(0, 7) : source.path;
 ---
 

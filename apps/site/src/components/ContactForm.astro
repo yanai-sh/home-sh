@@ -125,7 +125,8 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
   :global(html.has-scroll-scene) .contact-stage {
     position: fixed;
-    top: 38%;
+    /* Anchor above mid-viewport so the form + heading read as one unit, not “bottom heavy”. */
+    top: 26%;
     left: max(var(--spacing-16), min(var(--spacing-48), 5vi));
     right: max(var(--spacing-16), min(var(--spacing-48), 5vi));
     z-index: 11;
@@ -136,7 +137,7 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
           max(var(--spacing-16), min(var(--spacing-48), 5vi))
       )
     );
-    transform-origin: 50% 12%;
+    transform-origin: 50% 8%;
     will-change: transform, opacity;
   }
 
@@ -232,15 +233,15 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     width: 100%;
     min-width: 0;
     padding: clamp(var(--spacing-16), 3vi, var(--spacing-32));
-    border: 1px solid rgba(245, 245, 247, 0.09);
+    border: 1px solid rgba(245, 245, 247, 0.16);
     border-radius: 8px;
     background:
-      linear-gradient(180deg, var(--colors-surface-contact-lift), rgba(245, 247, 250, 0.075)),
+      linear-gradient(180deg, var(--colors-surface-contact-lift), rgba(245, 247, 250, 0.1)),
       var(--colors-surface-contact);
     color: rgba(245, 247, 250, 0.94);
     box-shadow:
-      0 0 0 1px rgba(47, 107, 255, 0.12),
-      0 24px 80px rgba(0, 0, 0, 0.38);
+      0 0 0 1px rgba(47, 107, 255, 0.22),
+      0 20px 64px rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
@@ -258,7 +259,7 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .contact-direct p {
     max-width: 27rem;
     margin: 0;
-    color: color-mix(in srgb, var(--colors-fg) 72%, transparent);
+    color: color-mix(in srgb, var(--colors-fg) 86%, transparent);
     font-family: var(--fonts-serif);
     font-size: 1rem;
     line-height: 1.65;
@@ -274,13 +275,13 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .form-label {
     font-size: 0.6875rem;
     letter-spacing: 0.1em;
-    color: rgba(245, 247, 250, 0.62);
+    color: rgba(245, 247, 250, 0.78);
     user-select: none;
   }
 
   .form-input {
     background: var(--colors-surface-contact-field);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.26);
     border-radius: 4px;
     color: rgba(255, 255, 255, 0.96);
     font-family: var(--fonts-mono);
@@ -299,12 +300,12 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   }
 
   .form-input::placeholder {
-    color: rgba(245, 247, 250, 0.38);
+    color: rgba(245, 247, 250, 0.5);
   }
 
   .form-input:hover {
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.105);
+    border-color: rgba(255, 255, 255, 0.38);
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .form-input:focus {
@@ -382,7 +383,7 @@ const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .form-status {
     font-size: 0.75rem;
     letter-spacing: 0.04em;
-    color: rgba(245, 247, 250, 0.62);
+    color: rgba(245, 247, 250, 0.76);
     transition: color 0.2s ease;
   }
 

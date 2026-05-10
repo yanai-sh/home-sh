@@ -15,28 +15,35 @@
       "id": "24a11b0f6e8d48c5b0ac070019588200"
     }
   ],
+  // D1 binding for telemetry — `sessions` + `frame_samples` in infra/migrations/0001_init.sql
+  // (cloudflare_d1_database.telemetry). Endpoints: /api/telemetry/beacon, /api/telemetry/stats.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "home-sh-telemetry",
+      "database_id": "b37f9fce-9ee6-458d-9fa8-27356464788c",
+      "migrations_dir": "../../infra/migrations"
+    }
+  ],
   // Secrets bound from the account-level Workers Secrets Store
   // (yanai-sh-prod, id 02000d0490be49b09eed0e6d95c08e99). Values are
-  // pushed by `bun run scripts/push-secrets.ts` from the SOPS-encrypted
-  // source-of-truth at infra/tofu/secrets.enc.json.
+  // pushed by `bun run push-secrets` (local JSON or GitHub Actions — see infra/secrets/README.md).
   "secrets_store_secrets": [
     { "binding": "TURNSTILE_SECRET", "store_id": "02000d0490be49b09eed0e6d95c08e99", "secret_name": "TURNSTILE_SECRET" },
     { "binding": "RESEND_API_KEY",   "store_id": "02000d0490be49b09eed0e6d95c08e99", "secret_name": "RESEND_API_KEY" },
     { "binding": "CONTACT_FROM",     "store_id": "02000d0490be49b09eed0e6d95c08e99", "secret_name": "CONTACT_FROM" },
-    { "binding": "CONTACT_TO",       "store_id": "02000d0490be49b09eed0e6d95c08e99", "secret_name": "CONTACT_TO" }
+    { "binding": "CONTACT_TO",       "store_id": "02000d0490be49b09eed0e6d95c08e99", "secret_name": "CONTACT_TO" },
+    { "binding": "RESUME_REPO_TOKEN", "store_id": "02000d0490be49b09eed0e6d95c08e99", "secret_name": "RESUME_REPO_TOKEN" }
   ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
   },
-  "unsafe": {
-    "bindings": [
-      {
-        "name": "CONTACT_RATE_LIMIT",
-        "type": "ratelimit",
-        "namespace_id": "1001",
-        "simple": { "limit": 5, "period": 60 }
-      }
-    ]
-  }
+  "ratelimits": [
+    {
+      "name": "CONTACT_RATE_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ]
 }

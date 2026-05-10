@@ -1,18 +1,27 @@
 ---
-import '../styles/global.css';
-import '@fontsource/ibm-plex-mono/index.css';
-import '@fontsource/ibm-plex-serif/index.css';
-import { SITE_OG_IMAGE_PATH, SITE_TITLE, SITE_URL } from '@config/site';
+import "../styles/global.css";
+import "@fontsource/ibm-plex-mono/index.css";
+import "@fontsource/ibm-plex-serif/index.css";
+import { ClientRouter } from "astro:transitions";
+import { SITE_OG_IMAGE_PATH, SITE_TITLE, SITE_URL } from "@config/site";
 
 interface Props {
   title: string;
   description?: string;
   /** Target id for the skip link (must match the main content region on the page). */
   contentId?: string;
-  robots?: 'index' | 'noindex';
+  robots?: "index" | "noindex";
+  /** Opt-in Astro client router + view transitions (homepage only by default). */
+  clientRouter?: boolean;
 }
 
-const { title, description, contentId = 'main-content', robots = 'index' } = Astro.props;
+const {
+  title,
+  description,
+  contentId = "main-content",
+  robots = "index",
+  clientRouter = false,
+} = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, SITE_URL).href;
 const ogImageUrl = new URL(SITE_OG_IMAGE_PATH, SITE_URL).href;
 ---
@@ -47,6 +56,7 @@ const ogImageUrl = new URL(SITE_OG_IMAGE_PATH, SITE_URL).href;
     <meta name="twitter:image:alt" content="yanai.sh wordmark on a slate background" />
     <meta name="theme-color" content="#151B22" />
     <title>{title}</title>
+    {clientRouter ? <ClientRouter /> : null}
   </head>
   <body>
     <a class="skip-link" href={`#${contentId}`}>Skip to content</a>
