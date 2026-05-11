@@ -46,10 +46,11 @@ const pack = (await import(packPath, { with: { type: 'json' } })).default as Pac
 const defaultW = pack.width ?? 24;
 const defaultH = pack.height ?? 24;
 
+const missing: string[] = [];
 for (const name of NAMES) {
   const ic = pack.icons[name];
   if (!ic) {
-    console.error(`miss: ${name}`);
+    missing.push(name);
     continue;
   }
   const vw = ic.width ?? defaultW;
@@ -57,4 +58,8 @@ for (const name of NAMES) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vw} ${vh}" fill="currentColor">${ic.body}</svg>\n`;
   writeFileSync(resolve(outDir, `${name}.svg`), svg);
   console.log(`wrote ${name}`);
+}
+
+if (missing.length > 0) {
+  throw new Error(`Missing simple-icons entries: ${missing.join(', ')}`);
 }
