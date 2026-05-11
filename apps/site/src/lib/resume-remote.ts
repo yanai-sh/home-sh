@@ -1,5 +1,5 @@
+import embeddedFallbackJson from '@resume/generated';
 import { type ResumeSnapshot, ResumeSnapshotSchema } from '@/content/resume-schema';
-import embeddedFallbackJson from '../../../../content/resume.generated.json';
 
 /**
  * Bundled resume snapshot from `content/resume.generated.json`, produced by

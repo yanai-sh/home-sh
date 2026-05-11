@@ -9,6 +9,9 @@
     ],
     "baseUrl": ".",
     "paths": {
+      "@resume/generated": [
+        "../../content/resume.generated.json"
+      ],
       "@components/*": [
         "src/components/*"
       ],

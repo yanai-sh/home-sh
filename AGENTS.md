@@ -32,7 +32,7 @@ design/      # tokens.ts + build-root-css.ts
 middleware.ts # security headers (CSP, HSTS, etc.)
 ```
 
-Path aliases (`apps/site/tsconfig.json`): `@/` → `src/`, `@components/*`, `@layouts/*`, `@lib/*`, `@config/*`.
+Path aliases (`apps/site/tsconfig.json`; Vite mirrors `@resume/generated` in `astro.config.mjs`): `@/` → `src/`, `@components/*`, `@layouts/*`, `@lib/*`, `@config/*`, `@resume/generated` → monorepo `content/resume.generated.json` (bundled resume snapshot from `sync:resume`).
 
 Client-only scripts follow `*-client.ts` naming and are loaded as `<script>` tags (never imported at build time).
 

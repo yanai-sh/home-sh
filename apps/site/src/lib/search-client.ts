@@ -1,4 +1,4 @@
-import rawResumeSnapshot from '../../../../content/resume.generated.json';
+import rawResumeSnapshot from '@resume/generated';
 import { NOW, PROJECTS, READING, STACK, USES } from '../config/workspace';
 
 export interface SearchEntry {
