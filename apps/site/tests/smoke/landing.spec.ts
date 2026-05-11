@@ -74,6 +74,21 @@ test('contact form renders sitekey', async ({ page }, testInfo) => {
   expect(sitekey).toMatch(/^0x4AAAA/);
 });
 
+test('POST /api/contact rejects oversized message before Turnstile', async ({ request }) => {
+  const res = await request.post(`${BASE}/api/contact`, {
+    headers: { 'Content-Type': 'application/json' },
+    data: JSON.stringify({
+      name: 'Smoke',
+      email: 'smoke@example.com',
+      message: 'x'.repeat(2001),
+      token: 'not-verified-should-not-run',
+    }),
+  });
+  expect(res.status()).toBe(400);
+  const data = (await res.json()) as { error?: string };
+  expect(data.error).toBe('invalid_input');
+});
+
 test('mobile viewport (375px wide) shows resume CTAs without overflow', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const page = await ctx.newPage();

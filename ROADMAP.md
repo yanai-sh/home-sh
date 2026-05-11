@@ -258,9 +258,9 @@ Acceptance:
   fragment **`#systems`** (exact hash policy documented in middleware or page).
 - No standalone interactive document is required at `/workspace` once redirect
   ships.
-- COOP/COEP: remove from `/workspace` when the route is redirect-only; scope
-  shared-memory headers to `/` only after an explicit architecture review if
-  SAB is required.
+- **COOP/COEP:** **`apps/site/public/_headers`** no longer scopes isolation to
+  `/workspace/*` (redirect-only route). Any future SharedArrayBuffer need on `/`
+  requires an explicit middleware + CSP review before widening headers.
 
 ## Performance And Accessibility
 
