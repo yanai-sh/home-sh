@@ -10,5 +10,6 @@
 - **Polyglot tasks:** `just --list` (WASM, Workers, OpenTofu). Infra: **[infra/README.md](infra/README.md)**.
 - **CSS:** Panda CSS preset in `packages/ui-system` *and* `src/design/tokens.ts` → `:root` vars in `Layout.astro`. `dev`/`build` run `panda codegen` first.
 - **Path aliases** (`apps/site/tsconfig.json`; Vite mirrors `@resume/generated` in `astro.config.mjs`): `@/`, `@components/*`, `@layouts/*`, `@lib/*`, `@config/*`, `@resume/generated` → `content/resume.generated.json`.
+- **direnv** (`.envrc`): **`direnv allow`** → **`GIT_CONFIG_*`** scopes **Git** to **`yanai-sh`** on GitHub; **`GH_TOKEN`** from **`gh auth token -u yanai-sh`** when available. Cleared outside this repo. Restore default **`gh`** account elsewhere with **`gh auth switch -u <account>`**.
 - **Client scripts:** `*-client.ts` naming, loaded as `<script>` tags — never build-time imports.
 - **Lefthook `pre-push`** runs `verify`. Skip with `LEFTHOOK=0` (rare).
