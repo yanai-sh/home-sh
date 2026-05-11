@@ -1,17 +1,13 @@
 import { defineMiddleware } from 'astro:middleware';
 
-function securityHeadersForRedirect(isHttps: boolean): Headers {
-  const headers = new Headers();
-  headers.set('X-Content-Type-Options', 'nosniff');
-  headers.set('X-Frame-Options', 'DENY');
-  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+function buildContentSecurityPolicy(isHttps: boolean, isDev: boolean): string {
   const scriptSrc = [
     "'self'",
     "'wasm-unsafe-eval'",
     'https://challenges.cloudflare.com',
-    ...(import.meta.env.DEV ? ["'unsafe-inline'"] : []),
+    ...(isDev ? ["'unsafe-inline'"] : []),
   ];
-  const cspDirectives = [
+  const directives = [
     "default-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
@@ -20,11 +16,19 @@ function securityHeadersForRedirect(isHttps: boolean): Headers {
     'frame-src https://challenges.cloudflare.com',
     "connect-src 'self' https://challenges.cloudflare.com",
   ];
+  if (isHttps) directives.push('upgrade-insecure-requests');
+  return `${directives.join('; ')};`;
+}
+
+function securityHeadersForRedirect(isHttps: boolean): Headers {
+  const headers = new Headers();
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('X-Frame-Options', 'DENY');
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   if (isHttps) {
-    cspDirectives.push('upgrade-insecure-requests');
     headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
-  headers.set('Content-Security-Policy', `${cspDirectives.join('; ')};`);
+  headers.set('Content-Security-Policy', buildContentSecurityPolicy(isHttps, import.meta.env.DEV));
   return headers;
 }
 
@@ -55,25 +59,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
 
-  const scriptSrc = [
-    "'self'",
-    "'wasm-unsafe-eval'",
-    'https://challenges.cloudflare.com',
-    ...(import.meta.env.DEV ? ["'unsafe-inline'"] : []),
-  ];
-  const cspDirectives = [
-    "default-src 'self'",
-    "style-src 'self' 'unsafe-inline'",
-    "font-src 'self'",
-    "img-src 'self' data:",
-    `script-src ${scriptSrc.join(' ')}`,
-    'frame-src https://challenges.cloudflare.com',
-    "connect-src 'self' https://challenges.cloudflare.com",
-  ];
-  if (isHttps) {
-    cspDirectives.push('upgrade-insecure-requests');
-  }
-  headers.set('Content-Security-Policy', `${cspDirectives.join('; ')};`);
+  headers.set('Content-Security-Policy', buildContentSecurityPolicy(isHttps, import.meta.env.DEV));
 
   return new Response(response.body, {
     status: response.status,

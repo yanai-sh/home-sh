@@ -91,7 +91,7 @@ test('WASM load failure: pane content remains readable, fallback visible', async
 
 test('GET /workspace redirects toward /#systems', async ({ request }) => {
   const res = await request.get(`${BASE}/workspace`, { maxRedirects: 0 });
-  expect([301, 308]).toContain(res.status());
+  expect(res.status()).toBe(308);
   const loc = res.headers().location ?? '';
   expect(loc).toMatch(/\/#systems$/);
 });

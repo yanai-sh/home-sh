@@ -21,5 +21,5 @@ export function mountHomeSystems(): void {
   mountWorkspaceWip(HOME_WIP_IDS);
   mountTelemetry();
   const systemsRoot = document.getElementById('systems');
-  void mountTelemetryStats(systemsRoot ?? undefined);
+  void mountTelemetryStats(systemsRoot);
 }
