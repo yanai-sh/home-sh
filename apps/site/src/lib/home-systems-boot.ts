@@ -2,23 +2,16 @@ import { mountTelemetry } from '@lib/telemetry-client';
 import { mountTelemetryStats } from '@lib/telemetry-stats-client';
 import { mountWorkspaceWip } from '@lib/workspace-wip-client';
 
-const HOME_WIP_IDS = {
-  canvas: 'home-rust-canvas',
-  searchTrigger: 'home-search-trigger',
-  searchClose: 'home-search-close',
-  searchPanel: 'home-search-panel',
-  searchInput: 'home-search-input',
-  searchResults: 'home-search-results',
-} as const;
+const HOME_CANVAS_ID = 'home-rust-canvas';
 
 let mounted = false;
 
-/** Lazy-mount WASM canvas, search, pane nav, and telemetry for `#systems` on `/`. */
+/** Lazy-mount WASM canvas, pane nav, and telemetry for `#systems` on `/`. */
 export function mountHomeSystems(): void {
   if (mounted) return;
-  if (!document.getElementById(HOME_WIP_IDS.canvas)) return;
+  if (!document.getElementById(HOME_CANVAS_ID)) return;
   mounted = true;
-  mountWorkspaceWip(HOME_WIP_IDS);
+  mountWorkspaceWip({ canvas: HOME_CANVAS_ID });
   mountTelemetry();
   const systemsRoot = document.getElementById('systems');
   void mountTelemetryStats(systemsRoot);

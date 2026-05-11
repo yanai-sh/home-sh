@@ -56,15 +56,6 @@ test('runtime strip transitions wasm/sab/canvas out of pending', async ({ page }
   }
 });
 
-test('search panel opens and closes without error', async ({ page }) => {
-  await gotoHomeSystemsReady(page);
-  await expect(page.locator('#home-search-panel')).toBeHidden();
-  await page.click('#home-search-trigger');
-  await expect(page.locator('#home-search-panel')).toBeVisible();
-  await page.click('#home-search-close');
-  await expect(page.locator('#home-search-panel')).toBeHidden();
-});
-
 test('reduced-motion: canvas frame is hidden, prose fills the projects pane', async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: 'reduce' });
   const page = await ctx.newPage();

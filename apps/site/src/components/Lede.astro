@@ -4,7 +4,6 @@ import { heroCta } from "../../styled-system/recipes";
 
 const lede = SITE_LEDE.trim();
 const ctaPrimary = heroCta({ variant: "primary" });
-const ctaOutline = heroCta({ variant: "outline" });
 ---
 
 {
@@ -14,8 +13,7 @@ const ctaOutline = heroCta({ variant: "outline" });
 }
 
 <div class="lede-cta" role="group" aria-label="Resume access">
-  <a class={ctaPrimary} href="#resume-full">View resume</a>
-  <a class={ctaOutline} href="/resume.pdf" target="_blank" rel="noopener noreferrer">Download PDF</a>
+  <a class={ctaPrimary} href="#resume">View resume</a>
 </div>
 
 <style>

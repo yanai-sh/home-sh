@@ -135,4 +135,111 @@ const ogImageUrl = new URL(SITE_OG_IMAGE_PATH, SITE_URL).href;
     background: rgba(47, 107, 255, 0.32);
     color: var(--colors-bg);
   }
+
+  .chapter-kicker {
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-muted) 86%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  /*
+   * Section heading: slash + label, sentence-cased.
+   * Inspired by nbakh16/career-portfolio-template: "<span class='slash'>/</span> Section Name".
+   */
+  .section-heading {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    color: var(--colors-fg);
+    font-family: var(--fonts-mono);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  .section-heading--display {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .section-heading--sub {
+    font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  }
+
+  .section-heading .slash {
+    color: var(--colors-accent);
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .section-deck {
+    max-width: 36rem;
+    margin: var(--spacing-12) 0 0;
+    color: color-mix(in srgb, var(--colors-fg) 62%, transparent);
+    font-family: var(--fonts-serif);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .section-deck a {
+    color: color-mix(in srgb, var(--colors-accent) 78%, var(--colors-fg));
+    text-underline-offset: 0.2em;
+  }
+
+  .section-deck code {
+    font-family: var(--fonts-mono);
+    font-size: 0.85em;
+    font-weight: 600;
+    color: color-mix(in srgb, var(--colors-accent) 72%, var(--colors-fg));
+  }
+
+  /*
+   * Card surface: subtle accent tint, lifts on hover.
+   * Inspired by nbakh16/career-portfolio-template's `bg-accent/5 border-accent/10 rounded-2xl hover:border-accent/40` recipe.
+   */
+  .card {
+    border: 1px solid color-mix(in srgb, var(--colors-accent) 12%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--colors-accent) 5%, transparent);
+    transition:
+      border-color 0.3s ease,
+      background-color 0.3s ease;
+  }
+
+  .card:hover,
+  .card:focus-within {
+    border-color: color-mix(in srgb, var(--colors-accent) 40%, transparent);
+    background: color-mix(in srgb, var(--colors-accent) 8%, transparent);
+  }
+
+  /*
+   * Tag chip: small accent-tinted pill. Brightens when the parent .card is hovered.
+   */
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--colors-accent) 18%, transparent);
+    border-radius: 6px;
+    padding: 0.22rem 0.55rem;
+    color: color-mix(in srgb, var(--colors-accent) 72%, var(--colors-fg));
+    background: color-mix(in srgb, var(--colors-accent) 5%, transparent);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    transition:
+      border-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  .card:hover .tag-chip,
+  .card:focus-within .tag-chip {
+    border-color: color-mix(in srgb, var(--colors-accent) 40%, transparent);
+    color: color-mix(in srgb, var(--colors-accent) 92%, var(--colors-fg));
+  }
 </style>

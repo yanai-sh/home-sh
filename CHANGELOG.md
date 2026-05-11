@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Site UX — design pass** — Unified slash-prefixed section headings (`/ Resume`, `/ Systems`, `/ Contact`, plus sub-sections) and a single `.card` + `.tag-chip` recipe across `Layout.astro`, `ResumeShowcase`, `HomeSystems`, and `ContactForm` (heavy gradient/glass chrome dropped). Pulsing dot on the current-role timeline entry. Inspiration: `nbakh16/career-portfolio-template`.
+- **Hero contact row** — `EmailPill` removed in favor of a single `Socials` row (GitHub, LinkedIn, **click-to-copy email** button) with hover-revealed labels; clipboard write replaces the previous `mailto:` for the in-hero contact action. Server `mailto:` contact CTA is preserved in `ContactForm`.
+- **Technical profile icons** — Each skill now renders a brand glyph (Simple Icons SVGs vendored under `apps/site/src/icons/`) via `astro-icon`; no proficiency stars. `scripts/sync-tech-icons.ts` regenerates the SVGs from `@iconify-json/simple-icons` at dev time so the Worker has no runtime Iconify dependency.
 - **Site UX** — Full semantic résumé on **`/#resume-full`** (shared **`ResumeDocument`** with **`/resume`**), systems strip on **`/#systems`** (canvas, search, telemetry, reading), and idle-mounted client boot on **`/`**. **`GET /workspace`** returns **`308`** to **`/#systems`** (page removed). **`ROADMAP.md`** reflects the single-URL primary experience.
 - **README** — brand assets path points at **`apps/site/public/brand/`**; OG/canonical pointers reference **`apps/site/src/config/site.ts`** instead of a missing root **`manifest.json`**.
 - **Contact** — **`POST /api/contact`** unit tests cover over-long **`message`** and disallowed **`Origin`** (honeypot + rate limit behavior unchanged). Playwright smoke asserts **`400`** + **`invalid_input`** for an oversized JSON body (runs against local preview and deployed **`SMOKE_BASE_URL`**).

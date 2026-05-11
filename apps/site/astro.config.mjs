@@ -3,13 +3,21 @@ import { fileURLToPath } from 'node:url';
 import cloudflare from '@astrojs/cloudflare';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
+import icon from 'astro-icon';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   site: 'https://yanai.sh',
   output: 'server',
-  integrations: [sitemap()],
+  integrations: [
+    sitemap(),
+    // Resolves SVGs from `src/icons/*.svg` and inlines them at build time so the
+    // worker has no runtime dependency on an Iconify pack (workerd lacks Node fs).
+    // SVGs were extracted from @iconify-json/simple-icons via:
+    //   scripts/sync-tech-icons.ts
+    icon(),
+  ],
   adapter: cloudflare({
     platformProxy: { enabled: true },
   }),

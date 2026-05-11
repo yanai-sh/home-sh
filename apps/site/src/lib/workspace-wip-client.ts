@@ -406,7 +406,7 @@ function mountPaneNavigation(): void {
 
   const focusPaneHeading = (id: string) => {
     const pane = document.getElementById(id);
-    const heading = pane?.querySelector<HTMLElement>('h2[tabindex="-1"]');
+    const heading = pane?.querySelector<HTMLElement>('h2[tabindex="-1"], h3[tabindex="-1"]');
     heading?.focus({ preventScroll: true });
   };
 
