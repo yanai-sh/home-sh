@@ -43,6 +43,37 @@ test('honeypot field tripped → 200 with HONEYPOT_TRIPPED code', async () => {
   expect(json.ok).toBe(true);
 });
 
+test('message over 2000 chars → INVALID_INPUT', async () => {
+  const req = buildRequest({
+    name: 'Test',
+    email: 'test@example.com',
+    message: 'x'.repeat(2001),
+    token: 'unused',
+  });
+  // @ts-expect-error — Astro APIRoute signature; we're calling directly
+  const res = await POST({ request: req });
+  expect(res.status).toBe(400);
+  const json = (await res.json()) as { error?: string };
+  expect(json.error).toBe(CONTACT_ERROR.INVALID_INPUT);
+});
+
+test('disallowed Origin → FORBIDDEN_ORIGIN', async () => {
+  const req = buildRequest(
+    {
+      name: 'Test',
+      email: 'test@example.com',
+      message: 'Hello',
+      token: 'unused',
+    },
+    'https://evil.example',
+  );
+  // @ts-expect-error — Astro APIRoute signature; we're calling directly
+  const res = await POST({ request: req });
+  expect(res.status).toBe(403);
+  const json = (await res.json()) as { error?: string };
+  expect(json.error).toBe(CONTACT_ERROR.FORBIDDEN_ORIGIN);
+});
+
 test('rate-limited IP gets RATE_LIMITED', async () => {
   // The `cloudflare:workers` env is module-bound at import time, so we can't
   // swap the mock per-test. Instead, assert that the contact source references

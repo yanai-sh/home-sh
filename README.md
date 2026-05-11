@@ -20,7 +20,7 @@
 
 Public source for my personal site. The code is under the [MIT License](LICENSE).
 
-Polished **brand SVGs** (mark, lockups, wordmark, OG cover, palette) live in [`public/brand/`](public/brand/) with a machine-readable [`manifest.json`](public/brand/manifest.json).
+Polished **brand SVGs** (wordmark, favicon, OG cover) live in [`apps/site/public/brand/`](apps/site/public/brand/). Open Graph defaults use **`SITE_URL`** and **`SITE_OG_IMAGE_PATH`** in [`apps/site/src/config/site.ts`](apps/site/src/config/site.ts).
 
 [AGENTS.md](AGENTS.md) and [ARCHITECTURE.md](ARCHITECTURE.md) describe layout, commands, maintainer workflow, and design choices.
 

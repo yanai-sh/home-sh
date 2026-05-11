@@ -74,7 +74,7 @@ Day-to-day: **`git checkout dev && git pull`** → **`git submodule update --ini
 
 ### Resume submodule and `RESUME_REPO_TOKEN`
 
-HTML **`/resume`**, home resume, and **`/workspace`** search use **`content/resume.generated.json`**, produced by **`bun run sync:resume`** from the pinned **`resume/`** submodule (**`yanai-sh/resume`**, **`resume.toml`**). Bump the submodule pointer to ship upstream CV changes, then **`bun run verify`**.
+HTML **`/resume`**, home resume band, and **`/#systems`** (site search index) use **`content/resume.generated.json`**, produced by **`bun run sync:resume`** from the pinned **`resume/`** submodule (**`yanai-sh/resume`**, **`resume.toml`**). Bump the submodule pointer to ship upstream CV changes, then **`bun run verify`**.
 
 **`/resume.pdf`** (GitHub Releases proxy) and local **`astro dev`** / **`preview`** when you need PDFs require **`RESUME_REPO_TOKEN`** — same PAT string as the **`staging`/`production`** GitHub Environment (Deploy syncs it to Cloudflare Secrets Store). Put it in **`apps/site/.dev.vars`** or as **`resume_repo_token`** in gitignored **`infra/secrets/worker-secrets.local.json`** (direnv); full secret shape: **`infra/secrets/README.md`**. **`/resume.pdf`** smoke only makes sense with **`SMOKE_BASE_URL`** on a deployed origin; local **`astro preview`** does not emulate Secrets Store bindings reliably.
 
