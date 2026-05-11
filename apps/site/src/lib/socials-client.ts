@@ -31,6 +31,7 @@ export function mountSocialsCopy(): void {
       window.clearTimeout(resetTimer);
       resetTimer = window.setTimeout(() => resetState(button), 2000);
     } catch {
+      resetState(button);
       announce('Copy failed. Long-press or select the address manually.');
       window.clearTimeout(resetTimer);
       resetTimer = window.setTimeout(() => announce(''), 4500);
