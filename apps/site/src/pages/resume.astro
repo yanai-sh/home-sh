@@ -1,6 +1,7 @@
 ---
 import Background from "@components/Background.astro";
 import Footer from "@components/Footer.astro";
+import ResumeDocument from "@components/ResumeDocument.astro";
 import Layout from "@layouts/Layout.astro";
 import { footerEdgeProps } from "@lib/footer-edge";
 import { resumeSnapshotForPage } from "@lib/resume-page-snapshot";
@@ -11,8 +12,6 @@ const source = snapshot.source;
 const footer = footerEdgeProps(Astro.request);
 const pageTitle = `${resume.header.name} — resume`;
 const pageDescription = `${resume.header.name}, ${resume.header.headline}.`;
-const primaryExperience = resume.experience.slice(0, 3);
-const skillGroups = Object.entries(resume.skills);
 const sourceLabel = source.fallback ? "fallback snapshot" : "pinned resume submodule";
 const sourceDetail = source.commitSha ? source.commitSha.slice(0, 7) : source.path;
 ---
@@ -52,123 +51,7 @@ const sourceDetail = source.commitSha ? source.commitSha.slice(0, 7) : source.pa
       </nav>
     </aside>
 
-    <article class="resume-document" aria-labelledby="resume-title">
-      <header class="resume-header">
-        <p class="chapter-kicker">static resume</p>
-        <h2 id="resume-title">Forward deployment, systems integration, customer engineering.</h2>
-        <p>{resume.summary}</p>
-      </header>
-
-      <section class="resume-section" aria-labelledby="experience-title">
-        <div class="section-heading">
-          <span>01</span>
-          <h2 id="experience-title">Experience</h2>
-        </div>
-
-        <ol class="timeline">
-          {primaryExperience.map((job) => (
-            <li>
-              <article class="entry">
-                <header>
-                  <p class="period">{job.period}</p>
-                  <h3>{job.role}</h3>
-                  <p class="meta">
-                    {job.company}
-                    {job.subtitle ? ` / ${job.subtitle}` : ""}
-                    {job.location ? ` / ${job.location}` : ""}
-                  </p>
-                </header>
-                <ul>
-                  {job.highlights.slice(0, 5).map((highlight) => (
-                    <li>{highlight}</li>
-                  ))}
-                </ul>
-                {job.skills.length > 0 ? (
-                  <p class="tags">{job.skills.join(" / ")}</p>
-                ) : null}
-              </article>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {resume.projects.length > 0 ? (
-        <section class="resume-section" aria-labelledby="projects-title">
-          <div class="section-heading">
-            <span>02</span>
-            <h2 id="projects-title">Projects</h2>
-          </div>
-
-          <div class="entry-list">
-            {resume.projects.map((project) => (
-              <article class="entry">
-                <header>
-                  <h3>{project.name}</h3>
-                  {project.description ? <p class="meta">{project.description}</p> : null}
-                </header>
-                <ul>
-                  {project.highlights.map((highlight) => (
-                    <li>{highlight}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {skillGroups.length > 0 ? (
-        <section class="resume-section" aria-labelledby="skills-title">
-          <div class="section-heading">
-            <span>03</span>
-            <h2 id="skills-title">Skills</h2>
-          </div>
-
-          <div class="skills-grid">
-            {skillGroups.map(([group, items]) => (
-              <section class="skill-group" aria-labelledby={`skill-${group}`}>
-                <h3 id={`skill-${group}`}>{group}</h3>
-                <p>{items.join(" / ")}</p>
-              </section>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section class="resume-section" aria-labelledby="education-title">
-        <div class="section-heading">
-          <span>04</span>
-          <h2 id="education-title">Education & Training</h2>
-        </div>
-
-        <div class="entry-list compact">
-          {[...resume.training, ...resume.education].map((entry) => (
-            <article class="entry">
-              <header>
-                <p class="period">{entry.period}</p>
-                <h3>{entry.degree}</h3>
-                <p class="meta">
-                  {entry.institution}
-                  {entry.location ? ` / ${entry.location}` : ""}
-                </p>
-              </header>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {resume.languages.length > 0 ? (
-        <section class="resume-section compact-final" aria-labelledby="languages-title">
-          <div class="section-heading">
-            <span>05</span>
-            <h2 id="languages-title">Languages</h2>
-          </div>
-          <p class="language-line">
-            {resume.languages.map((language) => `${language.name}: ${language.proficiency}`).join(" / ")}
-          </p>
-        </section>
-      ) : null}
-    </article>
+    <ResumeDocument resume={resume} titleId="resume-title" />
   </main>
 
   <Footer {...footer} />
@@ -210,8 +93,7 @@ const sourceDetail = source.commitSha ? source.commitSha.slice(0, 7) : source.pa
     text-transform: uppercase;
   }
 
-  h1,
-  .resume-header h2 {
+  h1 {
     margin: var(--spacing-12) 0;
     color: var(--colors-fg);
     font-size: clamp(2.25rem, 7vw, 4.75rem);
@@ -287,124 +169,6 @@ const sourceDetail = source.commitSha ? source.commitSha.slice(0, 7) : source.pa
     background: color-mix(in srgb, var(--colors-accent) 16%, transparent);
   }
 
-  .resume-document {
-    display: grid;
-    gap: var(--spacing-64);
-    min-width: 0;
-  }
-
-  .resume-header {
-    padding-bottom: var(--spacing-32);
-    border-bottom: 1px solid rgba(245, 245, 247, 0.1);
-  }
-
-  .resume-header p:last-child {
-    max-width: 60rem;
-    color: color-mix(in srgb, var(--colors-fg) 78%, transparent);
-    font-size: 1rem;
-    line-height: 1.75;
-  }
-
-  .resume-section {
-    display: grid;
-    gap: var(--spacing-24);
-  }
-
-  .section-heading {
-    display: flex;
-    align-items: baseline;
-    gap: var(--spacing-12);
-    padding-bottom: var(--spacing-12);
-    border-bottom: 1px solid rgba(245, 245, 247, 0.1);
-  }
-
-  .section-heading span {
-    color: var(--colors-accent);
-    font-size: 0.75rem;
-    font-weight: 800;
-  }
-
-  .section-heading h2 {
-    color: var(--colors-fg);
-    font-size: 1rem;
-    line-height: 1.4;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-
-  .timeline,
-  .entry-list {
-    display: grid;
-    gap: var(--spacing-24);
-    list-style: none;
-  }
-
-  .entry {
-    display: grid;
-    gap: var(--spacing-12);
-    min-width: 0;
-  }
-
-  .entry h3 {
-    margin: var(--spacing-4) 0;
-    color: var(--colors-fg);
-    font-size: 1.125rem;
-    line-height: 1.35;
-    letter-spacing: 0;
-  }
-
-  .entry ul {
-    display: grid;
-    gap: var(--spacing-8);
-    padding-left: 1.15rem;
-    color: color-mix(in srgb, var(--colors-fg) 78%, transparent);
-    font-size: 0.875rem;
-    line-height: 1.65;
-  }
-
-  .entry li::marker {
-    color: var(--colors-accent);
-  }
-
-  .tags {
-    color: color-mix(in srgb, var(--colors-warning) 78%, transparent);
-  }
-
-  .skills-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--spacing-24);
-  }
-
-  .skill-group {
-    display: grid;
-    gap: var(--spacing-8);
-    min-width: 0;
-    padding-top: var(--spacing-12);
-    border-top: 1px solid rgba(245, 245, 247, 0.08);
-  }
-
-  .skill-group h3 {
-    color: var(--colors-fg);
-    font-size: 0.875rem;
-    line-height: 1.4;
-  }
-
-  .skill-group p,
-  .language-line {
-    color: color-mix(in srgb, var(--colors-fg) 72%, transparent);
-    font-size: 0.8125rem;
-    line-height: 1.65;
-  }
-
-  .compact {
-    gap: var(--spacing-16);
-  }
-
-  .compact-final {
-    padding-bottom: var(--spacing-24);
-  }
-
   @media (max-width: 860px) {
     .resume-shell {
       grid-template-columns: 1fr;
@@ -417,10 +181,6 @@ const sourceDetail = source.commitSha ? source.commitSha.slice(0, 7) : source.pa
       position: static;
       padding-bottom: var(--spacing-32);
       border-bottom: 1px solid rgba(245, 245, 247, 0.1);
-    }
-
-    .skills-grid {
-      grid-template-columns: 1fr;
     }
   }
 
@@ -454,31 +214,17 @@ const sourceDetail = source.commitSha ? source.commitSha.slice(0, 7) : source.pa
     }
 
     h1,
-    .resume-header h2,
-    .section-heading h2,
-    .entry h3,
-    .skill-group h3,
     .headline,
-    .resume-header p:last-child,
-    .entry ul,
-    .skill-group p,
-    .language-line,
     dd,
     a,
     .meta,
     .period,
-    .tags,
     dt {
       color: #000;
     }
 
-    h1,
-    .resume-header h2 {
+    h1 {
       font-size: 24pt;
-    }
-
-    .resume-document {
-      gap: 1rem;
     }
   }
 </style>

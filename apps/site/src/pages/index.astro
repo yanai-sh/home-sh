@@ -6,21 +6,24 @@ import Footer from "@components/Footer.astro";
 import Hero from "@components/Hero.astro";
 import HomeLattice from "@components/HomeLattice.astro";
 import Lede from "@components/Lede.astro";
+import ResumeDocument from "@components/ResumeDocument.astro";
 import ResumeShowcase from "@components/ResumeShowcase.astro";
 import SceneCanvas from "@components/SceneCanvas.astro";
 import Socials from "@components/Socials.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@config/site";
 import Layout from "@layouts/Layout.astro";
 import { footerEdgeProps } from "@lib/footer-edge";
+import { resumeSnapshotForPage } from "@lib/resume-page-snapshot";
 
 const footer = footerEdgeProps(Astro.request);
+const resumeData = resumeSnapshotForPage().data;
 ---
 
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION} clientRouter>
   <Background />
   <SceneCanvas />
   <main class="page-shell" id="main-content" tabindex="-1">
-    <section class="chapter chapter--home" data-bg-variant="home" aria-labelledby="hero-title">
+    <section class="chapter chapter--home" id="hero" data-bg-variant="home" aria-labelledby="hero-title">
       <div class="home-motion">
         <HomeLattice />
         <span class="roll-index" aria-hidden="true">01</span>
@@ -39,6 +42,24 @@ const footer = footerEdgeProps(Astro.request);
       </a>
     </section>
     <ResumeShowcase />
+    <section
+      class="resume-full-embed"
+      id="resume-full"
+      data-bg-variant="resume"
+      aria-labelledby="resume-full-heading"
+      tabindex="-1"
+    >
+      <div class="resume-full-inner">
+        <header class="resume-full-header">
+          <h2 class="resume-full-kicker" id="resume-full-heading">06 / full résumé</h2>
+          <p class="resume-full-deck">
+            Same snapshot as <code>resume.toml</code>. Prefer a dedicated print view? Use{" "}
+            <a href="/resume">the `/resume` page</a>.
+          </p>
+        </header>
+        <ResumeDocument resume={resumeData} titleId="resume-full-title" />
+      </div>
+    </section>
     <ContactForm />
   </main>
 
@@ -376,6 +397,64 @@ const footer = footerEdgeProps(Astro.request);
       will-change: auto;
       opacity: 1;
     }
+  }
+
+  .resume-full-embed {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    min-width: 0;
+    padding:
+      clamp(var(--spacing-48), 10vh, var(--spacing-96))
+      max(var(--spacing-16), min(var(--spacing-48), 5vi))
+      clamp(var(--spacing-64), 12vh, var(--spacing-96));
+    box-sizing: border-box;
+  }
+
+  .resume-full-embed:focus {
+    outline: none;
+  }
+
+  .resume-full-inner {
+    width: min(76rem, 100%);
+    margin: 0 auto;
+    display: grid;
+    gap: clamp(var(--spacing-32), 5vw, var(--spacing-48));
+  }
+
+  .resume-full-header {
+    display: grid;
+    gap: var(--spacing-12);
+    max-width: 42rem;
+  }
+
+  .resume-full-kicker {
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-muted) 86%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .resume-full-deck {
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-fg) 68%, transparent);
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+
+  .resume-full-deck code {
+    font-family: var(--fonts-mono);
+    font-size: 0.85em;
+    font-weight: 600;
+    color: color-mix(in srgb, var(--colors-accent) 72%, var(--colors-fg));
+  }
+
+  .resume-full-deck a {
+    color: color-mix(in srgb, var(--colors-accent) 78%, var(--colors-fg));
+    text-underline-offset: 0.2em;
   }
 </style>
 

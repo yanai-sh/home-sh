@@ -10,7 +10,7 @@ if (BASE.includes('<') || BASE.includes('>')) {
 
 test('first viewport shows resume CTAs', async ({ page }) => {
   await page.goto(`${BASE}/`);
-  await expect(page.locator('a[href="/resume"]').first()).toBeVisible();
+  await expect(page.locator('a[href="#resume-full"]').first()).toBeVisible();
   await expect(page.locator('a[href="/resume.pdf"]').first()).toBeVisible();
 });
 
@@ -54,7 +54,7 @@ test('reduced-motion: page still renders content', async ({ browser }) => {
   const page = await ctx.newPage();
   await page.goto(`${BASE}/`);
   // Page must still render content even with reduced-motion (no JS-required content).
-  await expect(page.locator('a[href="/resume"]').first()).toBeVisible();
+  await expect(page.locator('a[href="#resume-full"]').first()).toBeVisible();
   await ctx.close();
 });
 
@@ -74,7 +74,7 @@ test('mobile viewport (375px wide) shows resume CTAs without overflow', async ({
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/`);
-  await expect(page.locator('a[href="/resume"]').first()).toBeVisible();
+  await expect(page.locator('a[href="#resume-full"]').first()).toBeVisible();
   await expect(page.locator('a[href="/resume.pdf"]').first()).toBeVisible();
   // No horizontal scroll on mobile.
   const hasOverflow = await page.evaluate(
