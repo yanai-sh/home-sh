@@ -86,7 +86,7 @@ A production release is whatever lands on **`main`** (Deploy auto-tags the next 
 
 ### Commits, dependencies, style
 
-Use clear messages; **Conventional Commits** are optional. **Dependabot**: **`.github/dependabot.yml`** — weekly **Bun** + grouped weekly **GitHub Actions** bumps (disable under repo security settings if you want fully manual bumps). **Biome** is the source of truth for JS/TS style (**`bun run fix`**). Astro: follow existing patterns under **`apps/site/src/components/`**.
+Use clear messages; **Conventional Commits** are optional. **Dependabot**: **`.github/dependabot.yml`** — **monthly** **Bun** (grouped: runtime vs tooling vs root scripts) + grouped **GitHub Actions** bumps (disable under repo security settings if you want fully manual bumps). **Biome** is the source of truth for JS/TS style (**`bun run fix`**). Astro: follow existing patterns under **`apps/site/src/components/`**.
 
 ### Optional maintainer tooling
 

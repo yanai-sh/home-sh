@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Deploy** — production **git**/**GitHub Release** tags are SemVer **`v0.y.z`**. The next tag after any legacy **`v1+.*`** release (e.g. **`v2.7.0`**) is **`v0.1.0`** (hard reset). **Staging** uploads use **`dev-<run_id>`** only (no git tags on **`dev`**). **`workflow_dispatch`** on **`main`**: **patch** / **minor** on **`0.y.z`**, or **major** → **`v1.0.0`**. If an experimental **four-part** **`v0.*.*.*`** tag exists locally or on the remote, delete it so **`git tag -l`** ordering stays unambiguous.
+- **Deploy** — production **git**/**GitHub Release** tags are SemVer **`v0.y.z`**. The next tag after any legacy **`v1+.*`** release (e.g. **`v2.7.0`**) is **`v0.1.0`** (hard reset). **Staging** uploads use **`dev-<run_id>`** only (no git tags on **`dev`**). **`workflow_dispatch`** on **`main`**: **patch** / **minor** on **`0.y.z`**, or **major** → **`v1.0.0`**. If an experimental **four-part** **`v0.*.*.*`** tag exists locally or on the remote, delete it so **`git tag -l`** ordering stays unambiguous. **GitHub release** checks out the repo before **`gh release create --generate-notes`** (avoids `fatal: not a git repository` on the runner).
+- **Dependabot** — **monthly** schedule, **Bun** updates grouped (runtime / tooling / root scripts), lower concurrent PR limits.
+- **Local** — **direnv** (`.envrc`) scopes **Git**/**`gh`** to **`yanai-sh`** under this repo via **`GIT_CONFIG_*`** and optional **`GH_TOKEN`**.
 
 ## [2.7.0] - 2026-05-10
 
