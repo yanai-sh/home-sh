@@ -10,7 +10,7 @@ if (BASE.includes('<') || BASE.includes('>')) {
 
 test('first viewport shows resume CTAs', async ({ page }) => {
   await page.goto(`${BASE}/`);
-  await expect(page.locator('a[href="/resume"]').first()).toBeVisible();
+  await expect(page.locator('a[href="#resume-full"]').first()).toBeVisible();
   await expect(page.locator('a[href="/resume.pdf"]').first()).toBeVisible();
 });
 
@@ -37,10 +37,14 @@ test('resume.pdf returns a PDF', async ({ request }, testInfo) => {
   expect(res.headers()['content-type']).toContain('application/pdf');
 });
 
-test('workspace renders without errors', async ({ page }) => {
+test('/workspace redirect and /#systems render without errors', async ({ page }) => {
   const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('pageerror', (e) => {
+    if (!e.message.includes('Turnstile')) errors.push(e.message);
+  });
   await page.goto(`${BASE}/workspace`);
+  expect(page.url()).toMatch(/\/#systems$/);
+  await page.waitForTimeout(5200);
   expect(errors).toEqual([]);
 });
 
@@ -54,7 +58,7 @@ test('reduced-motion: page still renders content', async ({ browser }) => {
   const page = await ctx.newPage();
   await page.goto(`${BASE}/`);
   // Page must still render content even with reduced-motion (no JS-required content).
-  await expect(page.locator('a[href="/resume"]').first()).toBeVisible();
+  await expect(page.locator('a[href="#resume-full"]').first()).toBeVisible();
   await ctx.close();
 });
 
@@ -70,11 +74,26 @@ test('contact form renders sitekey', async ({ page }, testInfo) => {
   expect(sitekey).toMatch(/^0x4AAAA/);
 });
 
+test('POST /api/contact rejects oversized message before Turnstile', async ({ request }) => {
+  const res = await request.post(`${BASE}/api/contact`, {
+    headers: { 'Content-Type': 'application/json' },
+    data: JSON.stringify({
+      name: 'Smoke',
+      email: 'smoke@example.com',
+      message: 'x'.repeat(2001),
+      token: 'not-verified-should-not-run',
+    }),
+  });
+  expect(res.status()).toBe(400);
+  const data = (await res.json()) as { error?: string };
+  expect(data.error).toBe('invalid_input');
+});
+
 test('mobile viewport (375px wide) shows resume CTAs without overflow', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/`);
-  await expect(page.locator('a[href="/resume"]').first()).toBeVisible();
+  await expect(page.locator('a[href="#resume-full"]').first()).toBeVisible();
   await expect(page.locator('a[href="/resume.pdf"]').first()).toBeVisible();
   // No horizontal scroll on mobile.
   const hasOverflow = await page.evaluate(

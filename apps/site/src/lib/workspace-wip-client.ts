@@ -58,7 +58,27 @@ type SearchWorkerResponse =
       message: string;
     };
 
-export function mountWorkspaceWip(): void {
+/** DOM ids for canvas + workspace search panel (defaults match `/workspace` legacy markup). */
+export interface WorkspaceWipDomIds {
+  canvas: string;
+  searchTrigger: string;
+  searchClose: string;
+  searchPanel: string;
+  searchInput: string;
+  searchResults: string;
+}
+
+export const DEFAULT_WORKSPACE_WIP_DOM_IDS: WorkspaceWipDomIds = {
+  canvas: 'ws-rust-canvas',
+  searchTrigger: 'ws-search-trigger',
+  searchClose: 'ws-search-close',
+  searchPanel: 'ws-search-panel',
+  searchInput: 'ws-search-input',
+  searchResults: 'ws-search-results',
+};
+
+export function mountWorkspaceWip(domIds: Partial<WorkspaceWipDomIds> = {}): void {
+  const ids: WorkspaceWipDomIds = { ...DEFAULT_WORKSPACE_WIP_DOM_IDS, ...domIds };
   const targets: StatusTargets = {
     wasm: document.querySelector('[data-wip-status="wasm"]'),
     sab: document.querySelector('[data-wip-status="sab"]'),
@@ -71,8 +91,8 @@ export function mountWorkspaceWip(): void {
   // the animation can read mouse coords; if SAB never resolves, canvas falls
   // back to a static render.
   const sharedStatePromise = mountSharedState(targets);
-  void mountCanvas(targets, sharedStatePromise);
-  mountSearch(targets);
+  void mountCanvas(targets, sharedStatePromise, ids.canvas);
+  mountSearch(targets, ids);
   mountPaneNavigation();
 }
 
@@ -128,8 +148,9 @@ async function mountSharedState(
 async function mountCanvas(
   targets: StatusTargets,
   sharedStatePromise: Promise<import('@lib/shared-state').SharedStateWriters | undefined>,
+  canvasElementId: string,
 ): Promise<void> {
-  const canvas = document.getElementById('ws-rust-canvas');
+  const canvas = document.getElementById(canvasElementId);
   if (!(canvas instanceof HTMLCanvasElement)) return;
 
   // prefers-reduced-motion users get a single static render (or none if the
@@ -208,12 +229,12 @@ async function mountCanvas(
   resizeObserver.observe(canvas);
 }
 
-function mountSearch(targets: StatusTargets): void {
-  const trigger = document.getElementById('ws-search-trigger');
-  const closeButton = document.getElementById('ws-search-close');
-  const panel = document.getElementById('ws-search-panel');
-  const input = document.getElementById('ws-search-input');
-  const results = document.getElementById('ws-search-results');
+function mountSearch(targets: StatusTargets, ids: WorkspaceWipDomIds): void {
+  const trigger = document.getElementById(ids.searchTrigger);
+  const closeButton = document.getElementById(ids.searchClose);
+  const panel = document.getElementById(ids.searchPanel);
+  const input = document.getElementById(ids.searchInput);
+  const results = document.getElementById(ids.searchResults);
 
   if (!(trigger instanceof HTMLButtonElement)) return;
   if (!(closeButton instanceof HTMLButtonElement)) return;

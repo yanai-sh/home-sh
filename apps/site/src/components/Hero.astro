@@ -1,8 +1,15 @@
 ---
 import { SITE_BRAND } from "@config/site";
+
+interface Props {
+  /** Override when a second wordmark appears on the same document (e.g. `#systems`). */
+  titleId?: string;
+}
+
+const { titleId = "hero-title" } = Astro.props;
 ---
 
-<h1 id="hero-title">
+<h1 id={titleId}>
   <span class="hero-wordmark">
     <span class="prefix">{SITE_BRAND.prefix}</span><span class="suffix text-accent">{SITE_BRAND.suffix}</span>
   </span>
