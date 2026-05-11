@@ -1,6 +1,6 @@
 ---
 /**
- * Semantic resume body shared by `/resume` (inside shell) and `/#resume-full` on `/`.
+ * Semantic resume body rendered on `/resume` inside the rail shell.
  * Single source of facts: normalized snapshot from `resume.toml`.
  */
 import type { Resume } from "@/content/resume-schema";
@@ -165,14 +165,8 @@ const experience = resume.experience;
     border-bottom: 1px solid rgba(245, 245, 247, 0.1);
   }
 
-  .chapter-kicker {
-    margin: 0 0 var(--spacing-8);
-    color: color-mix(in srgb, var(--colors-muted) 86%, transparent);
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1.35;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
+  .resume-header .chapter-kicker {
+    margin-bottom: var(--spacing-8);
   }
 
   .resume-header p:last-child {
