@@ -3,13 +3,14 @@
 #   Push to `dev` → uploads an immutable Worker version to the staging
 #   Worker (yanai-sh-staging, set via `--name` override at upload time
 #   against the shared apps/site/wrangler.jsonc). Production at yanai.sh
-#   is unaffected. Wrangler `--tag` uses a run-scoped label (`dev-<run_id>`);
-#   no git tags on dev (avoids semver noise; rollback uses Worker version id).
+#   is unaffected. Wrangler `--tag` uses **`dev-<run_id>`** (no git tag on dev).
 #
 #   Push to `main` → uploads + promotes to 100% on the production Worker
 #   (yanai-sh, bound to yanai.sh via Custom Domain). Git tag + GitHub Release
-#   use a semver *patch* bump (vX.Y.Z → vX.Y.(Z+1)). Major/minor marketing
-#   bumps stay manual (`git tag -a vX.Y.0` / `vX.0.0` before or after merge).
+#   use **SemVer** on the **0.y.z pre-1.0** line: next tag after any legacy **`v1+.*`**
+#   release (e.g. **`v2.7.0`**) is **`v0.1.0`** (intentional hard reset). Then
+#   **patch** bumps the patch digit; **workflow_dispatch** **minor** / **major**
+#   bump **0.minor** or promote to **`v1.0.0`**.
 #
 # Each Worker has its own ~10-version retention, so dev pushes never
 # displace prod rollback options. Rollback (.github/workflows/rollback.yml)
@@ -21,8 +22,8 @@ name: yanai-sh / Deploy
 on:
   # Staging only on `push` to `dev` (not `pull_request`): a PR preview deploy
   # plus the post-merge push would upload twice for the same merge. Every push
-  # updating `refs/heads/dev` runs staging (Worker label only); `main` runs
-  # prod upload + promote + patch semver git tag + release. No path filters.
+  # updating `refs/heads/dev` runs staging (Worker label only); `main` runs prod
+  # upload + promote + SemVer `v0.y.z` (or `v1.0.0`+) git tag + release. No path filters.
   push:
     branches: [main, dev]
   workflow_dispatch:
@@ -33,7 +34,7 @@ on:
         default: "false"
         type: string
       version_bump:
-        description: "Production semver bump (main only; pushes always use patch)"
+        description: "SemVer bump (main only; pushes = patch on 0.y.z)"
         required: false
         default: patch
         type: choice
@@ -145,30 +146,51 @@ jobs:
 
       - name: Compute next version tag
         id: tag
-        # Convention:
-        #   - dev push → Wrangler-only label `dev-$GITHUB_RUN_ID` (no git tag).
-        #   - main push → semver patch on last `vX.Y.Z` tag (vX.Y.(Z+1)).
-        #   - main workflow_dispatch → optional minor/major via `version_bump` input.
+        # SemVer `v0.y.z` on main; legacy `v1+.*` → next `v0.1.0`; dev → `dev-<run_id>`.
         env:
           VERSION_BUMP: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.version_bump || 'patch' }}
         run: |
           set -euo pipefail
-          LAST="$(git tag -l --sort=-v:refname 'v[0-9]*.[0-9]*.[0-9]*' | head -1 || true)"
-          if [ -z "$LAST" ]; then LAST="v0.0.0"; fi
-          VERSION="${LAST#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
-            case "${VERSION_BUMP}" in
-              major) NEXT="v$((MAJOR + 1)).0.0" ;;
-              minor) NEXT="v${MAJOR}.$((MINOR + 1)).0" ;;
-              *) NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
-            esac
+          # Pre-1.0 line only: v0.MINOR.PATCH (three segments, leading 0).
+          LAST0="$(git tag -l | grep -E '^v0\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
+          # Legacy bloated line: v1.0.0, v2.7.0, … (never v0.x.y — that is the modern line).
+          LEGACY="$(git tag -l | grep -E '^v[1-9][0-9]*\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
+          if [ -n "$LAST0" ]; then
+            LAST="$LAST0"
+          elif [ -n "$LEGACY" ]; then
+            LAST="$LEGACY"
           else
-            NEXT="dev-${GITHUB_RUN_ID}"
+            LAST=""
           fi
-          echo "previous=$LAST"
+
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            NEXT="dev-${GITHUB_RUN_ID}"
+            PREV="${LAST:-<none>}"
+            echo "previous=$PREV"
+            echo "next=$NEXT"
+            echo "previous=$PREV" >> "$GITHUB_OUTPUT"
+            echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -n "$LAST0" ]; then
+            VERSION="${LAST0#v}"
+            IFS='.' read -r _Z MINOR PATCH <<< "$VERSION"
+            case "${VERSION_BUMP}" in
+              major) NEXT="v1.0.0" ;;
+              minor) NEXT="v0.$((MINOR + 1)).0" ;;
+              *) NEXT="v0.${MINOR}.$((PATCH + 1))" ;;
+            esac
+          elif [ -n "$LEGACY" ]; then
+            NEXT="v0.1.0"
+          else
+            NEXT="v0.1.0"
+          fi
+
+          PREV="${LAST:-<none>}"
+          echo "previous=$PREV"
           echo "next=$NEXT"
-          echo "previous=$LAST" >> "$GITHUB_OUTPUT"
+          echo "previous=$PREV" >> "$GITHUB_OUTPUT"
           echo "next=$NEXT" >> "$GITHUB_OUTPUT"
 
       - name: Upload Worker version (wrangler)
@@ -177,7 +199,7 @@ jobs:
         # apps/site/package.json. Extra args after `--` are forwarded to
         # wrangler. `--message` annotates each version with the commit
         # subject so the Cloudflare dashboard's version history is
-        # human-readable. `--tag` records the new version (e.g. v2.3.1).
+        # human-readable. `--tag` records the new version (e.g. v0.1.3 or dev-…).
         # On dev pushes, `--name yanai-sh-staging` overrides the Worker
         # name so the upload lands on a separate script with its own
         # ~10-version retention. Bindings (KV, Secrets Store, D1, rate
@@ -238,7 +260,7 @@ jobs:
               echo ""
               echo "Worker version label \`${{ steps.tag.outputs.next }}\` (no git tag on **\`dev\`**)."
               echo ""
-              echo "Latest \`v*\` release tag (for reference): \`${{ steps.tag.outputs.previous }}\`."
+              echo "Latest release tag for reference: \`${{ steps.tag.outputs.previous }}\`."
               echo ""
               echo "Uploaded version \`${{ steps.upload.outputs.version_id }}\` to the **yanai-sh-staging** Worker. Production at https://yanai.sh is unchanged."
               echo ""
@@ -318,6 +340,15 @@ jobs:
     permissions:
       contents: write
     steps:
+      # `gh release create --generate-notes` shells out to git; this job had no
+      # checkout before, which failed with "fatal: not a git repository".
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
       - name: Create GitHub release (production)
         env:
           GH_TOKEN: ${{ github.token }}

@@ -3,14 +3,15 @@
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) for **library** dependencies. **Site release tags** use SemVer **`v0.y.z`** (pre-1.0); the first tag after any legacy **`v1+.*`** line is **`v0.1.0`** (hard reset).
 
 ## [Unreleased]
 
 ### Changed
 
-- **Deploy** — **`dev`** uploads label Worker versions as **`dev-<run_id>`** (no git tags on staging). **`main`** deploys use **patch** semver tags (`vX.Y.(Z+1)`) + GitHub Release instead of always bumping **minor**; **workflow_dispatch** on **`main`** adds **`version_bump`** (**patch** / **minor** / **major**) for intentional story releases.
+- **Deploy** — production **git**/**GitHub Release** tags are SemVer **`v0.y.z`**. The next tag after any legacy **`v1+.*`** release (e.g. **`v2.7.0`**) is **`v0.1.0`** (hard reset). **Staging** uploads use **`dev-<run_id>`** only (no git tags on **`dev`**). **`workflow_dispatch`** on **`main`**: **patch** / **minor** on **`0.y.z`**, or **major** → **`v1.0.0`**. If an experimental **four-part** **`v0.*.*.*`** tag exists locally or on the remote, delete it so **`git tag -l`** ordering stays unambiguous. **GitHub release** checks out the repo before **`gh release create --generate-notes`** (avoids `fatal: not a git repository` on the runner).
 - **Dependabot** — **monthly** schedule, **Bun** updates grouped (runtime / tooling / root scripts), lower concurrent PR limits.
+- **Local** — **direnv** (`.envrc`) scopes **Git**/**`gh`** to **`yanai-sh`** under this repo via **`GIT_CONFIG_*`** and optional **`GH_TOKEN`**.
 
 ## [2.7.0] - 2026-05-10
 

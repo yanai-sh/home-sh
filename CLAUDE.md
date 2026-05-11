@@ -9,6 +9,6 @@
 - **Verify before claiming done:** `bun run verify` (= check → typecheck → test → build; mirrors CI). **`bun run smoke`** — Playwright smoke (`apps/site`).
 - **Polyglot tasks:** `just --list` (WASM, Workers, OpenTofu). Infra: **[infra/README.md](infra/README.md)**.
 - **CSS:** Panda CSS preset in `packages/ui-system` *and* `src/design/tokens.ts` → `:root` vars in `Layout.astro`. `dev`/`build` run `panda codegen` first.
-- **Path aliases** (`apps/site/tsconfig.json`): `@/`, `@components/*`, `@layouts/*`, `@lib/*`, `@config/*`.
+- **Path aliases** (`apps/site/tsconfig.json`; Vite mirrors `@resume/generated` in `astro.config.mjs`): `@/`, `@components/*`, `@layouts/*`, `@lib/*`, `@config/*`, `@resume/generated` → `content/resume.generated.json`.
 - **Client scripts:** `*-client.ts` naming, loaded as `<script>` tags — never build-time imports.
 - **Lefthook `pre-push`** runs `verify`. Skip with `LEFTHOOK=0` (rare).
