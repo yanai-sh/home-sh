@@ -1,6 +1,6 @@
 # Roadmap
 
-Status date: 2026-05-10
+Status date: 2026-05-11
 
 This is the planning source of truth for `yanai.sh`. It consolidates the old
 split design and execution notes into one document. `ARCHITECTURE.md` records
@@ -17,18 +17,19 @@ browser supports it. The server-rendered baseline should be a **static resume
 fallback** with visible `View resume` and `Download resume` actions before any
 client script runs.
 
-The site has four public surfaces:
+The site has one **primary** surface and supporting routes:
 
 | Route | Role |
 | --- | --- |
-| `/` | Progressive landing: SSR resume fallback first, WASM visual enhancement second. |
-| `/resume` | Full semantic HTML resume, readable, printable, no WASM required. |
+| `/` | **Primary experience:** progressive landing (SSR resume summary first, lazy WASM/canvas/search/telemetry in-page). Same-document anchors: `#hero`, `#resume` (summary band), `#resume-full` (full semantic resume), `#systems`, `#contact`. |
+| `/resume` | Optional deep link / print: same snapshot as `#resume-full`, standalone layout, no WASM required. |
 | `/resume.pdf` | LaTeX-built PDF from **`yanai-sh/resume`** releases, proxied at request time (not a repo static file). |
-| `/workspace` | Deeper opt-in systems demo: panes, search, canvas, telemetry. |
+| `/workspace` | **Legacy redirect** → `/#systems` (308). Do not add new behavior here. |
 
-The practical user flow is simple: see the technical signal, view the static
-resume, download the PDF. The technical user can enter `/workspace` for the
-deeper architecture demo.
+The practical user flow is simple: see the technical signal on `/`, scroll or
+follow in-page anchors for the full resume and systems strip, and download the
+PDF without leaving the primary document. **`/workspace` is legacy:** HTTP
+redirect to `/#systems` (no unique product surface).
 
 ## Design Intent
 
@@ -62,10 +63,11 @@ Visual rules:
 
 Interaction rules:
 
-- `/` may use WASM and canvas only as a lazy enhancement.
+- `/` may use WASM and canvas only as a lazy enhancement; the **`#systems`**
+  strip may host search, canvas preview, and aggregate telemetry UI with list
+  view and reduced-motion fallbacks (same requirements formerly scoped to
+  `/workspace`).
 - `/resume` must be semantic HTML with normal vertical scroll.
-- `/workspace` can use richer interaction, but it must provide list view and
-  reduced-motion fallbacks.
 - Never hijack vertical wheel scrolling for horizontal navigation.
 - Never trap keyboard focus without an obvious `Esc` path and visible close
   control.
@@ -85,9 +87,10 @@ The current thesis is a hybrid delivery model:
 Boundary decisions:
 
 - Prefer a non-SharedArrayBuffer WASM scene on `/`.
-- Keep COOP/COEP scoped to `/workspace` unless the homepage design explicitly
-  requires shared memory. If `/` needs SharedArrayBuffer, document and review
-  the header tradeoff before implementation.
+- Keep COOP/COEP off `/` unless the homepage **`#systems`** design explicitly
+  requires shared memory (SharedArrayBuffer). While **`/workspace`** existed,
+  headers were scoped there; after redirect removal, only widen COOP/CEOP to `/`
+  behind an explicit decision + CSP/CORP audit.
 - Do not put heavy interactive code on `/resume`.
 - Do not add frontend frameworks inside WASM islands.
 - D1 migrations are forward-only.
@@ -118,8 +121,9 @@ Near-term gaps, in priority order:
   is clear (telemetry slots, DNT paths).
 - **Contact** — prod-only origin by design; document and keep Turnstile + Resend
   + rate limit monitored.
-- **`/workspace`** — pane navigation, reduced-motion / list view, and richer pane
-  content remain the main interactive milestone.
+- **`#systems` on `/`** — search, canvas/WASM preview, telemetry readout, and
+  reduced-motion / list-view fallbacks (interactive milestone on the home
+  document).
 - **Telemetry** — coarse aggregates shipped; tune retention and copy in-pane as
   usage grows.
 
@@ -184,9 +188,12 @@ Server-render:
 - name and role
 - compact resume summary
 - latest or strongest proof points
-- `View resume`
-- `Download resume`
-- link to `/workspace`
+- primary **`View resume`** → in-page target **`#resume-full`** (same URL)
+- **`Download resume`** → `/resume.pdf` (new tab or attachment semantics
+  acceptable; primary document stays `/`)
+- optional secondary link to **`/resume`** for print / crawlers
+- full semantic resume region **`#resume-full`** (same snapshot as `/resume`)
+- **`#systems`** shell for lazy WASM search/canvas/telemetry (progressive)
 - no broken empty state if scripts fail
 
 Enhance when supported:
@@ -198,7 +205,8 @@ Enhance when supported:
 
 Acceptance:
 
-- First viewport contains `View resume` and `Download resume`.
+- First viewport contains primary resume actions (`View resume` → `#resume-full`,
+  `Download resume` → PDF) without requiring navigation to `/resume`.
 - No-WASM, no-JS, reduced-motion, and mobile modes stay useful.
 - The enhancement lazy-loads and has a size budget.
 - Resume actions remain keyboard reachable.
@@ -238,30 +246,21 @@ Acceptance:
 - Sourced from **`yanai-sh/resume`** latest release asset (**`YanaiKlugman_CV_*.pdf`**), fetched by the site Worker (no committed or build-bundled PDF).
 - Opens cleanly in common PDF viewers.
 
-### `/workspace`
+### `/workspace` (legacy)
 
 Purpose:
 
-- deeper systems demo after the landing page
-- place for richer WASM/search/telemetry work
-
-Planned panes:
-
-- projects
-- now
-- stack
-- reading or uses
-- telemetry
-- optional resume/search pane
+- **HTTP 308** to `/#systems` so old links keep working.
 
 Acceptance:
 
-- Deep links like `/workspace#stack` open the correct pane.
-- Keyboard and pointer navigation work.
-- List view is always available.
-- Reduced-motion users get stacked semantic content.
-- COOP/COEP headers appear on `/workspace` and not on `/`, unless a later
-  documented decision changes the homepage header boundary.
+- **`GET /workspace`** and **`GET /workspace/*`** redirect to the home URL with
+  fragment **`#systems`** (exact hash policy documented in middleware or page).
+- No standalone interactive document is required at `/workspace` once redirect
+  ships.
+- COOP/COEP: remove from `/workspace` when the route is redirect-only; scope
+  shared-memory headers to `/` only after an explicit architecture review if
+  SAB is required.
 
 ## Performance And Accessibility
 
@@ -272,7 +271,7 @@ Targets:
 | `/` fallback | Lighthouse 100, no client dependency | WCAG AA, keyboard reachable actions |
 | `/` enhanced | Fast first content, lazy enhancement | Reduced-motion and no-WASM fallback |
 | `/resume` | Static HTML speed | Semantic headings, print, screen reader flow |
-| `/workspace` | Interactive but bounded | Keyboard, list view, reduced motion |
+| `/#systems` | Interactive but bounded | Keyboard, list view, reduced motion |
 
 Accessibility requirements:
 
@@ -312,8 +311,8 @@ Security and privacy:
 | P2 | WASM Landing and Static Resume Fallback | The first screen defines the product while keeping resume access reliable. |
 | P3 | Release Guardrails | Preview, CI, rollback, and smoke tests should harden before production Workers. |
 | P4 | Contact Pipeline | Contact depends on the public shell and release path. |
-| P5 | Workspace Alpha | Deeper interactive systems work follows the core landing/resume path. |
-| ~~P6~~ | ~~Telemetry~~ | **Shipped v2.3.0** — coarse session beacon + aggregates in **`/workspace#telemetry`** on the site Worker bound to **`home-sh-telemetry`**. |
+| P5 | Home systems strip | Interactive WASM/search/telemetry lives on **`/#systems`** after core landing/resume path on `/`. |
+| ~~P6~~ | ~~Telemetry~~ | **Shipped v2.3.0** — coarse session beacon + aggregates (UI target **`/#systems`** telemetry region; legacy **`/workspace#telemetry`** retired with redirect). |
 
 ### Milestone 0: Consolidate Planning Docs
 
@@ -336,7 +335,7 @@ Acceptance criteria:
 ### Milestone 1: Content and Resume Sync
 
 **Status:** shipped for HTML (submodule + `sync:resume` + bundled snapshot).
-Optional follow-ups remain (workspace pane TOML/JSON, extra content collections).
+Optional follow-ups remain (`#systems` pane TOML/JSON, extra content collections).
 
 Goal: structured **`resume.toml`** drives all **HTML** resume surfaces from one
 normalized snapshot per deploy.
@@ -386,8 +385,8 @@ Acceptance criteria:
 - `bun run verify` passes.
 - `bun run preview` serves the built artifact.
 - Manual smoke test covers `/` enhanced, `/` fallback, `/resume`,
-  `/resume.pdf`, `/workspace`, `/404`, contact idle state, reduced motion, and
-  mobile width.
+  `/resume.pdf`, `/workspace` redirect → `/#systems`, `/404`, contact idle state,
+  reduced motion, and mobile width.
 - First viewport includes visible `View resume` and `Download resume`.
 - Unsupported WASM renders static resume fallback instead of a broken demo.
 
@@ -430,27 +429,33 @@ Acceptance criteria:
 - No IP address or full user agent is stored.
 - Secrets are documented by name only.
 
-### Milestone 5: Workspace Alpha
+### Milestone 5: Home systems strip (`/#systems`)
 
-Goal: turn `/workspace` into the deeper interactive proof of work.
+Goal: deliver the interactive proof-of-work (canvas, search, telemetry readout,
+projects/stack copy) on the home document inside **`#systems`**, without
+requiring a second route for the happy path.
 
 Scope:
 
-- Define the pane model: id, title, content source, keyboard order, and hash.
-- Implement horizontal navigation with hash sync and sane browser back behavior.
-- Render panes for projects, now, stack, uses or reading, and telemetry.
-- Wire Rust/WASM canvas into the workspace background or pane preview.
-- Wire WASM search through a Web Worker and Comlink where it improves the
-  experience.
-- Provide list view and reduced-motion stacked layout.
+- Define section ids and keyboard order for the systems region (single-page hash
+  targets under `/`, e.g. `#systems`, optional sub-anchors as needed).
+- Implement navigation and focus management inside **`#systems`** (search panel
+  or modal, telemetry slots).
+- Render projects, now, stack, uses/reading, and telemetry content from existing
+  config + APIs.
+- Wire Rust/WASM canvas into the systems preview (non-SAB preferred on `/`).
+- Wire WASM search through a Web Worker (Comlink optional).
+- Provide list view and reduced-motion stacked layout for the systems region.
 
 Acceptance criteria:
 
-- Deep links like `/workspace#stack` open the right pane.
-- Keyboard users can enter, navigate, scroll inside a pane, and exit.
+- **`/#systems`** (and legacy **`/workspace`** redirect) land on readable systems
+  content; in-page deep links behave predictably with browser history.
+- Keyboard users can enter, navigate, scroll inside the systems region, and exit.
 - Reduced-motion users get full content without animated canvas requirements.
 - WASM load failure leaves readable content and a visible fallback.
-- COOP/COEP headers appear on `/workspace`.
+- COOP/COEP on `/` only if SharedArrayBuffer is explicitly required and reviewed;
+  otherwise omit on `/`.
 
 ### Milestone 6: Telemetry
 
@@ -463,14 +468,14 @@ Scope:
 - Decide exact beacon payload and keep it coarse.
 - Wire session creation, LCP, WASM init timing, and frame samples.
 - ~~Deploy D1 migrations and bind read/write Workers~~ **Done:** **`DB`** binding + migrations folder on **`apps/site/wrangler.jsonc`**; endpoints live beside **`/api/contact`**.
-- Render aggregate telemetry in `/workspace#telemetry`.
+- Render aggregate telemetry in the **`/#systems`** telemetry region.
 - Add cache and retention rules that match the privacy posture.
 
 Acceptance criteria:
 
 - Read endpoint returns cached aggregate data with no raw identifiers.
 - Write endpoint rejects malformed UUIDs and unbounded sample arrays.
-- Telemetry pane explains data through labels and numbers.
+- Telemetry UI on `/` explains data through labels and numbers.
 - A user can block telemetry without breaking the site.
 
 ## Backlog
@@ -478,7 +483,7 @@ Acceptance criteria:
 High-value candidates:
 
 - RSS feed and blog route if writing becomes part of the site.
-- Additional Playwright coverage beyond existing landing + **`workspace`** smoke (including telemetry slots and DNT beacons).
+- Additional Playwright coverage beyond existing landing + **`/#systems`** smoke (including telemetry slots and DNT beacons).
 - Lighthouse budgets for fallback and enhanced paths.
 - Worker tests with Miniflare or Wrangler test helpers.
 - OpenTofu documentation for Cloudflare resources after manual setup stops
@@ -499,8 +504,8 @@ Defer for now:
 | WASM-first homepage blocks recruiter access | Server-render resume fallback and keep resume actions visible before enhancement. |
 | WASM-first homepage bloats `/` | Lazy-load the enhancement, enforce size budgets, and render fallback first. |
 | Homepage WASM forces broader COOP/COEP scope | Prefer a non-SAB homepage scene; make shared-memory headers an explicit decision if needed. |
-| `/workspace` becomes redundant | Keep `/workspace` focused on deeper panes, search, telemetry, and inspectable systems behavior. |
-| SharedArrayBuffer headers break third-party assets | Scope COOP/COEP to `/workspace` unless a documented decision changes it. |
+| `/workspace` bookmark drift | Keep **308** from `/workspace` to `/#systems` until traffic is negligible. |
+| SharedArrayBuffer headers break third-party assets | Prefer non-SAB WASM on `/`; widen COOP/COEP to `/` only after explicit review. |
 | Submodule not initialized | **`verify`** fails until `git submodule update --init --recursive`; CI must use `submodules: recursive`. |
 | HTML vs PDF version skew | Cut a **`yanai-sh/resume`** release when the PDF should match a new TOML pin. |
 | Contact endpoint attracts spam | Use Turnstile, rate limiting, honeypot fields, and short retention. |
