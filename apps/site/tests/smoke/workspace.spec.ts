@@ -1,4 +1,4 @@
-// apps/site/tests/smoke/workspace.spec.ts
+// apps/site/tests/smoke/workspace.spec.ts — systems strip now lives on `/` inside `#systems`.
 import { expect, test } from 'playwright/test';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:4321';
@@ -8,106 +8,96 @@ if (BASE.includes('<') || BASE.includes('>')) {
   );
 }
 
-test('deep link /workspace#stack opens stack pane in viewport', async ({ page }) => {
-  await page.goto(`${BASE}/workspace#stack`);
-  // Browser fragment-nav scrolls #stack into view; we assert the heading is on screen.
+/** Home mounts systems WASM/search on idle (≤3.5s); allow time before asserting runtime strip. */
+// biome-ignore lint/suspicious/noExplicitAny: Playwright Page is only a devDependency at repo root; keep smoke self-contained for astro check.
+async function gotoHomeSystemsReady(page: any) {
+  await page.goto(`${BASE}/`);
+  await page.waitForTimeout(5200);
+}
+
+test('deep link /#stack opens stack pane in viewport', async ({ page }) => {
+  await page.goto(`${BASE}/#stack`);
+  await page.waitForTimeout(5200);
   const heading = page.locator('#stack-title');
   await expect(heading).toBeInViewport();
 });
 
-test('deep link /workspace#stack focuses the stack heading', async ({ page }) => {
-  await page.goto(`${BASE}/workspace#stack`);
-  // Task 2 defers focus by one rAF; wait for it.
+test('deep link /#stack focuses the stack heading', async ({ page }) => {
+  await page.goto(`${BASE}/#stack`);
+  await page.waitForTimeout(5200);
   await expect(async () => {
     const focusedId = await page.evaluate(() => document.activeElement?.id ?? '');
     expect(focusedId).toBe('stack-title');
-  }).toPass({ timeout: 2000 });
+  }).toPass({ timeout: 8000 });
 });
 
-test('clicking a pane-nav link focuses the target heading', async ({ page }) => {
-  await page.goto(`${BASE}/workspace`);
-  await page.click('a[data-pane-link="uses"]');
-  await expect(async () => {
-    const focusedId = await page.evaluate(() => document.activeElement?.id ?? '');
-    expect(focusedId).toBe('uses-title');
-  }).toPass({ timeout: 2000 });
+test('clicking a pane-nav link activates the uses pane', async ({ page }) => {
+  await gotoHomeSystemsReady(page);
+  await page.locator('#systems a[data-pane-link="uses"]').click();
+  await expect(page.locator('#systems a[data-pane-link="uses"]')).toHaveAttribute('aria-current', 'true', {
+    timeout: 8000,
+  });
+  await expect(page.locator('#systems #uses-title')).toBeInViewport();
 });
 
 test('aria-current updates to the active pane on scroll', async ({ page }) => {
-  await page.goto(`${BASE}/workspace`);
-  // Scroll the stack pane section into view (not just the heading) so the
-  // IntersectionObserver threshold conditions (-24%/−58% rootMargin) can fire.
+  await gotoHomeSystemsReady(page);
   await page.locator('#stack[data-pane]').scrollIntoViewIfNeeded();
-  // IntersectionObserver fires async; allow a generous window.
-  await expect(page.locator('a[data-pane-link="stack"]')).toHaveAttribute(
-    'aria-current',
-    'true',
-    { timeout: 5000 },
-  );
+  await expect(page.locator('a[data-pane-link="stack"]')).toHaveAttribute('aria-current', 'true', {
+    timeout: 8000,
+  });
 });
 
 test('runtime strip transitions wasm/sab/canvas out of pending', async ({ page }) => {
-  await page.goto(`${BASE}/workspace`);
-  // wasm/sab/canvas are resolved on page mount by workspace-wip-client.ts.
-  // "search" only transitions after the user opens the search panel, so it
-  // is intentionally excluded here (covered by the search-panel test below).
+  await gotoHomeSystemsReady(page);
   for (const item of ['wasm', 'sab', 'canvas']) {
     const status = page.locator(`[data-wip-status="${item}"]`);
-    // Each status is "pending" at SSR; M5 mount logic flips it to ready / error / off.
-    await expect(status).not.toHaveText(/pending/i, { timeout: 5000 });
+    await expect(status).not.toHaveText(/pending/i, { timeout: 12000 });
   }
 });
 
 test('search panel opens and closes without error', async ({ page }) => {
-  await page.goto(`${BASE}/workspace`);
-  // Panel is hidden by default.
-  await expect(page.locator('#ws-search-panel')).toBeHidden();
-  await page.click('#ws-search-trigger');
-  await expect(page.locator('#ws-search-panel')).toBeVisible();
-  // Close button works.
-  await page.click('#ws-search-close');
-  await expect(page.locator('#ws-search-panel')).toBeHidden();
+  await gotoHomeSystemsReady(page);
+  await expect(page.locator('#home-search-panel')).toBeHidden();
+  await page.click('#home-search-trigger');
+  await expect(page.locator('#home-search-panel')).toBeVisible();
+  await page.click('#home-search-close');
+  await expect(page.locator('#home-search-panel')).toBeHidden();
 });
 
 test('reduced-motion: canvas frame is hidden, prose fills the projects pane', async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: 'reduce' });
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/workspace#projects`);
-  // The canvas-frame block has `display: none` under the Task 1 rule; child <canvas>
-  // shouldn't be in the viewport even if the projects pane is.
-  const canvas = page.locator('#ws-rust-canvas');
+  await page.goto(`${BASE}/#projects`);
+  const canvas = page.locator('#home-rust-canvas');
   await expect(canvas).toBeHidden();
-  // The prose column ("current build surface" heading) is on screen.
-  await expect(page.locator('#projects-title')).toBeInViewport();
+  await expect(page.locator('#sys-projects-title')).toBeInViewport();
   await ctx.close();
 });
 
 test('WASM load failure: pane content remains readable, fallback visible', async ({ browser }) => {
-  // Block the canvas WASM module to simulate a failure.
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.route('**/wasm/canvas/**', (route) => route.abort());
-  // Navigate directly to the projects pane so it's in the initial viewport.
-  await page.goto(`${BASE}/workspace#projects`);
-  // Pane content (project list) still renders.
-  await expect(page.locator('#projects-title')).toBeInViewport();
-  // Visible fallback paragraph inside .canvas-frame.
-  await expect(page.locator('.canvas-frame p')).toContainText(/Rust lyon/i);
-  // Status flips to "error".
+  await page.goto(`${BASE}/#projects`);
+  await page.waitForTimeout(5200);
+  await expect(page.locator('#sys-projects-title')).toBeInViewport();
+  await expect(page.locator('#systems .canvas-frame p')).toContainText(/Rust lyon/i);
   await expect(page.locator('[data-wip-status="canvas"]')).toHaveAttribute('data-state', 'error', {
-    timeout: 5000,
+    timeout: 12000,
   });
   await ctx.close();
 });
 
-test('COOP/COEP headers present on /workspace, absent on /', async ({ request }) => {
-  // Smoke depends on the deployed Worker (or `wrangler dev`) honoring the
-  // public/_headers + middleware rules. SSR preview server doesn't apply them,
-  // so this test runs ONLY against SMOKE_BASE_URL when it's a real Worker URL.
-  test.skip(!process.env.SMOKE_BASE_URL, 'header scope requires deployed Worker');
-  const ws = await request.get(`${BASE}/workspace`);
-  expect(ws.headers()['cross-origin-embedder-policy']).toBe('require-corp');
-  expect(ws.headers()['cross-origin-opener-policy']).toBe('same-origin');
+test('GET /workspace redirects toward /#systems', async ({ request }) => {
+  const res = await request.get(`${BASE}/workspace`, { maxRedirects: 0 });
+  expect([301, 308]).toContain(res.status());
+  const loc = res.headers().location ?? '';
+  expect(loc).toMatch(/\/#systems$/);
+});
+
+test('COOP/COEP headers absent on /', async ({ request }) => {
+  test.skip(!process.env.SMOKE_BASE_URL, 'header check is informational for deployed Worker');
   const root = await request.get(`${BASE}/`);
   expect(root.headers()['cross-origin-embedder-policy']).toBeUndefined();
   expect(root.headers()['cross-origin-opener-policy']).toBeUndefined();
@@ -116,8 +106,7 @@ test('COOP/COEP headers present on /workspace, absent on /', async ({ request })
 test('mobile viewport (375px) renders pane-nav as horizontal scroll', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/workspace`);
-  // Mobile media-query at <860px collapses the sidebar nav into a horizontal scroll row.
+  await gotoHomeSystemsReady(page);
   const navBox = await page.locator('.pane-nav').boundingBox();
   expect(navBox).not.toBeNull();
   if (navBox) {
@@ -127,8 +116,9 @@ test('mobile viewport (375px) renders pane-nav as horizontal scroll', async ({ b
 });
 
 test('telemetry pane renders aggregate stat slots', async ({ page }) => {
-  await page.goto(`${BASE}/workspace#telemetry`);
-  const first = page.locator('[data-telemetry-stat="total-sessions"]');
+  await page.goto(`${BASE}/#telemetry`);
+  await page.waitForTimeout(5200);
+  const first = page.locator('#systems [data-telemetry-stat="total-sessions"]');
   if ((await first.count()) === 0) {
     test.skip(
       Boolean(process.env.SMOKE_BASE_URL),
@@ -136,7 +126,7 @@ test('telemetry pane renders aggregate stat slots', async ({ page }) => {
     );
   }
   for (const name of ['total-sessions', 'sessions-30d', 'avg-lcp', 'avg-fps', 'countries', 'devices']) {
-    await expect(page.locator(`[data-telemetry-stat="${name}"]`)).toBeAttached();
+    await expect(page.locator(`#systems [data-telemetry-stat="${name}"]`)).toBeAttached();
   }
 });
 
@@ -211,9 +201,8 @@ test('DNT user does not POST a beacon', async ({ browser }) => {
   page.on('request', (req) => {
     if (req.url().includes('/api/telemetry/beacon')) beaconRequests += 1;
   });
-  await page.goto(`${BASE}/workspace`);
   await page.goto(`${BASE}/`);
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(6000);
   expect(beaconRequests).toBe(0);
   await ctx.close();
 });

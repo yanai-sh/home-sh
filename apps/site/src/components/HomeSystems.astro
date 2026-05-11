@@ -1,37 +1,34 @@
 ---
-import Background from "@components/Background.astro";
 import Hero from "@components/Hero.astro";
-import { NOW, PROJECTS, STACK, USES } from "@config/workspace";
-import Layout from "@layouts/Layout.astro";
+import { NOW, PROJECTS, READING, STACK, USES } from "@config/workspace";
 import { resumeSnapshotForPage } from "@lib/resume-page-snapshot";
 
 const resumeSnapshot = resumeSnapshotForPage();
 const resume = resumeSnapshot.data;
 const panes = [
   { id: "projects", label: "Projects" },
-  { id: "resume", label: "Resume" },
+  { id: "cv-index", label: "Résumé" },
   { id: "stack", label: "Stack" },
   { id: "uses", label: "Uses" },
+  { id: "reading", label: "Reading" },
   { id: "telemetry", label: "Telemetry" },
 ] as const;
 const primaryExperience = resume.experience.slice(0, 3);
 ---
 
-<Layout title="workspace - yanai.sh" contentId="workspace-main">
-  <Background />
-
-  <main class="workspace" id="workspace-main" tabindex="-1">
-    <header class="workspace-hero" aria-labelledby="hero-title">
-      <a class="back-link" href="/">Back home</a>
+<section id="systems" aria-label="Systems lab" tabindex="-1">
+  <main class="workspace" id="systems-main" tabindex="-1">
+    <header class="workspace-hero" aria-labelledby="systems-hero-title">
+      <a class="back-link" href="#hero">Back to top</a>
       <div class="hero-headline-slot">
-        <Hero />
+        <Hero titleId="systems-hero-title" />
       </div>
       <p class="lede">systems, integration, infra, and Rust/WASM proofs.</p>
       <div class="workspace-actions">
-        <button class="action action--primary" type="button" id="ws-search-trigger">
-          Search workspace
+        <button class="action action--primary" type="button" id="home-search-trigger">
+          Search site
         </button>
-        <a class="action" href="/resume">View resume</a>
+        <a class="action" href="#resume-full">View résumé</a>
       </div>
     </header>
 
@@ -48,7 +45,7 @@ const primaryExperience = resume.experience.slice(0, 3);
     </section>
 
     <div class="workspace-shell">
-      <nav class="pane-nav" aria-label="Workspace panes">
+      <nav class="pane-nav" aria-label="Systems panes">
         {panes.map((pane) => (
           <a href={`#${pane.id}`} data-pane-link={pane.id}>{pane.label}</a>
         ))}
@@ -58,7 +55,7 @@ const primaryExperience = resume.experience.slice(0, 3);
         <section class="pane pane--canvas" id="projects" data-pane aria-labelledby="projects-title">
           <div class="pane-copy">
             <p class="pane-kicker">projects</p>
-            <h2 id="projects-title" tabindex="-1">current build surface</h2>
+            <h2 id="sys-projects-title" tabindex="-1">current build surface</h2>
             <div class="project-list">
               {PROJECTS.map((project) => (
                 <article class="project-card">
@@ -74,14 +71,14 @@ const primaryExperience = resume.experience.slice(0, 3);
             </div>
           </div>
           <div class="canvas-frame" aria-label="Rust canvas renderer">
-            <canvas id="ws-rust-canvas" width="720" height="420" aria-hidden="true"></canvas>
+            <canvas id="home-rust-canvas" width="720" height="420" aria-hidden="true"></canvas>
             <p>Rust lyon tessellation renders this surface when WASM is available.</p>
           </div>
         </section>
 
-        <section class="pane" id="resume" data-pane aria-labelledby="resume-pane-title">
+        <section class="pane" id="cv-index" data-pane aria-labelledby="cv-pane-title">
           <p class="pane-kicker">resume index</p>
-          <h2 id="resume-pane-title" tabindex="-1">{resume.header.headline}</h2>
+          <h2 id="cv-pane-title" tabindex="-1">{resume.header.headline}</h2>
           <p class="pane-summary">{resume.summary}</p>
           <div class="experience-grid">
             {primaryExperience.map((job) => (
@@ -117,7 +114,7 @@ const primaryExperience = resume.experience.slice(0, 3);
           <p class="pane-kicker">uses / now</p>
           <h2 id="uses-title" tabindex="-1">tools and current work</h2>
           <div class="uses-grid">
-            <section>
+            <section id="now">
               <h3>now</h3>
               <ul>
                 {NOW.map((item) => (
@@ -144,13 +141,32 @@ const primaryExperience = resume.experience.slice(0, 3);
           </div>
         </section>
 
+        <section class="pane" id="reading" data-pane aria-labelledby="reading-title">
+          <p class="pane-kicker">reading</p>
+          <h2 id="reading-title" tabindex="-1">queue</h2>
+          <div class="entry-list">
+            {
+              READING.map((item) => (
+                <article class="entry">
+                  <header>
+                    <h3>{item.title}</h3>
+                    <p class="meta">
+                      {item.author} · {item.status}
+                    </p>
+                  </header>
+                </article>
+              ))
+            }
+          </div>
+        </section>
+
         <section class="pane" id="telemetry" data-pane aria-labelledby="telemetry-title">
           <p class="pane-kicker">telemetry</p>
           <h2 id="telemetry-title" tabindex="-1">local runtime proof</h2>
           <p class="pane-summary">
-            Aggregate runtime data from /workspace visits over the last 30 days.
-            No identifiers, no ad networks; the page works the same with telemetry
-            blocked (DNT or <code>localStorage['telemetry:opt-out']='1'</code>).
+            Aggregate runtime data from yanai.sh over the last 30 days. No identifiers,
+            no ad networks; the page works the same with telemetry blocked (DNT or{" "}
+            <code>localStorage['telemetry:opt-out']='1'</code>).
           </p>
           <div class="telemetry-grid">
             <article>
@@ -183,18 +199,18 @@ const primaryExperience = resume.experience.slice(0, 3);
       </div>
     </div>
 
-    <section class="ws-search" id="ws-search-panel" hidden aria-label="Workspace search">
+    <section class="ws-search" id="home-search-panel" hidden aria-label="Site search">
       <div class="ws-search__panel">
         <div class="ws-search__bar">
-          <label class="sr-only" for="ws-search-input">Search workspace</label>
-          <input id="ws-search-input" type="search" autocomplete="off" placeholder="search resume, stack, projects" />
-          <button type="button" id="ws-search-close" aria-label="Close search">Close</button>
+          <label class="sr-only" for="home-search-input">Search site</label>
+          <input id="home-search-input" type="search" autocomplete="off" placeholder="search resume, stack, projects" />
+          <button type="button" id="home-search-close" aria-label="Close search">Close</button>
         </div>
-        <div class="ws-search__results" id="ws-search-results" aria-live="polite"></div>
+        <div class="ws-search__results" id="home-search-results" aria-live="polite"></div>
       </div>
     </section>
   </main>
-</Layout>
+</section>
 
 <style>
   .workspace {
@@ -662,22 +678,29 @@ const primaryExperience = resume.experience.slice(0, 3);
       grid-template-columns: 1fr;
     }
   }
+
+  .pane .entry {
+    display: grid;
+    gap: var(--spacing-8);
+    padding-top: var(--spacing-12);
+    border-top: 1px solid rgba(245, 245, 247, 0.08);
+  }
+
+  .pane .entry:first-of-type {
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .pane .entry h3 {
+    font-size: 1rem;
+  }
+
+  .pane .entry .meta {
+    margin: 0;
+    color: color-mix(in srgb, var(--colors-muted) 86%, transparent);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
 </style>
-
-<script>
-  import { mountTelemetry } from "@lib/telemetry-client";
-  import { mountTelemetryStats } from "@lib/telemetry-stats-client";
-  import { mountWorkspaceWip } from "@lib/workspace-wip-client";
-
-  function bootWorkspace() {
-    mountWorkspaceWip();
-    mountTelemetry();
-    void mountTelemetryStats();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootWorkspace, { once: true });
-  } else {
-    bootWorkspace();
-  }
-</script>

@@ -143,7 +143,7 @@ Near-term gaps, in priority order:
 
 ## Content Pipeline
 
-Resume **HTML** (home band, `/resume`, `/workspace` search index input) comes
+Resume **HTML** (home band, `/resume`, `/#systems` search index input) comes
 from the canonical upstream repo as a **git submodule** at `resume/` →
 `yanai-sh/resume` on a **pinned commit**.
 
@@ -155,7 +155,7 @@ resume/resume.toml (submodule pin)
   -> normalizeToml + Zod (ResumeSnapshotSchema)
   -> content/resume.generated.json   # bundled SSR + client search
   -> content/resume.snapshot.json      # redacted-source test fixture
-  -> /, /resume, /workspace search
+  -> /, /resume, /#systems search
 ```
 
 **`/resume.pdf`** is **not** the same artifact path: the Worker proxies the

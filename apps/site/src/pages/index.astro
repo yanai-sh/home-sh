@@ -5,6 +5,7 @@ import EmailPill from "@components/EmailPill.astro";
 import Footer from "@components/Footer.astro";
 import Hero from "@components/Hero.astro";
 import HomeLattice from "@components/HomeLattice.astro";
+import HomeSystems from "@components/HomeSystems.astro";
 import Lede from "@components/Lede.astro";
 import ResumeDocument from "@components/ResumeDocument.astro";
 import ResumeShowcase from "@components/ResumeShowcase.astro";
@@ -42,6 +43,7 @@ const resumeData = resumeSnapshotForPage().data;
       </a>
     </section>
     <ResumeShowcase />
+    <HomeSystems />
     <section
       class="resume-full-embed"
       id="resume-full"
@@ -459,11 +461,26 @@ const resumeData = resumeSnapshotForPage().data;
 </style>
 
 <script>
+  import { mountHomeSystems } from "@lib/home-systems-boot";
   import { mountResumeNavigation } from "@lib/resume-nav-client";
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", mountResumeNavigation, { once: true });
   } else {
     mountResumeNavigation();
+  }
+
+  function scheduleHomeSystems() {
+    if (typeof globalThis.requestIdleCallback === "function") {
+      globalThis.requestIdleCallback(() => mountHomeSystems(), { timeout: 3500 });
+    } else {
+      globalThis.setTimeout(() => mountHomeSystems(), 3500);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scheduleHomeSystems, { once: true });
+  } else {
+    scheduleHomeSystems();
   }
 </script>

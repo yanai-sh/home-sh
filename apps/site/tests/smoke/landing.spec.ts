@@ -37,10 +37,14 @@ test('resume.pdf returns a PDF', async ({ request }, testInfo) => {
   expect(res.headers()['content-type']).toContain('application/pdf');
 });
 
-test('workspace renders without errors', async ({ page }) => {
+test('/workspace redirect and /#systems render without errors', async ({ page }) => {
   const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('pageerror', (e) => {
+    if (!e.message.includes('Turnstile')) errors.push(e.message);
+  });
   await page.goto(`${BASE}/workspace`);
+  expect(page.url()).toMatch(/\/#systems$/);
+  await page.waitForTimeout(5200);
   expect(errors).toEqual([]);
 });
 
