@@ -92,15 +92,17 @@ const ogImageUrl = new URL(SITE_OG_IMAGE_PATH, SITE_URL).href;
     width: 100%;
     height: 100%;
     opacity: 0;
+    mix-blend-mode: screen;
     transition: opacity 700ms ease;
   }
 
   .systems-field-layer.is-systems-field-ready canvas {
-    opacity: 0.3;
+    opacity: 0.42;
   }
 
   [data-theme='light'] .systems-field-layer.is-systems-field-ready canvas {
-    opacity: 0.22;
+    opacity: 0.36;
+    mix-blend-mode: multiply;
   }
 
   .systems-field-debug {

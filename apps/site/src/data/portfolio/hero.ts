@@ -5,24 +5,13 @@ export const hero = {
   headline: 'Yanai Klugman',
   byline: 'Systems, Integration, Infrastructure, Automation',
   lede: 'I work on systems, integration, and infrastructure for engineering teams building customer-facing software and internal tools.',
-  artifact: {
-    label: 'Hero rendering status',
-    eyebrow: 'Systems field',
-    title: 'canvas.wasm',
-    rows: [
-      {
-        label: 'Renderer',
-        value: 'Rust / Canvas 2D',
-      },
-      {
-        label: 'Load',
-        value: 'After first paint',
-      },
-      {
-        label: 'Motion',
-        value: 'Paused offscreen',
-      },
-    ],
+  focus: {
+    label: 'Current engineering focus',
+    eyebrow: 'Current focus',
+    title: 'Practical systems for product teams',
+    summary:
+      'I connect services, data paths, operational tooling, and delivery workflows so teams can ship with fewer brittle edges.',
+    items: ['Systems', 'Integration', 'Infrastructure', 'Automation'],
   },
   actionsLabel: 'Primary actions',
   actions: [

@@ -22,25 +22,22 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
     </div>
   </div>
 
-  <aside class="hero-artifact panel" aria-label={hero.artifact.label}>
-    <div class="hero-artifact__header">
-      <p class="hero-artifact__label">{hero.artifact.eyebrow}</p>
-      <span>01 / hero</span>
+  <aside class="hero-focus panel" aria-label={hero.focus.label}>
+    <div class="hero-focus__header">
+      <p class="hero-focus__label">{hero.focus.eyebrow}</p>
+      <span>01 / focus</span>
     </div>
 
-    <div class="hero-artifact__core" aria-hidden="true">
-      <span class="hero-artifact__pulse"></span>
-      <h2>{hero.artifact.title}</h2>
+    <div class="hero-focus__core">
+      <span class="hero-focus__mark" aria-hidden="true"></span>
+      <h2>{hero.focus.title}</h2>
     </div>
 
-    <dl class="hero-artifact__readout">
-      {hero.artifact.rows.map((row) => (
-        <div>
-          <dt>{row.label}</dt>
-          <dd>{row.value}</dd>
-        </div>
-      ))}
-    </dl>
+    <p class="hero-focus__summary">{hero.focus.summary}</p>
+
+    <ul class="hero-focus__items" aria-label="Focus areas">
+      {hero.focus.items.map((item) => <li>{item}</li>)}
+    </ul>
 
     <div class="hero-socials" aria-label="Social links">
       {socials.filter((social) => social.url).map((social) => (
@@ -71,36 +68,24 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
     z-index: -2;
     overflow: hidden;
     background:
-      radial-gradient(circle at 26% 28%, rgba(47, 107, 255, 0.2), transparent 28rem),
-      radial-gradient(circle at 74% 40%, rgba(118, 255, 213, 0.11), transparent 24rem),
-      linear-gradient(135deg, rgba(120, 164, 255, 0.12) 0 1px, transparent 1px 11rem),
-      linear-gradient(90deg, rgba(245, 247, 250, 0.06) 1px, transparent 1px),
-      linear-gradient(180deg, rgba(245, 247, 250, 0.045) 1px, transparent 1px),
-      #090e14;
+      radial-gradient(circle at 22% 28%, rgba(47, 107, 255, 0.16), transparent 30rem),
+      radial-gradient(circle at 74% 42%, rgba(118, 255, 213, 0.08), transparent 26rem),
+      linear-gradient(135deg, rgba(120, 164, 255, 0.1) 0 1px, transparent 1px 11rem);
     background-size:
       auto,
       auto,
-      11rem 11rem,
-      4.5rem 4.5rem,
-      4.5rem 4.5rem,
-      auto;
+      11rem 11rem;
   }
 
   [data-theme="light"] .hero-field {
     background:
-      radial-gradient(circle at 24% 26%, rgba(47, 107, 255, 0.16), transparent 25rem),
-      radial-gradient(circle at 78% 38%, rgba(0, 126, 118, 0.11), transparent 23rem),
-      linear-gradient(135deg, rgba(36, 91, 220, 0.16) 0 1px, transparent 1px 10rem),
-      linear-gradient(90deg, rgba(21, 27, 34, 0.08) 1px, transparent 1px),
-      linear-gradient(180deg, rgba(21, 27, 34, 0.06) 1px, transparent 1px),
-      #f7faff;
+      radial-gradient(circle at 24% 25%, rgba(31, 95, 255, 0.14), transparent 27rem),
+      radial-gradient(circle at 80% 36%, rgba(0, 126, 118, 0.1), transparent 24rem),
+      linear-gradient(135deg, rgba(23, 79, 199, 0.12) 0 1px, transparent 1px 10rem);
     background-size:
       auto,
       auto,
-      10rem 10rem,
-      4.25rem 4.25rem,
-      4.25rem 4.25rem,
-      auto;
+      10rem 10rem;
   }
 
   .hero-field::before,
@@ -113,34 +98,34 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
 
   .hero-field::before {
     background:
-      linear-gradient(100deg, transparent 0 16%, rgba(255, 205, 118, 0.18) 16.2%, transparent 16.8% 54%, rgba(120, 164, 255, 0.18) 54.2%, transparent 55%),
-      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 7px);
+      linear-gradient(100deg, transparent 0 16%, rgba(255, 205, 118, 0.13) 16.2%, transparent 16.8% 54%, rgba(120, 164, 255, 0.12) 54.2%, transparent 55%),
+      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 7px);
     mix-blend-mode: screen;
-    opacity: 0.55;
+    opacity: 0.5;
   }
 
   [data-theme="light"] .hero-field::before {
     background:
-      linear-gradient(100deg, transparent 0 18%, rgba(179, 104, 22, 0.14) 18.2%, transparent 18.9% 58%, rgba(36, 91, 220, 0.14) 58.2%, transparent 59%),
-      repeating-linear-gradient(0deg, rgba(21, 27, 34, 0.035) 0 1px, transparent 1px 8px);
+      linear-gradient(100deg, transparent 0 18%, rgba(145, 82, 18, 0.1) 18.2%, transparent 18.9% 58%, rgba(23, 79, 199, 0.11) 58.2%, transparent 59%),
+      repeating-linear-gradient(0deg, rgba(16, 22, 29, 0.025) 0 1px, transparent 1px 8px);
     mix-blend-mode: multiply;
-    opacity: 0.78;
+    opacity: 0.62;
   }
 
   .hero-field::after {
     background:
-      linear-gradient(90deg, var(--color-background) 0%, transparent 18%, transparent 72%, var(--color-background) 100%),
-      linear-gradient(180deg, transparent 0%, transparent 62%, var(--color-background) 100%);
+      linear-gradient(90deg, var(--color-background) 0%, transparent 14%, transparent 78%, var(--color-background) 100%),
+      linear-gradient(180deg, color-mix(in srgb, var(--color-background) 34%, transparent) 0%, transparent 24%, transparent 68%, var(--color-background) 100%);
   }
 
   [data-theme="light"] .hero-field::after {
     background:
-      linear-gradient(90deg, var(--color-background) 0%, rgba(245, 247, 250, 0.22) 20%, rgba(245, 247, 250, 0.12) 70%, var(--color-background) 100%),
-      linear-gradient(180deg, transparent 0%, transparent 58%, var(--color-background) 100%);
+      linear-gradient(90deg, var(--color-background) 0%, rgba(251, 252, 248, 0.08) 18%, rgba(251, 252, 248, 0.04) 74%, var(--color-background) 100%),
+      linear-gradient(180deg, rgba(251, 252, 248, 0.24) 0%, transparent 24%, transparent 62%, var(--color-background) 100%);
   }
 
   .hero-copy,
-  .hero-artifact {
+  .hero-focus {
     position: relative;
     z-index: 1;
   }
@@ -184,28 +169,27 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
     margin-top: 2rem;
   }
 
-  .hero-artifact {
+  .hero-focus {
     display: grid;
-    gap: 1.15rem;
+    gap: 1.2rem;
     padding: clamp(1.25rem, 3vw, 1.6rem);
     background:
-      linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 42%),
-      color-mix(in srgb, var(--color-surface) 68%, transparent);
+      linear-gradient(145deg, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 44%),
+      color-mix(in srgb, var(--color-surface) 72%, transparent);
     backdrop-filter: blur(18px);
   }
 
-  [data-theme="light"] .hero-artifact {
+  [data-theme="light"] .hero-focus {
     border-color: rgba(21, 27, 34, 0.16);
     background:
-      linear-gradient(135deg, rgba(36, 91, 220, 0.08), transparent 46%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 250, 255, 0.72)),
-      color-mix(in srgb, var(--color-surface) 78%, transparent);
+      linear-gradient(145deg, rgba(28, 86, 214, 0.1), transparent 48%),
+      color-mix(in srgb, var(--color-surface) 84%, transparent);
     box-shadow:
-      0 26px 60px rgba(45, 68, 102, 0.14),
-      inset 0 1px 0 rgba(255, 255, 255, 0.82);
+      0 26px 58px rgba(38, 55, 78, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
-  .hero-artifact__header {
+  .hero-focus__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -217,79 +201,83 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
     text-transform: uppercase;
   }
 
-  .hero-artifact__header span {
+  .hero-focus__header span {
     white-space: nowrap;
   }
 
-  .hero-artifact__label {
+  .hero-focus__label {
     margin: 0;
     color: var(--color-accent-text);
     font-weight: 800;
   }
 
-  .hero-artifact__core {
+  .hero-focus__core {
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.85rem;
-    align-items: center;
-    min-height: 4rem;
+    gap: 0.75rem;
+    min-height: 5rem;
     border-block: 1px solid var(--color-rule);
     padding-block: 1rem;
   }
 
-  .hero-artifact__pulse {
+  .hero-focus__mark {
     position: relative;
-    width: 0.78rem;
-    height: 0.78rem;
+    width: 3.4rem;
+    height: 0.32rem;
     border-radius: 999px;
-    background: var(--color-accent);
-    box-shadow: 0 0 0 0.48rem color-mix(in srgb, var(--color-accent) 14%, transparent);
+    background:
+      linear-gradient(90deg, var(--color-accent), color-mix(in srgb, #007e76 76%, var(--color-accent)));
+    box-shadow: 0 0 0 0.42rem color-mix(in srgb, var(--color-accent) 10%, transparent);
   }
 
-  .hero-artifact__pulse::after {
+  .hero-focus__mark::after {
     position: absolute;
-    inset: -0.68rem;
-    border: 1px solid color-mix(in srgb, var(--color-accent) 34%, transparent);
-    border-radius: inherit;
+    top: 50%;
+    right: -1.45rem;
+    width: 0.54rem;
+    height: 0.54rem;
+    border: 1px solid color-mix(in srgb, var(--color-accent) 42%, transparent);
+    border-radius: 999px;
     content: "";
+    transform: translateY(-50%);
   }
 
-  .hero-artifact h2 {
+  .hero-focus h2 {
     margin: 0;
     color: var(--color-maintext);
-    font-family: var(--font-mono);
-    font-size: clamp(1.25rem, 2.4vw, 1.75rem);
-    font-weight: 750;
+    font-family: var(--font-heading);
+    font-size: clamp(1.45rem, 2.6vw, 2.05rem);
+    font-weight: 800;
     letter-spacing: 0;
-    line-height: 1;
+    line-height: 1.04;
+    text-wrap: balance;
   }
 
-  .hero-artifact__readout {
-    display: grid;
-    gap: 0.7rem;
+  .hero-focus__summary {
     margin: 0;
+    color: var(--color-subtext);
+    font-size: 0.96rem;
+    line-height: 1.62;
   }
 
-  .hero-artifact__readout div {
-    display: grid;
-    grid-template-columns: minmax(5.25rem, auto) 1fr;
-    gap: 1rem;
-    align-items: baseline;
+  .hero-focus__items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .hero-artifact__readout dt {
-    color: var(--color-muted);
-    font-family: var(--font-mono);
+  .hero-focus__items li {
+    border: 1px solid var(--color-rule);
+    border-radius: 999px;
+    padding: 0.42rem 0.62rem;
+    color: color-mix(in srgb, var(--color-maintext) 88%, transparent);
     font-size: 0.72rem;
-    letter-spacing: 0.08em;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1;
     text-transform: uppercase;
-  }
-
-  .hero-artifact__readout dd {
-    margin: 0;
-    color: var(--color-maintext);
-    font-size: 0.95rem;
-    line-height: 1.45;
   }
 
   .hero-socials {
@@ -324,7 +312,7 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
       min-height: auto;
     }
 
-    .hero-artifact {
+    .hero-focus {
       max-width: 36rem;
     }
   }

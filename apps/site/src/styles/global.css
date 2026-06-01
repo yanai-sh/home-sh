@@ -27,18 +27,18 @@
 
   [data-theme="light"] {
     color-scheme: light;
-    --color-background: #f5f7fa;
+    --color-background: #fbfcf8;
     --color-surface: #ffffff;
-    --color-surface-raised: #eef3f9;
-    --color-maintext: #151b22;
-    --color-subtext: #455363;
-    --color-muted: #667386;
-    --color-accent: #2f6bff;
-    --color-accent-text: #245bdc;
+    --color-surface-raised: #f0f4f1;
+    --color-maintext: #10161d;
+    --color-subtext: #344352;
+    --color-muted: #657383;
+    --color-accent: #1f5fff;
+    --color-accent-text: #174fc7;
     --color-accent-ink: #ffffff;
-    --color-rule: rgba(21, 27, 34, 0.13);
-    --color-rule-strong: rgba(21, 27, 34, 0.24);
-    --shadow-soft: 0 18px 44px rgba(30, 44, 64, 0.12);
+    --color-rule: rgba(16, 22, 29, 0.14);
+    --color-rule-strong: rgba(16, 22, 29, 0.26);
+    --shadow-soft: 0 18px 44px rgba(26, 42, 56, 0.13);
   }
 
   * {
@@ -60,19 +60,25 @@
     margin: 0;
     overflow-x: hidden;
     background:
+      radial-gradient(
+        circle at 74% 12%,
+        color-mix(in srgb, var(--color-accent) 10%, transparent),
+        transparent 24rem
+      ),
       linear-gradient(
         90deg,
-        color-mix(in srgb, var(--color-rule) 34%, transparent) 1px,
+        color-mix(in srgb, var(--color-rule) 28%, transparent) 1px,
         transparent 1px
       ),
       linear-gradient(
         180deg,
-        color-mix(in srgb, var(--color-rule) 30%, transparent) 1px,
+        color-mix(in srgb, var(--color-rule) 24%, transparent) 1px,
         transparent 1px
       ),
       var(--color-background);
     background-attachment: fixed;
     background-size:
+      auto,
       4.75rem 4.75rem,
       4.75rem 4.75rem,
       auto;
@@ -272,6 +278,7 @@
 @media (max-width: 720px) {
   body {
     background-size:
+      auto,
       3.25rem 3.25rem,
       3.25rem 3.25rem,
       auto;
