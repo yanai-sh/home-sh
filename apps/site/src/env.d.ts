@@ -5,6 +5,8 @@
 interface ImportMetaEnv {
   /** Cloudflare Turnstile site key (public — safe to expose in client). */
   readonly PUBLIC_TURNSTILE_SITE_KEY: string | undefined;
+  /** Local-only fallback for the server-side resume release proxy. */
+  readonly RESUME_REPO_TOKEN: string | undefined;
 }
 
 interface ImportMeta {
