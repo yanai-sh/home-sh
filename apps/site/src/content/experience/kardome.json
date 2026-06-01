@@ -1,0 +1,22 @@
+{
+  "order": 10,
+  "company": "Kardome",
+  "role": "Software & Systems Engineer",
+  "period": "December 2024 - Present",
+  "scope": "Python, C++, Linux, CI/CD",
+  "description": "Work on vehicle demo setups, audio tools, release checks, and scripts used by engineers in the field.",
+  "skillGroups": [
+    {
+      "label": "Code",
+      "skills": ["Python", "C++", "Linux"]
+    },
+    {
+      "label": "Release",
+      "skills": ["CI/CD", "GitHub Actions", "Checks"]
+    },
+    {
+      "label": "Field",
+      "skills": ["Audio capture", "Vehicle demos", "Debugging"]
+    }
+  ]
+}

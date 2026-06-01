@@ -36,7 +36,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
   if (url.pathname === '/workspace' || url.pathname.startsWith('/workspace/')) {
     const dest = new URL('/', url.origin);
-    dest.hash = 'systems';
+    dest.hash = 'home';
     const headers = securityHeadersForRedirect(url.protocol === 'https:');
     headers.set('Location', dest.href);
     return new Response(null, { status: 308, headers });

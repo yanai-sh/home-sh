@@ -1,0 +1,311 @@
+---
+import { SITE_EMAIL } from '@config/site';
+import { portfolio } from '../data/portfolio';
+
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+const isLocalOrigin = ['127.0.0.1', 'localhost'].includes(Astro.url.hostname);
+const canUseContactForm = Boolean(siteKey) && !isLocalOrigin;
+const { contact, resumeLabel, resumeUrl } = portfolio;
+const emailHref = `mailto:${SITE_EMAIL}?subject=${encodeURIComponent(contact.emailSubject)}`;
+---
+
+<section id={contact.id} class="section-block contact-section" aria-labelledby={contact.titleId}>
+  <div class="contact-copy">
+    <p class="section-eyebrow">{contact.eyebrow}</p>
+    <h2 id={contact.titleId} class="section-title">{contact.title}</h2>
+    <p class="section-deck">{contact.deck}</p>
+
+    <div class="contact-actions" aria-label={contact.actionsLabel}>
+      <a class="button-link button-link--primary" href={emailHref}>{contact.primaryLabel}</a>
+      <a class="button-link" href={resumeUrl} target="_blank" rel="noopener noreferrer">{resumeLabel}</a>
+    </div>
+  </div>
+
+  {
+    canUseContactForm ? (
+      <form
+        class="contact-sheet panel"
+        id="contact-form"
+        novalidate
+        aria-label={contact.form.label}
+        aria-describedby="cf-status"
+        data-sitekey={siteKey}
+        data-status-captcha={contact.form.statusMessages.captcha}
+        data-status-sending={contact.form.statusMessages.sending}
+        data-status-sent={contact.form.statusMessages.sent}
+        data-status-network-error={contact.form.statusMessages.networkError}
+      >
+        <div class="form-field">
+          <label for="cf-name">{contact.form.fields.name}</label>
+          <input id="cf-name" name="name" type="text" autocomplete="name" required maxlength="100" />
+        </div>
+
+        <div class="form-field">
+          <label for="cf-email">{contact.form.fields.email}</label>
+          <input id="cf-email" name="email" type="email" autocomplete="email" required maxlength="254" />
+        </div>
+
+        <div class="form-field">
+          <label for="cf-message">{contact.form.fields.message}</label>
+          <textarea id="cf-message" name="message" required maxlength="2000" rows="5"></textarea>
+        </div>
+
+        <div class="hp-trap" aria-hidden="true">
+          <label for="cf-website">{contact.form.fields.website}</label>
+          <input id="cf-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div class="form-turnstile" id="cf-turnstile-widget"></div>
+
+        <div class="form-footer">
+          <button class="form-submit" id="cf-submit" type="submit" disabled>{contact.form.submitLabel}</button>
+          <span class="form-status" id="cf-status" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    ) : (
+      <div class="contact-sheet contact-direct panel" aria-label={contact.form.directLabel}>
+        <p>{contact.form.localPreviewMessage}</p>
+        <a class="button-link button-link--primary" href={emailHref}>{contact.form.directEmailPrefix} {SITE_EMAIL}</a>
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .contact-section {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(20rem, 0.72fr);
+    gap: clamp(2rem, 6vw, 4rem);
+    align-items: start;
+    padding-bottom: clamp(6rem, 10vw, 8rem);
+  }
+
+  .contact-copy {
+    max-width: 44rem;
+  }
+
+  .contact-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.6rem;
+  }
+
+  .contact-sheet {
+    display: grid;
+    gap: 1rem;
+    padding: clamp(1rem, 3vw, 1.35rem);
+  }
+
+  .form-field {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  label {
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    border: 1px solid var(--color-rule-strong);
+    border-radius: 8px;
+    padding: 0.78rem 0.85rem;
+    background: color-mix(in srgb, var(--color-background) 48%, transparent);
+    color: var(--color-maintext);
+    outline: none;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease;
+  }
+
+  textarea {
+    min-height: 9rem;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  input:focus,
+  textarea:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+    background: color-mix(in srgb, var(--color-background) 64%, transparent);
+  }
+
+  .hp-trap {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .form-turnstile {
+    min-height: 65px;
+  }
+
+  .form-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .form-submit {
+    min-height: 2.6rem;
+    border: 1px solid var(--color-accent);
+    border-radius: 999px;
+    padding: 0.65rem 1.1rem;
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+    cursor: pointer;
+    font-weight: 850;
+  }
+
+  .form-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .form-status {
+    color: var(--color-subtext);
+    font-size: 0.84rem;
+  }
+
+  .form-status[data-state='success'] {
+    color: #42d392;
+  }
+
+  .form-status[data-state='error'] {
+    color: #ffb86b;
+  }
+
+  .contact-direct p {
+    margin: 0;
+    color: var(--color-subtext);
+    line-height: 1.6;
+  }
+
+  @media (max-width: 840px) {
+    .contact-section {
+      grid-template-columns: 1fr;
+      padding-bottom: 6rem;
+    }
+  }
+</style>
+
+<script>
+  import { errorMessage } from '@lib/contact-error-codes';
+
+  const CONTACT_ENDPOINT = '/api/contact';
+  type TurnstileApi = {
+    render: (
+      element: HTMLElement,
+      options: {
+        sitekey: string;
+        theme: 'dark' | 'light';
+        callback: () => void;
+        'expired-callback': () => void;
+      },
+    ) => void;
+    getResponse: () => string;
+    reset: () => void;
+  };
+
+  function initContactForm() {
+    const form = document.getElementById('contact-form') as HTMLFormElement | null;
+    const submitButton = document.getElementById('cf-submit') as HTMLButtonElement | null;
+    const statusElement = document.getElementById('cf-status') as HTMLElement | null;
+    const widgetElement = document.getElementById('cf-turnstile-widget') as HTMLElement | null;
+    if (!form || !submitButton || !statusElement) return;
+
+    const siteKey = form.dataset.sitekey;
+    if (!siteKey) return;
+    const submit = submitButton;
+    const status = statusElement;
+    const turnstileWindow = window as Window & { turnstile?: TurnstileApi };
+
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (!widgetElement) return;
+      turnstileWindow.turnstile?.render(widgetElement, {
+        sitekey: siteKey,
+        theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark',
+        callback: () => {
+          submit.disabled = false;
+        },
+        'expired-callback': () => {
+          submit.disabled = true;
+        },
+      });
+    };
+    document.head.appendChild(script);
+
+    function setStatus(message: string, state: 'idle' | 'loading' | 'success' | 'error') {
+      status.textContent = message;
+      status.dataset.state = state;
+      submit.disabled = state === 'loading';
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        setStatus('', 'idle');
+        return;
+      }
+
+      const token = turnstileWindow.turnstile?.getResponse();
+      if (!token) {
+        setStatus(form.dataset.statusCaptcha as string, 'error');
+        return;
+      }
+
+      const payload = {
+        name: (form.elements.namedItem('name') as HTMLInputElement).value.trim(),
+        email: (form.elements.namedItem('email') as HTMLInputElement).value.trim(),
+        message: (form.elements.namedItem('message') as HTMLTextAreaElement).value.trim(),
+        website: (form.elements.namedItem('website') as HTMLInputElement | null)?.value ?? '',
+        token,
+      };
+
+      setStatus(form.dataset.statusSending as string, 'loading');
+
+      try {
+        const response = await fetch(CONTACT_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          setStatus(form.dataset.statusSent as string, 'success');
+          form.reset();
+          turnstileWindow.turnstile?.reset();
+          submit.disabled = true;
+          return;
+        }
+
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        setStatus(errorMessage(body.error ?? 'send_failed'), 'error');
+        turnstileWindow.turnstile?.reset();
+        submit.disabled = true;
+      } catch {
+        setStatus(form.dataset.statusNetworkError as string, 'error');
+      }
+    });
+  }
+
+  initContactForm();
+</script>

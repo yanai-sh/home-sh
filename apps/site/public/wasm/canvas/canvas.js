@@ -16,6 +16,24 @@ export function render_lattice(canvas, width, height, mouse_x_norm, mouse_y_norm
     }
     return ret[0] >>> 0;
 }
+
+/**
+ * @param {HTMLCanvasElement} canvas
+ * @param {number} width
+ * @param {number} height
+ * @param {number} pointer_x_norm
+ * @param {number} pointer_y_norm
+ * @param {number} time_ms
+ * @param {number} quality
+ * @returns {number}
+ */
+export function render_systems_field(canvas, width, height, pointer_x_norm, pointer_y_norm, time_ms, quality) {
+    const ret = wasm.render_systems_field(canvas, width, height, pointer_x_norm, pointer_y_norm, time_ms, quality);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return ret[0] >>> 0;
+}
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
@@ -26,6 +44,9 @@ function __wbg_get_imports() {
         __wbg___wbindgen_throw_9c75d47bf9e7731e: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
+        __wbg_addColorStop_ba4aad6fba5ad929: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+            arg0.addColorStop(arg1, getStringFromWasm0(arg2, arg3));
+        }, arguments); },
         __wbg_arc_ebc74f7abf32eace: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4, arg5) {
             arg0.arc(arg1, arg2, arg3, arg4, arg5);
         }, arguments); },
@@ -38,6 +59,10 @@ function __wbg_get_imports() {
         __wbg_closePath_b438c379d0897f55: function(arg0) {
             arg0.closePath();
         },
+        __wbg_createRadialGradient_370efd7ef3903eef: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
+            const ret = arg0.createRadialGradient(arg1, arg2, arg3, arg4, arg5, arg6);
+            return ret;
+        }, arguments); },
         __wbg_devicePixelRatio_3a60c85ae6458d68: function(arg0) {
             const ret = arg0.devicePixelRatio;
             return ret;
@@ -52,6 +77,10 @@ function __wbg_get_imports() {
             const ret = arg0.getContext(getStringFromWasm0(arg1, arg2));
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         }, arguments); },
+        __wbg_height_f036cb27636625f6: function(arg0) {
+            const ret = arg0.height;
+            return ret;
+        },
         __wbg_instanceof_CanvasRenderingContext2d_b433938013de3a1e: function(arg0) {
             let result;
             try {
@@ -81,11 +110,23 @@ function __wbg_get_imports() {
         __wbg_setTransform_f25014a0bb3cb050: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
             arg0.setTransform(arg1, arg2, arg3, arg4, arg5, arg6);
         }, arguments); },
+        __wbg_set_fillStyle_6564a82b72a38a9c: function(arg0, arg1) {
+            arg0.fillStyle = arg1;
+        },
         __wbg_set_fillStyle_a3656c7c5d4ad803: function(arg0, arg1, arg2) {
             arg0.fillStyle = getStringFromWasm0(arg1, arg2);
         },
         __wbg_set_height_89a4ecd0f9cc3dfa: function(arg0, arg1) {
             arg0.height = arg1 >>> 0;
+        },
+        __wbg_set_lineCap_c6d038d4ea8817be: function(arg0, arg1, arg2) {
+            arg0.lineCap = getStringFromWasm0(arg1, arg2);
+        },
+        __wbg_set_lineWidth_da5d8942373f2ea0: function(arg0, arg1) {
+            arg0.lineWidth = arg1;
+        },
+        __wbg_set_strokeStyle_cee0bcfd92da6363: function(arg0, arg1, arg2) {
+            arg0.strokeStyle = getStringFromWasm0(arg1, arg2);
         },
         __wbg_set_width_d2ec5d6689655fa9: function(arg0, arg1) {
             arg0.width = arg1 >>> 0;
@@ -105,6 +146,16 @@ function __wbg_get_imports() {
         __wbg_static_accessor_WINDOW_6aeee9b51652ee0f: function() {
             const ret = typeof window === 'undefined' ? null : window;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
+        },
+        __wbg_strokeRect_4cb59de6fd9e905f: function(arg0, arg1, arg2, arg3, arg4) {
+            arg0.strokeRect(arg1, arg2, arg3, arg4);
+        },
+        __wbg_stroke_38f034c148fd63eb: function(arg0) {
+            arg0.stroke();
+        },
+        __wbg_width_73079be53f70e8ba: function(arg0) {
+            const ret = arg0.width;
+            return ret;
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.

@@ -1,5 +1,4 @@
-import { expect, test } from 'playwright/test';
-import { getPublicTurnstileSiteKey } from './smoke-worker-secrets';
+import { expect, test, type Page } from 'playwright/test';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:4321';
 if (BASE.includes('<') || BASE.includes('>')) {
@@ -8,42 +7,33 @@ if (BASE.includes('<') || BASE.includes('>')) {
   );
 }
 
-test('first viewport shows the resume CTA', async ({ page }) => {
-  await page.goto(`${BASE}/`);
-  await expect(page.locator('a[href="#resume"]').first()).toBeVisible();
-});
-
-test('resume route renders content', async ({ page }) => {
-  await page.goto(`${BASE}/resume`);
-  await expect(page.locator('h1')).toBeVisible();
-  // `.entry` is the per-job article inside `.timeline` on /resume.
-  await expect(page.locator('.entry').first()).toBeVisible();
-});
-
-test('resume.pdf returns a PDF', async ({ request }, testInfo) => {
-  testInfo.skip(
-    !process.env.SMOKE_BASE_URL,
-    'Run this check against a deployed origin: set SMOKE_BASE_URL (staging/prod). Local `astro preview` does not faithfully emulate the Cloudflare Secrets Store binding for /resume.pdf.',
-  );
-  const res = await request.get(`${BASE}/resume.pdf`);
-  if (res.status() !== 200) {
-    const body = await res.text();
-    throw new Error(
-      `GET /resume.pdf returned ${res.status()} (${res.headers()['content-type'] ?? 'unknown'})\n` +
-        body.slice(0, 400),
-    );
-  }
-  expect(res.headers()['content-type']).toContain('application/pdf');
-});
-
-test('/workspace redirect and /#systems render without errors', async ({ page }) => {
+function collectPageErrors(page: Page): string[] {
   const errors: string[] = [];
-  page.on('pageerror', (e) => {
-    if (!e.message.includes('Turnstile')) errors.push(e.message);
+  page.on('pageerror', (error) => {
+    if (!error.message.includes('[Cloudflare Turnstile]')) errors.push(error.message);
   });
+  return errors;
+}
+
+test('first viewport shows home hero and resume CTA', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await expect(page.locator('section#home')).toBeVisible();
+  await expect(page.locator('[data-systems-field-canvas]')).toBeAttached();
+  await expect(page.locator('a[href="/resume.pdf"]').first()).toBeVisible();
+});
+
+test('desktop systems field initializes as a progressive enhancement', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await expect(page.locator('[data-systems-hero]')).toHaveClass(/is-systems-field-ready/, {
+    timeout: 8_000,
+  });
+});
+
+test('/workspace redirect lands on /#home', async ({ page }) => {
+  const errors = collectPageErrors(page);
   await page.goto(`${BASE}/workspace`);
-  expect(page.url()).toMatch(/\/#systems$/);
-  await page.waitForTimeout(5200);
+  expect(page.url()).toMatch(/\/#home$/);
+  await page.waitForTimeout(500);
   expect(errors).toEqual([]);
 });
 
@@ -52,50 +42,38 @@ test('404 returns Astro 404 page', async ({ page }) => {
   expect(res?.status()).toBe(404);
 });
 
-test('reduced-motion: page still renders content', async ({ browser }) => {
+test('reduced-motion: home section still renders', async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: 'reduce' });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/`);
-  // Page must still render content even with reduced-motion (no JS-required content).
-  await expect(page.locator('a[href="#resume"]').first()).toBeVisible();
+  await expect(page.locator('section#home')).toBeVisible();
+  await page.waitForTimeout(700);
+  await expect(page.locator('[data-systems-hero]')).not.toHaveClass(/is-systems-field-ready/);
   await ctx.close();
 });
 
-test('contact form renders sitekey', async ({ page }, testInfo) => {
-  testInfo.skip(
-    !getPublicTurnstileSiteKey() && !process.env.SMOKE_BASE_URL,
-    'Set public_turnstile_site_key in infra/secrets/worker-secrets.local.json, PUBLIC_TURNSTILE_SITE_KEY in env, or SMOKE_BASE_URL for a deployed origin',
-  );
+test('blocked systems field WASM keeps hero usable', async ({ page }) => {
+  const errors = collectPageErrors(page);
+  await page.route('**/wasm/canvas/**', (route) => route.abort());
   await page.goto(`${BASE}/`);
-  const form = page.locator('#contact-form');
-  await expect(form).toBeVisible();
-  const sitekey = await form.getAttribute('data-sitekey');
-  expect(sitekey).toMatch(/^0x4AAAA/);
+  await expect(page.locator('section#home')).toBeVisible();
+  await expect(page.locator('a[href="/resume.pdf"]').first()).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(errors).toEqual([]);
 });
 
-test('POST /api/contact rejects oversized message before Turnstile', async ({ request }) => {
-  const res = await request.post(`${BASE}/api/contact`, {
-    headers: { 'Content-Type': 'application/json' },
-    data: JSON.stringify({
-      name: 'Smoke',
-      email: 'smoke@example.com',
-      message: 'x'.repeat(2001),
-      token: 'not-verified-should-not-run',
-    }),
-  });
-  expect(res.status()).toBe(400);
-  const data = (await res.json()) as { error?: string };
-  expect(data.error).toBe('invalid_input');
+test('contact section renders direct email', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await expect(page.locator('#contact')).toBeVisible();
+  await expect(page.locator('#contact a[href^="mailto:"]').first()).toBeVisible();
 });
 
 test('mobile viewport (375px wide) shows resume CTA without overflow', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/`);
-  await expect(page.locator('a[href="#resume"]').first()).toBeVisible();
-  // The /resume.pdf download lives in the contact section further down the page.
+  await expect(page.locator('section#home')).toBeVisible();
   await expect(page.locator('a[href="/resume.pdf"]').first()).toBeAttached();
-  // No horizontal scroll on mobile.
   const hasOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth,
   );

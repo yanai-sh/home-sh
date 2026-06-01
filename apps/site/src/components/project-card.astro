@@ -1,0 +1,120 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { Icon } from 'astro-icon/components';
+
+const { project, index, labels } = Astro.props as {
+  project: CollectionEntry<'projects'>['data'];
+  index: number;
+  labels: {
+    openLabelPrefix: string;
+    techLabelSuffix: string;
+  };
+};
+const image = project.images?.[0] ?? '/brand/og-cover.svg';
+const tech = project.tech ?? [];
+---
+
+<article class="project-card panel">
+  <div class="project-card__index">0{index + 1}</div>
+  <img src={image} alt="" width="1200" height="630" loading="lazy" />
+  <div class="project-card__body">
+    <p>{project.category}</p>
+    <h3>{project.title}</h3>
+    <span>{project.description}</span>
+    <ul class="chip-row" aria-label={`${project.title} ${labels.techLabelSuffix}`}>
+      {tech.map((tech) => <li class="chip">{tech}</li>)}
+    </ul>
+  </div>
+  {
+    project.externalUrl ? (
+      <a class="project-card__link" href={project.externalUrl} target="_blank" rel="noopener noreferrer" aria-label={`${labels.openLabelPrefix} ${project.title}`}>
+        <Icon name="mdi:open-in-new" />
+      </a>
+    ) : null
+  }
+</article>
+
+<style>
+  .project-card {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+  }
+
+  .project-card__index {
+    position: absolute;
+    top: 0.9rem;
+    left: 0.9rem;
+    z-index: 2;
+    border: 1px solid var(--color-rule);
+    border-radius: 999px;
+    padding: 0.26rem 0.55rem;
+    background: color-mix(in srgb, var(--color-background) 72%, transparent);
+    color: var(--color-subtext);
+    font-family: var(--font-heading);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-bottom: 1px solid var(--color-rule);
+    background: var(--color-surface);
+  }
+
+  .project-card__body {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1.15rem;
+  }
+
+  .project-card__body p {
+    margin: 0;
+    color: var(--color-accent-text);
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--color-maintext);
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    line-height: 1.08;
+  }
+
+  .project-card__body span {
+    color: var(--color-subtext);
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  .project-card__link {
+    position: absolute;
+    right: 0.9rem;
+    top: 0.9rem;
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border: 1px solid var(--color-rule);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-background) 72%, transparent);
+    color: var(--color-maintext);
+  }
+
+  .project-card__link:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent-text);
+  }
+
+  .project-card__link :global(svg) {
+    width: 1rem;
+    height: 1rem;
+  }
+</style>

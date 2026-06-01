@@ -31,8 +31,7 @@ export default defineConfig({
         // `PUBLIC_TURNSTILE_SITE_KEY` at build time: shell / `apps/site/.env`, or
         // `public_turnstile_site_key` in `infra/secrets/worker-secrets.local.json`
         // (same file optional Bitwarden import writes); see `smoke-worker-secrets.ts`.
-        command:
-          'bunx wrangler d1 migrations apply home-sh-telemetry --local && bun run build && bun run preview',
+        command: 'bun run build && bun run preview',
         cwd: '../..',
         url: 'http://localhost:4321/',
         env: {

@@ -1,15 +1,3 @@
-// POST /api/contact — contact-form receiver. Validates input, verifies the
-// Turnstile token server-side, and forwards the message via Resend.
-//
-// Secrets bind from the account-level Workers Secrets Store via
-// `secrets_store_secrets` in wrangler.jsonc. Each binding is a
-// `SecretsStoreSecret` whose value is fetched lazily through `.get()`.
-// Store values: `bun run push-secrets` or Actions workflow **yanai-sh / Secrets — push**.
-//
-// Lives in the site Worker (single ingress for yanai.sh), not as a separate
-// Worker — avoids the per-route IAM scope and the operational tax of an extra
-// deploy artifact.
-
 import { env } from 'cloudflare:workers';
 import { CONTACT_ERROR } from '@lib/contact-error-codes';
 import type { APIRoute } from 'astro';
@@ -30,12 +18,17 @@ const json = (body: unknown, status = 200): Response =>
     headers: { 'Content-Type': 'application/json', ...CORS },
   });
 
+const secretValue = async (binding: { get?: () => Promise<string> } | string): Promise<string> => {
+  if (typeof binding === 'string') return binding;
+  return binding.get?.() ?? '';
+};
+
 const verifyTurnstile = async (
   token: string,
   secret: string,
   ip: string | null,
 ): Promise<boolean> => {
-  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -44,7 +37,7 @@ const verifyTurnstile = async (
       ...(ip ? { remoteip: ip } : {}),
     }),
   });
-  const data = (await res.json()) as { success: boolean };
+  const data = (await response.json()) as { success: boolean };
   return data.success === true;
 };
 
@@ -64,15 +57,9 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   if (typeof body.website === 'string' && body.website.trim().length > 0) {
-    // Honeypot tripped — bot filled the trap field. Return ok:true to confuse
-    // crawlers; the message is dropped silently.
-    console.log('contact: honeypot tripped', { ip: request.headers.get('CF-Connecting-IP') });
     return json({ ok: true });
   }
 
-  // Per-IP rate limit (5/min) sits ahead of Turnstile so abusive callers
-  // don't burn siteverify quota. CF-Connecting-IP is set at the edge; in
-  // `wrangler dev` it can be missing, so fall back to a literal key.
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
   const limit = await env.CONTACT_RATE_LIMIT.limit({ key: ip });
   if (!limit.success) {
@@ -80,7 +67,6 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const { name, email, message, token } = body;
-
   if (
     typeof name !== 'string' ||
     name.trim().length < 1 ||
@@ -98,10 +84,10 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const [turnstileSecret, resendKey, contactFrom, contactTo] = await Promise.all([
-    env.TURNSTILE_SECRET.get(),
-    env.RESEND_API_KEY.get(),
-    env.CONTACT_FROM.get(),
-    env.CONTACT_TO.get(),
+    secretValue(env.TURNSTILE_SECRET),
+    secretValue(env.RESEND_API_KEY),
+    secretValue(env.CONTACT_FROM),
+    secretValue(env.CONTACT_TO),
   ]);
 
   const verified = await verifyTurnstile(token, turnstileSecret, ip);
@@ -109,7 +95,7 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: CONTACT_ERROR.TURNSTILE_FAILED }, 403);
   }
 
-  const sendRes = await fetch('https://api.resend.com/emails', {
+  const sendResponse = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${resendKey}`,
@@ -124,9 +110,12 @@ export const POST: APIRoute = async ({ request }) => {
     }),
   });
 
-  if (!sendRes.ok) {
-    const errBody = await sendRes.text().catch(() => '<unreadable>');
-    console.error('contact: resend rejected', { status: sendRes.status, body: errBody });
+  if (!sendResponse.ok) {
+    const responseBody = await sendResponse.text().catch(() => '<unreadable>');
+    console.error('contact: resend rejected', {
+      status: sendResponse.status,
+      body: responseBody,
+    });
     return json({ error: CONTACT_ERROR.SEND_FAILED }, 502);
   }
 

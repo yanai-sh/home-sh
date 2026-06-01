@@ -6,6 +6,8 @@ use lyon::{
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
+const TAU: f64 = core::f64::consts::TAU;
+
 #[wasm_bindgen]
 pub fn render_lattice(
     canvas: HtmlCanvasElement,
@@ -117,6 +119,137 @@ pub fn render_lattice(
             context.fill();
         }
     }
+
+    Ok(node_count)
+}
+
+#[wasm_bindgen]
+pub fn render_systems_field(
+    canvas: HtmlCanvasElement,
+    width: f64,
+    height: f64,
+    pointer_x_norm: f64,
+    pointer_y_norm: f64,
+    time_ms: f64,
+    quality: u32,
+) -> Result<u32, JsValue> {
+    let dpr = web_sys::window()
+        .map(|window| window.device_pixel_ratio())
+        .unwrap_or(1.0)
+        .clamp(1.0, 1.75);
+
+    let pixel_width = (width * dpr).max(1.0).round() as u32;
+    let pixel_height = (height * dpr).max(1.0).round() as u32;
+    if canvas.width() != pixel_width {
+        canvas.set_width(pixel_width);
+    }
+    if canvas.height() != pixel_height {
+        canvas.set_height(pixel_height);
+    }
+
+    let context = canvas
+        .get_context("2d")?
+        .ok_or_else(|| JsValue::from_str("2d canvas context unavailable"))?
+        .dyn_into::<CanvasRenderingContext2d>()?;
+
+    context.set_transform(dpr, 0.0, 0.0, dpr, 0.0, 0.0)?;
+    context.clear_rect(0.0, 0.0, width, height);
+    context.set_fill_style_str("rgba(9, 14, 20, 0.92)");
+    context.fill_rect(0.0, 0.0, width, height);
+
+    let tier = quality.clamp(1, 3);
+    let spacing = match tier {
+        1 => (width / 9.0).clamp(72.0, 116.0),
+        2 => (width / 12.0).clamp(58.0, 96.0),
+        _ => (width / 15.0).clamp(46.0, 82.0),
+    };
+    let cols = (width / spacing).ceil() as u32 + 3;
+    let rows = (height / spacing).ceil() as u32 + 3;
+    let px = pointer_x_norm.clamp(0.0, 1.0) * width;
+    let py = pointer_y_norm.clamp(0.0, 1.0) * height;
+    let t = time_ms * 0.001;
+    let mut node_count = 0;
+
+    context.set_line_cap("round");
+    context.set_line_width(1.0);
+
+    for row in 0..rows {
+        for col in 0..cols {
+            let base_x = col as f64 * spacing - spacing;
+            let base_y = row as f64 * spacing - spacing;
+            let phase = t * 0.62 + row as f64 * 0.71 + col as f64 * 0.39;
+            let drift = phase.sin() * spacing * 0.08;
+            let x = base_x + drift;
+            let y = base_y + phase.cos() * spacing * 0.05;
+            let pointer_dx = (x - px) / width.max(1.0);
+            let pointer_dy = (y - py) / height.max(1.0);
+            let pointer_pull = (-(pointer_dx * pointer_dx + pointer_dy * pointer_dy) * 18.0).exp();
+            let pulse = ((t * 1.4 + row as f64 * 0.6 + col as f64 * 0.2).sin() + 1.0) * 0.5;
+
+            if col + 1 < cols {
+                let nx = (col + 1) as f64 * spacing - spacing + phase.sin() * spacing * 0.05;
+                let ny = base_y + (phase + 0.7).cos() * spacing * 0.04;
+                let alpha = 0.055 + pointer_pull * 0.14 + pulse * 0.035;
+                context.set_stroke_style_str(&format!("rgba(105, 151, 255, {alpha:.3})"));
+                context.begin_path();
+                context.move_to(x, y);
+                context.line_to(nx, ny);
+                context.stroke();
+            }
+
+            if row + 1 < rows && (row + col) % 2 == 0 {
+                let nx = base_x + (phase + 0.5).sin() * spacing * 0.04;
+                let ny = (row + 1) as f64 * spacing - spacing;
+                context.set_stroke_style_str(&format!(
+                    "rgba(129, 222, 190, {:.3})",
+                    0.035 + pointer_pull * 0.09
+                ));
+                context.begin_path();
+                context.move_to(x, y);
+                context.line_to(nx, ny);
+                context.stroke();
+            }
+
+            let radius = 1.0 + pointer_pull * 2.0 + pulse * 0.7;
+            context.set_fill_style_str(&format!(
+                "rgba(233, 242, 255, {:.3})",
+                0.22 + pointer_pull * 0.42
+            ));
+            context.begin_path();
+            context.arc(x, y, radius, 0.0, TAU)?;
+            context.fill();
+            node_count += 1;
+        }
+    }
+
+    let gate_count = 3 + tier;
+    for index in 0..gate_count {
+        let lane = index as f64 / gate_count as f64;
+        let x = width * (0.2 + lane * 0.68);
+        let y = height * (0.22 + ((index * 37) % 52) as f64 / 100.0);
+        let sweep = ((t * 0.85 + index as f64 * 0.9).sin() + 1.0) * 0.5;
+        let gate_width = 54.0 + sweep * 32.0;
+
+        context.set_stroke_style_str(&format!("rgba(255, 205, 118, {:.3})", 0.16 + sweep * 0.18));
+        context.set_line_width(1.25);
+        context.stroke_rect(x, y, gate_width, 11.0);
+        context.set_fill_style_str(&format!("rgba(255, 205, 118, {:.3})", 0.08 + sweep * 0.12));
+        context.fill_rect(x, y, gate_width * sweep, 11.0);
+    }
+
+    let vignette = context.create_radial_gradient(
+        width * 0.38,
+        height * 0.35,
+        width * 0.08,
+        width * 0.5,
+        height * 0.5,
+        width.max(height) * 0.8,
+    )?;
+    vignette.add_color_stop(0.0, "rgba(47, 107, 255, 0.10)")?;
+    vignette.add_color_stop(0.52, "rgba(21, 27, 34, 0.18)")?;
+    vignette.add_color_stop(1.0, "rgba(4, 7, 10, 0.72)")?;
+    context.set_fill_style_canvas_gradient(&vignette);
+    context.fill_rect(0.0, 0.0, width, height);
 
     Ok(node_count)
 }

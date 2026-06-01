@@ -1,5 +1,10 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -21,6 +26,12 @@
     }
   },
   "overrides": [
+    {
+      "includes": ["apps/site/src/data/*.json"],
+      "formatter": {
+        "enabled": false
+      }
+    },
     {
       "includes": ["**/*.astro"],
       "formatter": {

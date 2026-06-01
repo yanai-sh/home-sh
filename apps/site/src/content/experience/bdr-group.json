@@ -1,0 +1,18 @@
+{
+  "order": 20,
+  "company": "BDR Group",
+  "role": "Backend .NET Engineer",
+  "period": "May 2024 - November 2024",
+  "scope": "C#, .NET, SQL Server",
+  "description": "Built internal reports over SQL Server for operations and quality checks.",
+  "skillGroups": [
+    {
+      "label": "Code",
+      "skills": ["C#", ".NET", "SQL Server"]
+    },
+    {
+      "label": "Use",
+      "skills": ["Reports", "Quality checks", "Internal tools"]
+    }
+  ]
+}

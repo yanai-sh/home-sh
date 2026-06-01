@@ -13,7 +13,7 @@ export type ContactErrorCode = (typeof CONTACT_ERROR)[keyof typeof CONTACT_ERROR
 const MESSAGES: Record<ContactErrorCode, string> = {
   forbidden_origin: 'request blocked',
   invalid_json: 'malformed request',
-  honeypot_tripped: 'message accepted', // intentionally vague to bots
+  honeypot_tripped: 'message accepted',
   invalid_input: 'check the name, email, and message fields',
   turnstile_failed: 'complete the captcha and try again',
   rate_limited: 'too many requests, try again in a minute',
