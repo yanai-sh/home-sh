@@ -1,8 +1,8 @@
 export const hero = {
   id: 'home',
   titleId: 'home-title',
-  eyebrow: 'Yanai Klugman',
-  headline: 'Software engineer.',
+  eyebrow: 'Software engineer',
+  headline: 'Yanai Klugman',
   byline: 'Systems, Integration, Infrastructure, Automation',
   lede: 'I work on systems, integration, and infrastructure for engineering teams building customer-facing software and internal tools.',
   artifact: {
