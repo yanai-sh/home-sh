@@ -3,7 +3,7 @@
 
 export function render_lattice(canvas: HTMLCanvasElement, width: number, height: number, mouse_x_norm: number, mouse_y_norm: number, time_ms: number): number;
 
-export function render_systems_field(canvas: HTMLCanvasElement, width: number, height: number, pointer_x_norm: number, pointer_y_norm: number, time_ms: number, quality: number): number;
+export function render_systems_field(canvas: HTMLCanvasElement, width: number, height: number, pointer_x_norm: number, pointer_y_norm: number, time_ms: number, render_options: number): number;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 

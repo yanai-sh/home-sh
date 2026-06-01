@@ -131,7 +131,7 @@ pub fn render_systems_field(
     pointer_x_norm: f64,
     pointer_y_norm: f64,
     time_ms: f64,
-    quality: u32,
+    render_options: u32,
 ) -> Result<u32, JsValue> {
     let dpr = web_sys::window()
         .map(|window| window.device_pixel_ratio())
@@ -154,10 +154,16 @@ pub fn render_systems_field(
 
     context.set_transform(dpr, 0.0, 0.0, dpr, 0.0, 0.0)?;
     context.clear_rect(0.0, 0.0, width, height);
-    context.set_fill_style_str("rgba(9, 14, 20, 0.92)");
+    let tier = (render_options & 0b11).clamp(1, 3);
+    let light_mode = render_options & 0b100 != 0;
+    let base_fill = if light_mode {
+        "rgba(247, 250, 255, 0.92)"
+    } else {
+        "rgba(9, 14, 20, 0.92)"
+    };
+    context.set_fill_style_str(base_fill);
     context.fill_rect(0.0, 0.0, width, height);
 
-    let tier = quality.clamp(1, 3);
     let spacing = match tier {
         1 => (width / 9.0).clamp(72.0, 116.0),
         2 => (width / 12.0).clamp(58.0, 96.0),
@@ -190,7 +196,12 @@ pub fn render_systems_field(
                 let nx = (col + 1) as f64 * spacing - spacing + phase.sin() * spacing * 0.05;
                 let ny = base_y + (phase + 0.7).cos() * spacing * 0.04;
                 let alpha = 0.055 + pointer_pull * 0.14 + pulse * 0.035;
-                context.set_stroke_style_str(&format!("rgba(105, 151, 255, {alpha:.3})"));
+                let stroke = if light_mode {
+                    format!("rgba(31, 91, 204, {:.3})", alpha * 1.24)
+                } else {
+                    format!("rgba(105, 151, 255, {alpha:.3})")
+                };
+                context.set_stroke_style_str(&stroke);
                 context.begin_path();
                 context.move_to(x, y);
                 context.line_to(nx, ny);
@@ -200,10 +211,13 @@ pub fn render_systems_field(
             if row + 1 < rows && (row + col) % 2 == 0 {
                 let nx = base_x + (phase + 0.5).sin() * spacing * 0.04;
                 let ny = (row + 1) as f64 * spacing - spacing;
-                context.set_stroke_style_str(&format!(
-                    "rgba(129, 222, 190, {:.3})",
-                    0.035 + pointer_pull * 0.09
-                ));
+                let cross_alpha = 0.035 + pointer_pull * 0.09;
+                let cross_stroke = if light_mode {
+                    format!("rgba(0, 126, 118, {:.3})", cross_alpha * 1.18)
+                } else {
+                    format!("rgba(129, 222, 190, {cross_alpha:.3})")
+                };
+                context.set_stroke_style_str(&cross_stroke);
                 context.begin_path();
                 context.move_to(x, y);
                 context.line_to(nx, ny);
@@ -211,10 +225,13 @@ pub fn render_systems_field(
             }
 
             let radius = 1.0 + pointer_pull * 2.0 + pulse * 0.7;
-            context.set_fill_style_str(&format!(
-                "rgba(233, 242, 255, {:.3})",
-                0.22 + pointer_pull * 0.42
-            ));
+            let node_alpha = 0.22 + pointer_pull * 0.42;
+            let node_fill = if light_mode {
+                format!("rgba(15, 43, 84, {:.3})", node_alpha * 0.78)
+            } else {
+                format!("rgba(233, 242, 255, {node_alpha:.3})")
+            };
+            context.set_fill_style_str(&node_fill);
             context.begin_path();
             context.arc(x, y, radius, 0.0, TAU)?;
             context.fill();
@@ -230,10 +247,22 @@ pub fn render_systems_field(
         let sweep = ((t * 0.85 + index as f64 * 0.9).sin() + 1.0) * 0.5;
         let gate_width = 54.0 + sweep * 32.0;
 
-        context.set_stroke_style_str(&format!("rgba(255, 205, 118, {:.3})", 0.16 + sweep * 0.18));
+        let gate_alpha = 0.16 + sweep * 0.18;
+        let gate_stroke = if light_mode {
+            format!("rgba(179, 104, 22, {:.3})", gate_alpha * 1.15)
+        } else {
+            format!("rgba(255, 205, 118, {gate_alpha:.3})")
+        };
+        context.set_stroke_style_str(&gate_stroke);
         context.set_line_width(1.25);
         context.stroke_rect(x, y, gate_width, 11.0);
-        context.set_fill_style_str(&format!("rgba(255, 205, 118, {:.3})", 0.08 + sweep * 0.12));
+        let gate_fill_alpha = 0.08 + sweep * 0.12;
+        let gate_fill = if light_mode {
+            format!("rgba(179, 104, 22, {:.3})", gate_fill_alpha * 0.9)
+        } else {
+            format!("rgba(255, 205, 118, {gate_fill_alpha:.3})")
+        };
+        context.set_fill_style_str(&gate_fill);
         context.fill_rect(x, y, gate_width * sweep, 11.0);
     }
 
@@ -245,9 +274,15 @@ pub fn render_systems_field(
         height * 0.5,
         width.max(height) * 0.8,
     )?;
-    vignette.add_color_stop(0.0, "rgba(47, 107, 255, 0.10)")?;
-    vignette.add_color_stop(0.52, "rgba(21, 27, 34, 0.18)")?;
-    vignette.add_color_stop(1.0, "rgba(4, 7, 10, 0.72)")?;
+    if light_mode {
+        vignette.add_color_stop(0.0, "rgba(47, 107, 255, 0.10)")?;
+        vignette.add_color_stop(0.46, "rgba(255, 255, 255, 0.18)")?;
+        vignette.add_color_stop(1.0, "rgba(219, 228, 240, 0.68)")?;
+    } else {
+        vignette.add_color_stop(0.0, "rgba(47, 107, 255, 0.10)")?;
+        vignette.add_color_stop(0.52, "rgba(21, 27, 34, 0.18)")?;
+        vignette.add_color_stop(1.0, "rgba(4, 7, 10, 0.72)")?;
+    }
     context.set_fill_style_canvas_gradient(&vignette);
     context.fill_rect(0.0, 0.0, width, height);
 

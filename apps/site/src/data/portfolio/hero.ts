@@ -5,19 +5,22 @@ export const hero = {
   headline: 'Software engineer.',
   byline: 'Systems, Integration, Infrastructure, Automation',
   lede: 'I work on systems, integration, and infrastructure for engineering teams building customer-facing software and internal tools.',
-  panel: {
-    label: 'Profile summary',
-    eyebrow: 'Now',
-    title: 'Kardome',
-    organization: 'Kardome',
+  artifact: {
+    label: 'Hero rendering status',
+    eyebrow: 'Systems field',
+    title: 'canvas.wasm',
     rows: [
       {
-        label: 'Role',
-        value: 'Software & Systems Engineer',
+        label: 'Renderer',
+        value: 'Rust / Canvas 2D',
       },
       {
-        label: 'Focus',
-        value: 'Field integration, benchmark automation, release checks',
+        label: 'Load',
+        value: 'After first paint',
+      },
+      {
+        label: 'Motion',
+        value: 'Paused offscreen',
       },
     ],
   },

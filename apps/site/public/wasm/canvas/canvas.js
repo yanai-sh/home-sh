@@ -24,11 +24,11 @@ export function render_lattice(canvas, width, height, mouse_x_norm, mouse_y_norm
  * @param {number} pointer_x_norm
  * @param {number} pointer_y_norm
  * @param {number} time_ms
- * @param {number} quality
+ * @param {number} render_options
  * @returns {number}
  */
-export function render_systems_field(canvas, width, height, pointer_x_norm, pointer_y_norm, time_ms, quality) {
-    const ret = wasm.render_systems_field(canvas, width, height, pointer_x_norm, pointer_y_norm, time_ms, quality);
+export function render_systems_field(canvas, width, height, pointer_x_norm, pointer_y_norm, time_ms, render_options) {
+    const ret = wasm.render_systems_field(canvas, width, height, pointer_x_norm, pointer_y_norm, time_ms, render_options);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
