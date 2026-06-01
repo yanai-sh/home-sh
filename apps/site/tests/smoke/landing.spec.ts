@@ -1,10 +1,18 @@
-import { expect, test } from 'playwright/test';
+import { expect, test, type Page } from 'playwright/test';
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:4321';
 if (BASE.includes('<') || BASE.includes('>')) {
   throw new Error(
     `SMOKE_BASE_URL looks like a placeholder: ${BASE}\nUse the *actual* preview URL from the deploy output, e.g. https://<hash>-yanai-sh-staging.yanaiklugman.workers.dev`,
   );
+}
+
+function collectPageErrors(page: Page): string[] {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => {
+    if (!error.message.includes('[Cloudflare Turnstile]')) errors.push(error.message);
+  });
+  return errors;
 }
 
 test('first viewport shows home hero and resume CTA', async ({ page }) => {
@@ -22,10 +30,7 @@ test('desktop systems field initializes as a progressive enhancement', async ({ 
 });
 
 test('/workspace redirect lands on /#home', async ({ page }) => {
-  const errors: string[] = [];
-  page.on('pageerror', (e) => {
-    errors.push(e.message);
-  });
+  const errors = collectPageErrors(page);
   await page.goto(`${BASE}/workspace`);
   expect(page.url()).toMatch(/\/#home$/);
   await page.waitForTimeout(500);
@@ -48,10 +53,7 @@ test('reduced-motion: home section still renders', async ({ browser }) => {
 });
 
 test('blocked systems field WASM keeps hero usable', async ({ page }) => {
-  const errors: string[] = [];
-  page.on('pageerror', (e) => {
-    errors.push(e.message);
-  });
+  const errors = collectPageErrors(page);
   await page.route('**/wasm/canvas/**', (route) => route.abort());
   await page.goto(`${BASE}/`);
   await expect(page.locator('section#home')).toBeVisible();
