@@ -1,0 +1,36 @@
+---
+import { getCollection } from 'astro:content';
+import { sortHomepageExperience } from '@lib/portfolio-content';
+import { portfolio } from '../data/portfolio';
+import CareerCard from './career-card.astro';
+
+const { experience } = portfolio;
+const experienceEntries = sortHomepageExperience(await getCollection('experience'));
+---
+
+<section id={experience.id} class="section-block career-section" aria-labelledby={experience.titleId}>
+  <header class="section-header">
+    <p class="section-eyebrow">{experience.eyebrow}</p>
+    <h2 id={experience.titleId} class="section-title">{experience.title}</h2>
+    <p class="section-deck">{experience.deck}</p>
+  </header>
+
+  <div class="career-list panel">
+    {experienceEntries.map((entry) => <CareerCard item={entry.data} skillLabelSuffix={experience.skillLabelSuffix} />)}
+  </div>
+</section>
+
+<style>
+  .career-section {
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .section-header {
+    max-width: 48rem;
+  }
+
+  .career-list {
+    padding: clamp(1.25rem, 3vw, 2rem);
+  }
+</style>

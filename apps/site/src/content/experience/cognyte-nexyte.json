@@ -1,0 +1,18 @@
+{
+  "order": 30,
+  "company": "Cognyte: NEXYTE",
+  "role": "Solutions & ETL Engineer (via Infinity Labs)",
+  "period": "June 2023 - March 2024",
+  "scope": "Python, C++, ETL",
+  "description": "Worked on Python/C++ ETL code for investigative data imports.",
+  "skillGroups": [
+    {
+      "label": "Code",
+      "skills": ["Python", "C++", "ETL pipelines"]
+    },
+    {
+      "label": "Data",
+      "skills": ["Imports", "Search indexes", "Schemas"]
+    }
+  ]
+}

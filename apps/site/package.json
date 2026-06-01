@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "wrangler-types": "wrangler types ./src/worker-configuration.d.ts && bun run ./scripts/patch-worker-configuration-env.ts",
-    "dev": "bun run wrangler-types && panda codegen && astro dev --host 127.0.0.1",
-    "build": "bun run wrangler-types && panda codegen && astro build",
+    "dev": "astro dev --host ::",
+    "build": "bun run wrangler-types && astro build",
     "check": "biome check ./src ./scripts astro.config.mjs package.json",
     "fix": "biome check --write ./src ./scripts astro.config.mjs package.json",
-    "typecheck": "bun run wrangler-types && panda codegen && astro check",
+    "typecheck": "bun run wrangler-types && astro check",
     "test": "bun test ./src",
     "verify": "bun run check && bun run typecheck && bun run test && bun run build",
     "preview": "astro preview",
@@ -18,25 +18,25 @@
     "version-deploy": "wrangler versions deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^13.5.0",
-    "@fontsource/ibm-plex-mono": "^5.2.7",
-    "@fontsource/ibm-plex-serif": "^5.2.7",
-    "@yanai-sh/ui-system": "workspace:*",
-    "astro": "^6.3.1",
-    "gsap": "^3.15.0",
-    "three": "^0.184.0"
+    "@astrojs/cloudflare": "^13.6.0",
+    "@astrojs/mdx": "^6.0.1",
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/space-grotesk": "^5.2.10",
+    "@tailwindcss/vite": "^4.3.0",
+    "astro": "^6.4.2",
+    "astro-icon": "^1.1.5",
+    "tailwindcss": "^4.3.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
-    "@astrojs/sitemap": "^3.7.2",
-    "@astrojs/ts-plugin": "^1.10.7",
-    "@biomejs/biome": "^2.4.15",
-    "@pandacss/dev": "^1.11.1",
-    "@types/bun": "^1.3.13",
-    "@types/node": "^25.6.2",
-    "@types/three": "^0.184.1",
-    "postcss": "^8.5.14",
+    "@astrojs/sitemap": "^3.7.3",
+    "@astrojs/ts-plugin": "^1.10.9",
+    "@biomejs/biome": "^2.4.16",
+    "@iconify-json/devicon": "^1.2.62",
+    "@iconify-json/mdi": "^1.2.3",
+    "@types/bun": "^1.3.14",
+    "@types/node": "^25.9.1",
     "typescript": "^6.0.3",
-    "wrangler": "^4.90.0"
+    "wrangler": "^4.96.0"
   }
 }

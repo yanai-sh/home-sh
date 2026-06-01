@@ -1,4 +1,4 @@
-import type { Resume } from '@/content/resume-schema';
+import type { Resume } from '../content/resume-schema';
 
 export function stringValue(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';

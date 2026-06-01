@@ -35,9 +35,9 @@
     "prepare": "bun -e \"if (!process.env.CI) { const r = Bun.spawnSync(['bun','x','lefthook','install'],{stdio:['inherit','inherit','inherit']}); process.exit(r.exitCode ?? 0); }\""
   },
   "devDependencies": {
-    "@iconify-json/simple-icons": "^1.2.81",
-    "lefthook": "^2.1.6",
-    "playwright": "^1.59.1"
+    "@iconify-json/simple-icons": "^1.2.84",
+    "lefthook": "^2.1.9",
+    "playwright": "^1.60.0"
   },
   "dependencies": {
     "astro-icon": "^1.1.5"

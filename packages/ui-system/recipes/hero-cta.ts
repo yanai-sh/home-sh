@@ -32,8 +32,11 @@ export const heroCtaRecipe = defineRecipe({
       primary: {
         borderColor: 'hero.ctaPrimaryBorder',
         backgroundColor: 'hero.ctaPrimaryBg',
+        color: 'onAccent',
         _hover: {
           backgroundColor: 'hero.ctaPrimaryBgHover',
+          borderColor: 'hero.ctaPrimaryBorder',
+          color: 'onAccent',
         },
       },
       outline: {

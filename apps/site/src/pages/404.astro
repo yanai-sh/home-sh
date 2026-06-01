@@ -1,97 +1,22 @@
 ---
-import Background from "@components/Background.astro";
-import { SITE_TITLE, SITE_URL } from "@config/site";
-import Layout from "@layouts/Layout.astro";
+import { SITE_TITLE } from '@config/site';
+import Layout from '../layouts/Layout.astro';
 
 Astro.response.status = 404;
-
 const title = `Page not found — ${SITE_TITLE}`;
-const description =
-  "This URL is not part of yanai.sh. Use the link below to return to the homepage.";
 ---
 
-<Layout title={title} description={description} contentId="not-found-main" robots="noindex">
-  <Background />
-  <main id="not-found-main" class="not-found" tabindex="-1">
-    <p class="not-found__code">404</p>
-    <h1 class="not-found__title">Nothing here</h1>
-    <p class="not-found__lede">
-      That page does not exist. If you followed a link, it may be out of date.
+<Layout title={title}>
+  <section class="section-container py-24 text-center">
+    <h1 class="font-heading text-4xl font-bold text-maintext">404</h1>
+    <p class="text-subtext font-body mt-4 max-w-md mx-auto">
+      This URL is not part of the site. Use the link below to return home.
     </p>
-    <a class="not-found__link" href="/">Back to {SITE_TITLE}</a>
-    <p class="not-found__origin" translate="no">{SITE_URL}</p>
-  </main>
+    <a
+      href="/"
+      class="mt-10 inline-block rounded-full border border-accent/30 bg-accent/10 px-8 py-2 font-body text-maintext transition-colors hover:border-accent/50"
+    >
+      Back to {SITE_TITLE}
+    </a>
+  </section>
 </Layout>
-
-<style>
-  .not-found {
-    position: relative;
-    z-index: 10;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-8);
-    padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 0px));
-    text-align: center;
-  }
-
-  .not-found__code {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-4);
-  }
-
-  .not-found__title {
-    font-size: clamp(1.75rem, 5vw, 2.25rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    color: var(--color-text);
-    margin-bottom: var(--space-3);
-  }
-
-  .not-found__lede {
-    max-width: 26rem;
-    font-size: 0.9375rem;
-    line-height: 1.55;
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-8);
-  }
-
-  .not-found__link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    padding: 0 var(--space-6);
-    border-radius: var(--radii-pill-wide);
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: var(--color-on-accent);
-    background: var(--blue);
-    text-decoration: none;
-    transition: filter 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .not-found__link:hover {
-    filter: brightness(1.08);
-    box-shadow: 0 0 20px rgba(47, 107, 255, 0.28);
-  }
-
-  .not-found__link:focus-visible {
-    outline: var(--effect-focus-ring);
-    outline-offset: var(--effect-focus-ring-offset);
-  }
-
-  .not-found__origin {
-    margin-top: var(--space-8);
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    color: var(--color-text-faint);
-  }
-</style>

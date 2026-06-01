@@ -4,7 +4,7 @@
     "repo": "resume",
     "path": "resume.toml",
     "url": "https://github.com/yanai-sh/resume/blob/f1722369cf7694084c1fc7ba3be5c8257bf9476f/resume.toml",
-    "fetchedAt": "2026-05-11T11:39:46.079Z",
+    "fetchedAt": "2026-06-01T18:58:45.879Z",
     "commitSha": "f1722369cf7694084c1fc7ba3be5c8257bf9476f",
     "fallback": false
   },
@@ -12,12 +12,12 @@
   "data": {
     "header": {
       "name": "Yanai Klugman",
-      "headline": "Software & Systems Engineer",
+      "headline": "Systems & Infrastructure Software Engineer | Python, Linux, CI/CD, AI Tooling",
       "email": "me@yanai.sh",
-      "phone": "+972 53-270-2380",
+      "phone": "053-270-2380",
       "location": "Raanana, Israel"
     },
-    "summary": "Software & Systems Engineer combining a background in organizational behavior & development (OBD) with hands-on systems integration. Experienced in low-level applications, enterprise backends, and cloud pipelines, with a track record of validating voice processing software and tuning audio performance directly in vehicles on-site. Uses an understanding of team dynamics and organizational development to build sustainable developer workflows and highly maintainable software systems.",
+    "summary": "Python-focused systems and infrastructure software engineer working across OEM\nfield integration, CI/CD platforms, release validation, native-library\nintegration, customer-deployed systems, and AI-assisted developer workflows.\nCombines Linux, DevOps automation, and C/C++ systems fundamentals with tools\nthat shorten release and field-engineering loops.",
     "links": [
       {
         "label": "yanai.sh",
@@ -35,21 +35,18 @@
     "experience": [
       {
         "company": "Kardome",
-        "role": "Audio Systems & Software Engineer",
-        "period": "Dec 2024 – Present",
-        "location": "Tel Aviv, IL",
+        "role": "Software & Systems Engineer",
+        "period": "December 2024 - Present",
+        "location": "Tel Aviv, Israel",
         "summary": "",
-        "subtitle": "Automotive Voice AI | Forward Deployment",
+        "subtitle": "Systems Integration, CI/CD Automation, Edge Deployment",
         "highlights": [
-          "Led the on-site integration, testing, and release of voice processing software for Hyundai’s 2026 vehicle program at their China R&D Center (HMTC).",
-          "Conducted on-site vehicle validation and audio testing across international sites in Seoul, Yantai, Sydney, and Dubai.",
-          "Partnered with Toyota's engineering team in Sunnyvale to integrate voice software into prototype infotainment systems.",
-          "Developed an offline voice-command feature that maps spoken requests directly to vehicle functions without an internet connection.",
-          "Configured and prepared demonstration vehicles in Paris for Renault engineering evaluations and client trials.",
-          "Managed offline container deployments on edge hardware, ensuring reliable container failover and traffic routing for speech-to-text services.",
-          "Built a desktop utility for field engineers to automate audio testing, file management, and system tuning on-site.",
-          "Extended the team's internal test library to automate audio recording and channel configuration, reducing script creation time.",
-          "Prepared and validated demonstration vehicles for CES 2026."
+          "Owned OEM field-integration work for pre-mass-production vehicle programs, covering validation, configuration, release-readiness evidence, and customer-environment handoff.",
+          "Converted ad-hoc field scripts into official Kardome tools for audio capture, calibration, configuration, diagnostics, and CES 2026 demo-vehicle readiness.",
+          "Reduced local CI runtime by ~60% and shifted benchmark validation into asynchronous cloud jobs tied to PR checks, status gates, branch protection, and release overrides.",
+          "Built Kardome's centralized cloud benchmark platform and developer-facing plugin SDK, standardizing benchmark execution, dataset handoff, scoring, and GitHub integration.",
+          "Stabilized Python access to Kardome's native audio library by evolving a direct ctypes wrapper into a versioned Python/C++ SDK using nanobind, schema-driven code generation, and C++ concurrency.",
+          "Shaped the local inference and tool-call architecture for a voice-intent service that routes natural-language audio commands into parameterized system actions."
         ],
         "skills": [
           "backend",
@@ -61,35 +58,32 @@
       {
         "company": "BDR Group",
         "role": "Backend .NET Engineer",
-        "period": "May 2024 – Nov 2024",
-        "location": "Ness Tziona, IL",
+        "period": "May 2024 - November 2024",
+        "location": "Ness Ziona, Israel",
         "summary": "",
-        "subtitle": "Database Systems & .NET Desktop Tools",
+        "subtitle": "C# Internal Reporting Tools, SQL Server",
         "highlights": [
-          "Modernized quality-control reporting systems, upgrading legacy backend services for better performance and maintainability.",
-          "Created automated testing and build pipelines in GitLab to streamline development workflows.",
-          "Developed and optimized database schemas and SQL queries to manage high-volume production-line quality metrics.",
-          "Created desktop administration tools using .NET and WPF to help operators configure industrial monitoring equipment."
+          "Delivered C#/.NET reporting tools backed by SQL Server for operations and quality-control workflows.",
+          "Reduced recurring report latency by tuning SQL Server queries, indexes, and data access patterns.",
+          "Exposed production-line quality metrics and industrial monitoring data through internal administration tools."
         ],
         "skills": [
           "backend",
-          "devops"
+          "database"
         ]
       },
       {
         "company": "Cognyte: NEXYTE",
         "role": "Solutions & ETL Engineer (via Infinity Labs)",
-        "period": "2022 – Mar 2024",
-        "location": "Herzliya, IL",
+        "period": "June 2023 - March 2024",
+        "location": "Herzliya, Israel",
         "summary": "",
-        "subtitle": "Data Ingestion & Systems Integration",
+        "subtitle": "Data Ingestion, Systems Integration",
         "highlights": [
-          "Completed Infinity Labs' intensive 32-week systems engineering program (C/C++, memory management, multithreading) before placing on-site.",
-          "Customized and maintained high-volume data ingestion pipelines inside secure client intelligence environments.",
-          "Troubleshot and resolved database indexing issues and pipeline bottlenecks for high-volume client datasets.",
-          "Designed data schemas to import complex records into search indexes for investigative tools.",
-          "Wrote robust data transformation scripts to clean and process high-volume information feeds.",
-          "Obtained and maintained security clearance for working inside secure client intelligence environments."
+          "Extended ETL pipelines for high-volume investigative datasets in secure client intelligence environments.",
+          "Increased search and pipeline throughput by resolving database indexing issues and ingestion bottlenecks.",
+          "Unblocked complex record imports by defining schemas and transformation scripts for investigative search indexes.",
+          "Held security clearance for client-site engineering work."
         ],
         "skills": [
           "backend",
@@ -101,23 +95,12 @@
     ],
     "projects": [
       {
-        "name": "Personal Website (yanai.sh)",
+        "name": "WinMint (Windows 11 Image Builder)",
         "description": "Developer",
         "url": "",
         "highlights": [
-          "Built a personal portfolio integrating an Astro frontend with a Cloudflare serverless backend and automated contact form.",
-          "Developed a high-speed search feature utilizing a compiled Rust and WebAssembly engine for client-side queries.",
-          "Designed automated GitHub Actions pipelines to deploy and proxy serverless release assets automatically."
-        ],
-        "skills": []
-      },
-      {
-        "name": "WinWS (Automated Windows ISO Builder)",
-        "description": "Developer",
-        "url": "",
-        "highlights": [
-          "Built a WPF-driven PowerShell desktop utility to automate the customization and offline staging of clean Windows 11 installers.",
-          "Wrote custom post-install scripts to configure local WSL2 developer environments and set up keyboard-driven window tiling managers."
+          "Made Windows 11 developer workstation installs repeatable with curated image-builder profiles instead of toggle-heavy debloat scripts or over-minimized ISOs.",
+          "Extended setup coverage across x64, Windows on ARM, and Surface-class machines with profile-driven choices, driver handling, first-logon provisioning, and developer environment configuration."
         ],
         "skills": []
       }
@@ -125,47 +108,75 @@
     "education": [
       {
         "institution": "Reichman University",
-        "degree": "M.A. Organizational Behavior & Development",
-        "period": "2019 – 2021",
-        "location": "Herzliya, IL",
+        "degree": "M.A. Organizational Behavior and Development",
+        "period": "2019 - 2021",
+        "location": "Herzliya, Israel",
         "highlights": [
-          "Completed a Siemens Digital Industries Software case study on post-acquisition integration, interviewing tech leaders to improve cross-team handoffs.",
-          "Selected as a graduate teaching assistant for the Mergers & Acquisitions course."
+          "Mapped ownership gaps and communication bottlenecks in a Siemens Digital Industries Software practicum into concrete post-acquisition engineering-handoff recommendations."
         ]
       },
       {
         "institution": "Muhlenberg College",
-        "degree": "B.A. Business Administration & Philosophy",
-        "period": "2011 – 2015",
-        "location": "Pennsylvania, US",
+        "degree": "B.A. Business Administration and Philosophy",
+        "period": "2011 - 2015",
+        "location": "Pennsylvania, United States",
         "highlights": []
       }
     ],
     "skills": {
-      "Systems & Software": [
+      "Languages": [
         "Python",
+        "Bash",
+        "SQL",
+        "SQL Server",
+        "C#/.NET",
+        "PowerShell",
         "C++",
         "C",
-        "C# / .NET",
-        "Bash",
-        "PowerShell",
+        "CMake",
+        "REST APIs",
+        "Python/C++ Bindings"
+      ],
+      "Systems": [
+        "Linux",
+        "Linux Internals",
+        "Systems Integration",
+        "Native Library Integration",
+        "OEM Field Integration",
+        "Hardware/Software Integration",
+        "Edge Systems",
+        "Product Validation"
+      ],
+      "Infrastructure": [
+        "GitHub Actions",
         "Docker",
-        "Docker Swarm",
-        "CI/CD (GitLab, GitHub Actions)",
-        "Linux"
+        "Kubernetes",
+        "Terraform",
+        "GCP Cloud Run",
+        "GCP Workflows",
+        "CI/CD",
+        "Test Automation"
       ],
-      "Data & Infrastructure": [
+      "Data / Observability": [
+        "Data Ingestion Pipelines",
         "Elasticsearch",
-        "Kafka",
-        "Apache NiFi",
-        "Apache Spark",
-        "SQL"
+        "Database Indexing",
+        "Prometheus",
+        "Grafana",
+        "Pytest",
+        "GoogleTest"
       ],
-      "Field & Client Integration": [
-        "On-Site Deployment",
-        "Product Validation",
-        "Technical Demos",
-        "Cross-Functional Collaboration"
+      "AI / Developer Workflow": [
+        "LangChain",
+        "Agent Orchestration",
+        "Model Context Protocol (MCP)",
+        "LLM Evaluation",
+        "LLM Observability",
+        "Prompt Engineering",
+        "CodeRabbit",
+        "OpenAI Codex",
+        "Claude Code",
+        "Cursor"
       ]
     },
     "training": [
@@ -173,28 +184,37 @@
         "institution": "DevOps Experts",
         "degree": "Software Architecture",
         "period": "2025",
-        "location": "Ramat Gan, IL",
+        "location": "Ramat Gan, Israel",
         "highlights": [
-          "Designed service boundaries and API integration paths for a distributed capstone project.",
-          "Studied event-driven, microkernel, and layered architectures, as well as Domain-Driven Design (DDD) concepts."
+          "Produced a distributed-system architecture that clarified service boundaries, API integration paths, deployment tradeoffs, and service ownership."
         ]
       },
       {
         "institution": "Technion - Israel Institute of Technology",
         "degree": "DevOps Professional",
         "period": "2024",
-        "location": "Tel Aviv, IL",
+        "location": "Tel Aviv, Israel",
         "highlights": [
-          "Built hands-on deployment pipelines utilizing Docker, Kubernetes, Terraform, Ansible, Jenkins, and AWS.",
-          "Configured Nginx and Apache web servers as load balancers and reverse proxies."
+          "Built AWS/Terraform infrastructure exercises covering Docker, Kubernetes, Ansible, and Jenkins workflows."
+        ]
+      },
+      {
+        "institution": "Infinity Labs R&D",
+        "degree": "Computer Science and C/C++ Systems Development",
+        "period": "July 2022 - June 2023",
+        "location": "Ramat Gan, Israel",
+        "highlights": [
+          "Completed full-time C/C++ systems training through Linux, memory management, data structures, algorithms, networking, multithreading, asynchronous programming, and build-internals projects.",
+          "Built low-level C projects around standard-library reimplementation, pointers, memory layout, file I/O, and manual debugging.",
+          "Delivered systems exercises using TCP/UDP, producer/consumer, pub/sub, Raspberry Pi, cross-compilation, code review, and regression tests."
         ]
       }
     ],
     "military": [
       {
         "unit": "Combat Engineering Corps, IDF",
-        "role": "Combat Medic, Ta’agad",
-        "period": "2016 – 2018",
+        "role": "Combat Medic, Ta'agad (Battalion Aid Station)",
+        "period": "2016 - 2018",
         "highlights": []
       }
     ],

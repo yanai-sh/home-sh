@@ -9,27 +9,30 @@ const uiPreset = definePreset({
   theme: {
     tokens: {
       colors: {
-        bg: { value: '#151B22' },
-        fg: { value: '#E8E8E8' },
-        muted: { value: '#8A8A8A' },
-        accent: { value: '#2F6BFF' },
-        warning: { value: '#D7B97A' },
+        /** Warm paper-like canvas (Astro career-portfolio–style light theme). */
+        bg: { value: '#f6f5f3' },
+        fg: { value: '#171717' },
+        muted: { value: '#737373' },
+        accent: { value: '#2563eb' },
+        /** Text on filled accent controls (primary CTA, etc.). */
+        onAccent: { value: '#ffffff' },
+        warning: { value: '#b45309' },
         border: {
-          quiet: { value: 'rgba(255,255,255,0.08)' },
-          glow: { value: 'rgba(255,255,255,0.16)' },
+          quiet: { value: 'rgba(23,23,23,0.08)' },
+          glow: { value: 'rgba(37,99,235,0.12)' },
         },
         surface: {
-          base: { value: '#202733' },
-          contact: { value: 'rgba(22,28,38,0.97)' },
-          contactLift: { value: 'rgba(245,247,250,0.14)' },
-          contactField: { value: 'rgba(245,247,250,0.13)' },
+          base: { value: '#ffffff' },
+          contact: { value: '#ffffff' },
+          contactLift: { value: 'rgba(248,250,252,0.96)' },
+          contactField: { value: '#f8fafc' },
         },
         hero: {
-          ctaPrimaryBorder: { value: 'rgba(47,107,255,0.72)' },
-          ctaPrimaryBg: { value: 'rgba(47,107,255,0.22)' },
-          ctaPrimaryBgHover: { value: 'rgba(47,107,255,0.30)' },
-          ctaOutlineBorder: { value: 'rgba(47,107,255,0.58)' },
-          ctaOutlineBgHover: { value: 'rgba(47,107,255,0.14)' },
+          ctaPrimaryBorder: { value: '#1d4ed8' },
+          ctaPrimaryBg: { value: '#2563eb' },
+          ctaPrimaryBgHover: { value: '#1d4ed8' },
+          ctaOutlineBorder: { value: 'rgba(37,99,235,0.42)' },
+          ctaOutlineBgHover: { value: 'rgba(37,99,235,0.08)' },
         },
       },
       spacing: {
