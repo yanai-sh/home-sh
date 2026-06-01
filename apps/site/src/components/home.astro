@@ -6,9 +6,7 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
 ---
 
 <section id={hero.id} class="hero-section" aria-labelledby={hero.titleId} data-systems-hero>
-  <div class="hero-field" aria-hidden="true">
-    <canvas data-systems-field-canvas></canvas>
-  </div>
+  <div class="hero-field" aria-hidden="true"></div>
 
   <div class="hero-copy">
     <p class="section-eyebrow">{hero.eyebrow}</p>
@@ -139,23 +137,6 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
     background:
       linear-gradient(90deg, var(--color-background) 0%, rgba(245, 247, 250, 0.22) 20%, rgba(245, 247, 250, 0.12) 70%, var(--color-background) 100%),
       linear-gradient(180deg, transparent 0%, transparent 58%, var(--color-background) 100%);
-  }
-
-  .hero-field canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    transition: opacity 700ms ease;
-  }
-
-  .hero-section.is-systems-field-ready .hero-field canvas {
-    opacity: 0.86;
-  }
-
-  [data-theme="light"] .hero-section.is-systems-field-ready .hero-field canvas {
-    opacity: 0.62;
   }
 
   .hero-copy,
@@ -358,10 +339,6 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
       opacity: 0.72;
     }
 
-    .hero-field canvas {
-      display: none;
-    }
-
     h1 {
       font-size: 4rem;
     }
@@ -373,9 +350,4 @@ const { hero, resumeLabel, resumeUrl, socials } = portfolio;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .hero-field canvas {
-      display: none;
-    }
-  }
 </style>

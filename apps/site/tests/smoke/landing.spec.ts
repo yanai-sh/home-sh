@@ -24,9 +24,10 @@ test('first viewport shows home hero and resume CTA', async ({ page }) => {
 
 test('desktop systems field initializes as a progressive enhancement', async ({ page }) => {
   await page.goto(`${BASE}/`);
-  await expect(page.locator('[data-systems-hero]')).toHaveClass(/is-systems-field-ready/, {
+  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
     timeout: 8_000,
   });
+  await expect(page.locator('.systems-field-debug')).toHaveCount(0);
 });
 
 test('light theme renders a bright systems field', async ({ browser }) => {
@@ -36,7 +37,7 @@ test('light theme renders a bright systems field', async ({ browser }) => {
   });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/`);
-  await expect(page.locator('[data-systems-hero]')).toHaveClass(/is-systems-field-ready/, {
+  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
     timeout: 8_000,
   });
   const luminance = await page.evaluate(() => {
@@ -60,6 +61,25 @@ test('light theme renders a bright systems field', async ({ browser }) => {
   await ctx.close();
 });
 
+test('systems field debug overlay is opt-in', async ({ page }) => {
+  await page.goto(`${BASE}/?wasmDebug=1`);
+  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
+    timeout: 8_000,
+  });
+  await expect(page.locator('.systems-field-debug')).toBeVisible();
+  await expect(page.locator('.systems-field-debug')).toContainText('nodes');
+});
+
+test('systems field remains mounted beyond the hero', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
+    timeout: 8_000,
+  });
+  await page.locator('#contact').scrollIntoViewIfNeeded();
+  await expect(page.locator('[data-systems-field-canvas]')).toBeAttached();
+  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/);
+});
+
 test('/workspace redirect lands on /#home', async ({ page }) => {
   const errors = collectPageErrors(page);
   await page.goto(`${BASE}/workspace`);
@@ -79,7 +99,7 @@ test('reduced-motion: home section still renders', async ({ browser }) => {
   await page.goto(`${BASE}/`);
   await expect(page.locator('section#home')).toBeVisible();
   await page.waitForTimeout(700);
-  await expect(page.locator('[data-systems-hero]')).not.toHaveClass(/is-systems-field-ready/);
+  await expect(page.locator('[data-systems-field-layer]')).not.toHaveClass(/is-systems-field-ready/);
   await ctx.close();
 });
 

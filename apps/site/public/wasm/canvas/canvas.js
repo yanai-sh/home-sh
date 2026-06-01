@@ -1,5 +1,87 @@
 /* @ts-self-types="./canvas.d.ts" */
 
+export class SystemsFieldRenderer {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        SystemsFieldRendererFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_systemsfieldrenderer_free(ptr, 0);
+    }
+    dispose() {
+        wasm.systemsfieldrenderer_dispose(this.__wbg_ptr);
+    }
+    /**
+     * @returns {any}
+     */
+    metrics() {
+        const ret = wasm.systemsfieldrenderer_metrics(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * @param {HTMLCanvasElement} canvas
+     * @param {number} seed
+     * @param {number} quality
+     */
+    constructor(canvas, seed, quality) {
+        const ret = wasm.systemsfieldrenderer_new(canvas, seed, quality);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        SystemsFieldRendererFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * @param {number} time_ms
+     * @returns {number}
+     */
+    render(time_ms) {
+        const ret = wasm.systemsfieldrenderer_render(this.__wbg_ptr, time_ms);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0] >>> 0;
+    }
+    /**
+     * @param {number} width
+     * @param {number} height
+     * @param {number} dpr
+     */
+    resize(width, height, dpr) {
+        const ret = wasm.systemsfieldrenderer_resize(this.__wbg_ptr, width, height, dpr);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
+     * @param {number} phase
+     */
+    set_page_phase(phase) {
+        wasm.systemsfieldrenderer_set_page_phase(this.__wbg_ptr, phase);
+    }
+    /**
+     * @param {number} x
+     * @param {number} y
+     */
+    set_pointer(x, y) {
+        wasm.systemsfieldrenderer_set_pointer(this.__wbg_ptr, x, y);
+    }
+    /**
+     * @param {number} theme
+     */
+    set_theme(theme) {
+        wasm.systemsfieldrenderer_set_theme(this.__wbg_ptr, theme);
+    }
+}
+if (Symbol.dispose) SystemsFieldRenderer.prototype[Symbol.dispose] = SystemsFieldRenderer.prototype.free;
+
 /**
  * @param {HTMLCanvasElement} canvas
  * @param {number} width
@@ -107,8 +189,20 @@ function __wbg_get_imports() {
         __wbg_moveTo_89e84c82679f8ac9: function(arg0, arg1, arg2) {
             arg0.moveTo(arg1, arg2);
         },
+        __wbg_new_2fad8ca02fd00684: function() {
+            const ret = new Object();
+            return ret;
+        },
+        __wbg_now_4f457f10f864aec5: function() {
+            const ret = Date.now();
+            return ret;
+        },
         __wbg_setTransform_f25014a0bb3cb050: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
             arg0.setTransform(arg1, arg2, arg3, arg4, arg5, arg6);
+        }, arguments); },
+        __wbg_set_5337f8ac82364a3f: function() { return handleError(function (arg0, arg1, arg2) {
+            const ret = Reflect.set(arg0, arg1, arg2);
+            return ret;
         }, arguments); },
         __wbg_set_fillStyle_6564a82b72a38a9c: function(arg0, arg1) {
             arg0.fillStyle = arg1;
@@ -157,7 +251,12 @@ function __wbg_get_imports() {
             const ret = arg0.width;
             return ret;
         },
-        __wbindgen_cast_0000000000000001: function(arg0, arg1) {
+        __wbindgen_cast_0000000000000001: function(arg0) {
+            // Cast intrinsic for `F64 -> Externref`.
+            const ret = arg0;
+            return ret;
+        },
+        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return ret;
@@ -177,6 +276,10 @@ function __wbg_get_imports() {
         "./canvas_bg.js": import0,
     };
 }
+
+const SystemsFieldRendererFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_systemsfieldrenderer_free(ptr, 1));
 
 function addToExternrefTable0(obj) {
     const idx = wasm.__externref_table_alloc();
