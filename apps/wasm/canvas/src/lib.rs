@@ -1,9 +1,9 @@
+use js_sys::{Object, Reflect};
 use lyon::{
     math::{point, Point},
     path::Path,
     tessellation::{BuffersBuilder, StrokeOptions, StrokeTessellator, StrokeVertex, VertexBuffers},
 };
-use js_sys::{Object, Reflect};
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
@@ -72,7 +72,8 @@ pub fn render_lattice(
             // 10 px base lean + up to 18 px boost under the pointer (peaks at
             // 28 px). Tuned by eye; bump the second coefficient for a heavier
             // pull or drop the first for less ambient sway.
-            let lean = ((row + col) as f64 * 0.73 + time_phase).sin() * (10.0 + mouse_falloff * 18.0);
+            let lean =
+                ((row + col) as f64 * 0.73 + time_phase).sin() * (10.0 + mouse_falloff * 18.0);
 
             if col + 1 < cols {
                 path.begin(point(x as f32, y as f32));
@@ -150,9 +151,7 @@ struct Rng {
 
 impl Rng {
     fn new(seed: u32) -> Self {
-        Self {
-            state: seed.max(1),
-        }
+        Self { state: seed.max(1) }
     }
 
     fn next(&mut self) -> f64 {
@@ -205,7 +204,11 @@ pub struct SystemsFieldRenderer {
 #[wasm_bindgen]
 impl SystemsFieldRenderer {
     #[wasm_bindgen(constructor)]
-    pub fn new(canvas: HtmlCanvasElement, seed: u32, quality: u32) -> Result<SystemsFieldRenderer, JsValue> {
+    pub fn new(
+        canvas: HtmlCanvasElement,
+        seed: u32,
+        quality: u32,
+    ) -> Result<SystemsFieldRenderer, JsValue> {
         let context = canvas
             .get_context("2d")?
             .ok_or_else(|| JsValue::from_str("2d canvas context unavailable"))?
@@ -299,7 +302,11 @@ impl SystemsFieldRenderer {
         let object = Object::new();
         Reflect::set(&object, &"quality".into(), &self.quality.into())?;
         Reflect::set(&object, &"dpr".into(), &self.dpr.into())?;
-        Reflect::set(&object, &"nodeCount".into(), &(self.nodes.len() as u32).into())?;
+        Reflect::set(
+            &object,
+            &"nodeCount".into(),
+            &(self.nodes.len() as u32).into(),
+        )?;
         Reflect::set(&object, &"renderMs".into(), &self.last_render_ms.into())?;
         Reflect::set(&object, &"theme".into(), &self.theme.into())?;
         Reflect::set(&object, &"pagePhase".into(), &self.page_phase.into())?;
@@ -359,19 +366,38 @@ impl SystemsFieldRenderer {
         let projects = phase_weight(self.page_phase, PHASE_PROJECTS);
         let contact = phase_weight(self.page_phase, PHASE_CONTACT);
         let pulse_speed = 1.0 - contact * 0.34;
-        let alpha_scale = 1.0 - contact * 0.22;
+        let alpha_scale = (1.0 - contact * 0.18) * mix(1.0, 1.22, self.theme);
         let route_diagonal = projects * 34.0;
         let vertical_drift = career * 24.0;
+        let pointer_screen_x = self.pointer_x * self.width;
+        let pointer_screen_y = self.pointer_y * self.height;
+        let ripple_phase = (t * 1.45).sin() * 0.5 + 0.5;
 
         self.context.clear_rect(0.0, 0.0, self.width, self.height);
-        self.context.set_fill_style_str(&color_rgba(
-            (9, 14, 20),
-            (247, 250, 255),
-            mix(0.52, 0.42, self.theme),
-            self.theme,
-        ));
-        self.context.fill_rect(0.0, 0.0, self.width, self.height);
         self.context.set_line_cap("round");
+
+        let wake = self.context.create_radial_gradient(
+            pointer_screen_x,
+            pointer_screen_y,
+            0.0,
+            pointer_screen_x,
+            pointer_screen_y,
+            260.0 + ripple_phase * 90.0,
+        )?;
+        wake.add_color_stop(
+            0.0,
+            &color_rgba((47, 107, 255), (31, 95, 255), 0.18, self.theme),
+        )?;
+        wake.add_color_stop(
+            0.42,
+            &color_rgba((129, 222, 190), (0, 126, 118), 0.08, self.theme),
+        )?;
+        wake.add_color_stop(
+            1.0,
+            &color_rgba((47, 107, 255), (31, 95, 255), 0.0, self.theme),
+        )?;
+        self.context.set_fill_style_canvas_gradient(&wake);
+        self.context.fill_rect(0.0, 0.0, self.width, self.height);
 
         for (index, node) in self.nodes.iter().enumerate() {
             let phase = t * 0.46 * pulse_speed + node.drift;
@@ -379,7 +405,10 @@ impl SystemsFieldRenderer {
             let y = node.y_norm * self.height + phase.cos() * 7.0 + vertical_drift;
             let pointer_dx = x / self.width.max(1.0) - self.pointer_x;
             let pointer_dy = y / self.height.max(1.0) - self.pointer_y;
-            let pointer_pull = (-(pointer_dx * pointer_dx + pointer_dy * pointer_dy) * 16.0).exp();
+            let pointer_distance = (pointer_dx * pointer_dx + pointer_dy * pointer_dy).sqrt();
+            let pointer_pull = (-(pointer_distance * pointer_distance) * 34.0).exp();
+            let ripple = (1.0 - (pointer_distance * 5.2 - ripple_phase).abs()).clamp(0.0, 1.0);
+            let wake_strength = (pointer_pull * 0.82 + ripple * 0.42).clamp(0.0, 1.0);
             let pulse = ((t * 1.28 * pulse_speed + node.pulse).sin() + 1.0) * 0.5;
 
             if let Some(next) = self.nodes.get(index + 1) {
@@ -387,10 +416,14 @@ impl SystemsFieldRenderer {
                 if is_same_band {
                     let nx = next.x_norm * self.width + phase.sin() * 5.0 + route_diagonal;
                     let ny = next.y_norm * self.height + (phase + 0.8).cos() * 5.0 + vertical_drift;
-                    let alpha = (0.048 + pointer_pull * 0.12 + pulse * 0.032) * alpha_scale;
-                    self.context
-                        .set_stroke_style_str(&color_rgba((105, 151, 255), (31, 91, 204), alpha, self.theme));
-                    self.context.set_line_width(1.0);
+                    let alpha = (0.07 + wake_strength * 0.24 + pulse * 0.046) * alpha_scale;
+                    self.context.set_stroke_style_str(&color_rgba(
+                        (105, 151, 255),
+                        (16, 73, 184),
+                        alpha,
+                        self.theme,
+                    ));
+                    self.context.set_line_width(0.9 + wake_strength * 0.85);
                     self.context.begin_path();
                     self.context.move_to(x, y);
                     self.context.line_to(nx, ny);
@@ -399,19 +432,46 @@ impl SystemsFieldRenderer {
             }
 
             if projects > 0.08 && index % 5 == 0 {
-                let alpha = (0.026 + pointer_pull * 0.048) * projects;
-                self.context
-                    .set_stroke_style_str(&color_rgba((129, 222, 190), (0, 126, 118), alpha, self.theme));
+                let alpha = (0.04 + wake_strength * 0.11) * projects * alpha_scale;
+                self.context.set_stroke_style_str(&color_rgba(
+                    (129, 222, 190),
+                    (0, 126, 118),
+                    alpha,
+                    self.theme,
+                ));
+                self.context.set_line_width(0.9 + projects * 0.35);
                 self.context.begin_path();
                 self.context.move_to(x, y);
                 self.context.line_to(x + route_diagonal * 1.8, y + 42.0);
                 self.context.stroke();
             }
 
-            let radius = 0.8 + pointer_pull * 1.8 + pulse * 0.45;
-            let node_alpha = (0.15 + pointer_pull * 0.34) * alpha_scale;
-            self.context
-                .set_fill_style_str(&color_rgba((233, 242, 255), (15, 43, 84), node_alpha, self.theme));
+            if wake_strength > 0.18 && index % 3 == 0 {
+                let alpha = wake_strength * 0.16 * alpha_scale;
+                self.context.set_stroke_style_str(&color_rgba(
+                    (255, 205, 118),
+                    (145, 82, 18),
+                    alpha,
+                    self.theme,
+                ));
+                self.context.set_line_width(0.8 + wake_strength * 0.45);
+                self.context.begin_path();
+                self.context.move_to(x, y);
+                self.context.line_to(
+                    pointer_screen_x + (x - pointer_screen_x) * 0.18,
+                    pointer_screen_y + (y - pointer_screen_y) * 0.18,
+                );
+                self.context.stroke();
+            }
+
+            let radius = 0.85 + wake_strength * 2.75 + pulse * 0.5;
+            let node_alpha = (0.2 + wake_strength * 0.52) * alpha_scale;
+            self.context.set_fill_style_str(&color_rgba(
+                (233, 242, 255),
+                (8, 35, 77),
+                node_alpha,
+                self.theme,
+            ));
             self.context.begin_path();
             self.context.arc(x, y, radius, 0.0, TAU)?;
             self.context.fill();
@@ -422,12 +482,20 @@ impl SystemsFieldRenderer {
             let x = gate.x_norm * self.width;
             let y = gate.y_norm * self.height + vertical_drift * 0.6;
             let width = gate.width + sweep * 28.0;
-            self.context
-                .set_stroke_style_str(&color_rgba((255, 205, 118), (179, 104, 22), 0.12 + sweep * 0.14, self.theme));
+            self.context.set_stroke_style_str(&color_rgba(
+                (255, 205, 118),
+                (145, 82, 18),
+                (0.15 + sweep * 0.16) * alpha_scale,
+                self.theme,
+            ));
             self.context.set_line_width(1.15);
             self.context.stroke_rect(x, y, width, 10.0);
-            self.context
-                .set_fill_style_str(&color_rgba((255, 205, 118), (179, 104, 22), 0.055 + sweep * 0.08, self.theme));
+            self.context.set_fill_style_str(&color_rgba(
+                (255, 205, 118),
+                (145, 82, 18),
+                (0.07 + sweep * 0.09) * alpha_scale,
+                self.theme,
+            ));
             self.context.fill_rect(x, y, width * sweep, 10.0);
         }
 
@@ -443,9 +511,20 @@ impl SystemsFieldRenderer {
             self.height * 0.52,
             self.width.max(self.height) * 0.82,
         )?;
-        let edge = color_rgba((4, 7, 10), (219, 228, 240), mix(0.62, 0.56, self.theme), self.theme);
-        vignette.add_color_stop(0.0, &color_rgba((47, 107, 255), (47, 107, 255), 0.08, self.theme))?;
-        vignette.add_color_stop(0.5, &color_rgba((21, 27, 34), (255, 255, 255), 0.12, self.theme))?;
+        let edge = color_rgba(
+            (4, 7, 10),
+            (16, 22, 29),
+            mix(0.2, 0.08, self.theme),
+            self.theme,
+        );
+        vignette.add_color_stop(
+            0.0,
+            &color_rgba((47, 107, 255), (31, 95, 255), 0.02, self.theme),
+        )?;
+        vignette.add_color_stop(
+            0.5,
+            &color_rgba((21, 27, 34), (255, 255, 255), 0.0, self.theme),
+        )?;
         vignette.add_color_stop(1.0, &edge)?;
         self.context.set_fill_style_canvas_gradient(&vignette);
         self.context.fill_rect(0.0, 0.0, self.width, self.height);
@@ -472,7 +551,11 @@ pub fn render_systems_field(
     let mut renderer = SystemsFieldRenderer::new(canvas, 0x59a1_f17d, quality)?;
     renderer.resize(width, height, dpr)?;
     renderer.set_pointer(pointer_x_norm, pointer_y_norm);
-    renderer.set_theme(if render_options & 0b100 != 0 { THEME_LIGHT } else { 0 });
+    renderer.set_theme(if render_options & 0b100 != 0 {
+        THEME_LIGHT
+    } else {
+        0
+    });
     renderer.theme = renderer.target_theme;
     renderer.render(time_ms)
 }

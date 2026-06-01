@@ -143,13 +143,13 @@ function idle(callback: () => void): void {
 }
 
 function shouldSkipSystemsField(): boolean {
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const coarsePointer = matchMedia('(pointer: coarse)').matches;
-  const narrowViewport = matchMedia('(max-width: 720px)').matches;
-  return reducedMotion || coarsePointer || narrowViewport;
+  return matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 function qualityTier(): number {
+  const coarsePointer = matchMedia('(pointer: coarse)').matches;
+  const narrowViewport = matchMedia('(max-width: 720px)').matches;
+  if (coarsePointer || narrowViewport) return 1;
   if (innerWidth >= 1280 && navigator.hardwareConcurrency >= 8) return 3;
   if (innerWidth >= 900 && navigator.hardwareConcurrency >= 4) return 2;
   return 1;
@@ -160,31 +160,9 @@ function initSystemsField(): void {
   const canvas = document.querySelector<HTMLCanvasElement>('[data-systems-field-canvas]');
   if (!layer || !canvas || shouldSkipSystemsField()) return;
 
-  let mounted = false;
-
-  const mount = (): void => {
-    if (mounted) return;
-    mounted = true;
-
-    idle(() => {
-      void runSystemsField(layer, canvas);
-    });
-  };
-
-  const hero = document.querySelector<HTMLElement>('[data-systems-hero]');
-  if (!hero) return;
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        mount();
-        observer.disconnect();
-      }
-    },
-    { rootMargin: '160px 0px', threshold: 0.01 },
-  );
-
-  observer.observe(hero);
+  idle(() => {
+    void runSystemsField(layer, canvas);
+  });
 }
 
 function sectionPhase(id: string): number {
