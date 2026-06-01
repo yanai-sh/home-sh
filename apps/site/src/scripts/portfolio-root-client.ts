@@ -13,7 +13,7 @@ type CanvasWasmModule = {
     pointerXNorm: number,
     pointerYNorm: number,
     timeMs: number,
-    quality: number,
+    renderOptions: number,
   ) => number;
 };
 
@@ -32,6 +32,7 @@ function setTheme(theme: 'dark' | 'light'): void {
 
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   themeColor?.setAttribute('content', THEME_COLORS[theme]);
+  document.dispatchEvent(new CustomEvent('portfolio:theme-change', { detail: { theme } }));
 }
 
 function initTheme(): void {
@@ -127,6 +128,11 @@ function qualityTier(): number {
   return 1;
 }
 
+function renderOptions(quality: number): number {
+  const lightMode = document.documentElement.dataset.theme === 'light';
+  return quality | (lightMode ? 0b100 : 0);
+}
+
 function initSystemsField(): void {
   const hero = document.querySelector<HTMLElement>('[data-systems-hero]');
   const canvas = document.querySelector<HTMLCanvasElement>('[data-systems-field-canvas]');
@@ -192,7 +198,7 @@ async function runSystemsField(hero: HTMLElement, canvas: HTMLCanvasElement): Pr
             pointer.x,
             pointer.y,
             timeMs,
-            quality,
+            renderOptions(quality),
           );
         }
       }
@@ -210,10 +216,25 @@ async function runSystemsField(hero: HTMLElement, canvas: HTMLCanvasElement): Pr
     hero.addEventListener('pointermove', updatePointer, { passive: true });
     visibility.observe(hero);
 
-    const rect = canvas.getBoundingClientRect();
-    wasm.render_systems_field(canvas, rect.width, rect.height, pointer.x, pointer.y, 0, quality);
+    const renderCurrentTheme = (timeMs = performance.now()): void => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      wasm.render_systems_field(
+        canvas,
+        rect.width,
+        rect.height,
+        pointer.x,
+        pointer.y,
+        timeMs,
+        renderOptions(quality),
+      );
+    };
+    const handleThemeChange = (): void => renderCurrentTheme();
+
+    renderCurrentTheme(0);
     hero.classList.add('is-systems-field-ready');
     raf = requestAnimationFrame(render);
+    document.addEventListener('portfolio:theme-change', handleThemeChange);
 
     addEventListener(
       'pagehide',
@@ -221,6 +242,7 @@ async function runSystemsField(hero: HTMLElement, canvas: HTMLCanvasElement): Pr
         cancelAnimationFrame(raf);
         visibility.disconnect();
         hero.removeEventListener('pointermove', updatePointer);
+        document.removeEventListener('portfolio:theme-change', handleThemeChange);
       },
       { once: true },
     );

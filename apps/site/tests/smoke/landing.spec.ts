@@ -29,6 +29,37 @@ test('desktop systems field initializes as a progressive enhancement', async ({ 
   });
 });
 
+test('light theme renders a bright systems field', async ({ browser }) => {
+  const ctx = await browser.newContext();
+  await ctx.addInitScript(() => {
+    localStorage.setItem('yanai-sh:theme', 'light');
+  });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/`);
+  await expect(page.locator('[data-systems-hero]')).toHaveClass(/is-systems-field-ready/, {
+    timeout: 8_000,
+  });
+  const luminance = await page.evaluate(() => {
+    const canvas = document.querySelector('[data-systems-field-canvas]');
+    if (!(canvas instanceof HTMLCanvasElement)) return 0;
+    const context = canvas.getContext('2d');
+    const sample = context?.getImageData(
+      Math.floor(canvas.width / 2),
+      Math.floor(canvas.height / 2),
+      12,
+      12,
+    ).data;
+    if (!sample) return 0;
+    let total = 0;
+    for (let index = 0; index < sample.length; index += 4) {
+      total += (sample[index] + sample[index + 1] + sample[index + 2]) / 3;
+    }
+    return total / (sample.length / 4);
+  });
+  expect(luminance).toBeGreaterThan(120);
+  await ctx.close();
+});
+
 test('/workspace redirect lands on /#home', async ({ page }) => {
   const errors = collectPageErrors(page);
   await page.goto(`${BASE}/workspace`);
