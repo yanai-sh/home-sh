@@ -8,6 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 bytemuck = { version = "1", features = ["derive"] }
+js-sys = "0.3"
 lyon = "1"
 wasm-bindgen = "0.2"
 
