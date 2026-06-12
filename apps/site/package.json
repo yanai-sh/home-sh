@@ -15,8 +15,8 @@
     "verify": "pnpm velite && vp check && vitest run --config vitest.config.ts && vp build",
     "preview": "vp preview",
     "smoke": "playwright test --config=tests/smoke/playwright.config.ts",
-    "version-upload": "wrangler versions upload --config dist/wrangler.json",
-    "version-deploy": "wrangler versions deploy --config dist/wrangler.json"
+    "version-upload": "wrangler versions upload --config dist/yanai_sh/wrangler.json",
+    "version-deploy": "wrangler versions deploy --config dist/yanai_sh/wrangler.json"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.39.1",
