@@ -1,0 +1,238 @@
+# Draft: Index card (search-first)
+
+**Direction:** Minimal headline + fuzzy-search affordance. Enter or pick a result to unlock resume scroll.
+
+**Preview:** Save as `index-card.html` and open in a browser.
+
+```html
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-site-mode="splash">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>yanai.sh — Index card draft</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Space+Grotesk:wght@600&family=IBM+Plex+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #151b22;
+        --surface: #1d2630;
+        --text: #f5f7fa;
+        --subtext: #b7c0cc;
+        --muted: #7f8b99;
+        --accent: #78a4ff;
+        --rule: rgba(245, 247, 250, 0.12);
+        --head: "Space Grotesk", sans-serif;
+        --body: "Inter", sans-serif;
+        --mono: "IBM Plex Mono", monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html[data-site-mode="splash"] {
+        overflow: hidden;
+      }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(47, 107, 255, 0.08), transparent 40%), var(--bg);
+        color: var(--text);
+        font-family: var(--body);
+      }
+      .center {
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+      }
+      .card {
+        width: min(32rem, 100%);
+      }
+      h1 {
+        margin: 0 0 0.5rem;
+        font: 600 clamp(2rem, 6vw, 2.8rem)/1.05 var(--head);
+      }
+      .sub {
+        margin: 0 0 2rem;
+        color: var(--subtext);
+      }
+      .search {
+        position: relative;
+      }
+      .search input {
+        width: 100%;
+        padding: 1rem 1rem 1rem 2.75rem;
+        border: 1px solid var(--rule);
+        border-radius: 1rem;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 1rem;
+        outline: none;
+      }
+      .search input:focus {
+        border-color: rgba(120, 164, 255, 0.45);
+        box-shadow: 0 0 0 3px rgba(47, 107, 255, 0.15);
+      }
+      .search::before {
+        content: "⌕";
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 1.1rem;
+      }
+      .results {
+        margin: 0.75rem 0 0;
+        padding: 0;
+        list-style: none;
+        border: 1px solid var(--rule);
+        border-radius: 1rem;
+        overflow: hidden;
+        background: var(--surface);
+        display: none;
+      }
+      .results.open {
+        display: block;
+      }
+      .results li button {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        border: 0;
+        border-bottom: 1px solid var(--rule);
+        background: 0;
+        color: var(--text);
+        text-align: left;
+        cursor: pointer;
+        font-size: 0.92rem;
+      }
+      .results li:last-child button {
+        border-bottom: 0;
+      }
+      .results li button:hover {
+        background: rgba(120, 164, 255, 0.08);
+      }
+      .results small {
+        display: block;
+        margin-top: 0.2rem;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+      .meta {
+        margin-top: 1.25rem;
+        font: 0.78rem var(--mono);
+        color: var(--muted);
+      }
+      .resume {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 3rem 1.5rem 5rem;
+        opacity: 0;
+        pointer-events: none;
+      }
+      html[data-site-mode="resume"] {
+        overflow: auto;
+      }
+      html[data-site-mode="resume"] .resume {
+        opacity: 1;
+        pointer-events: auto;
+        transition: opacity 0.35s;
+      }
+      mark {
+        background: rgba(120, 164, 255, 0.25);
+        color: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="center">
+      <div class="card">
+        <h1>Yanai Klugman</h1>
+        <p class="sub">Search experience, stacks, employers — or press Enter for full resume.</p>
+        <div class="search">
+          <input
+            id="q"
+            type="search"
+            placeholder="Try: integration, rust, cloudflare…"
+            autocomplete="off"
+          />
+        </div>
+        <ul class="results" id="results"></ul>
+        <p class="meta">wasm search index · draft mock data</p>
+      </div>
+    </main>
+    <section class="resume" id="resume">
+      <h2>Resume</h2>
+      <p id="resume-body">Full document unlocked.</p>
+      <button type="button" id="back">← Back</button>
+    </section>
+    <script>
+      const INDEX = [
+        {
+          t: "Systems & integration engineering",
+          d: "Connecting services, data paths, delivery workflows",
+          k: ["systems", "integration"],
+        },
+        {
+          t: "Infrastructure & automation",
+          d: "Tooling for product teams",
+          k: ["infrastructure", "automation", "terraform"],
+        },
+        {
+          t: "Cloudflare Workers / edge",
+          d: "SSR, WASM, D1 telemetry",
+          k: ["cloudflare", "wasm", "workers"],
+        },
+        { t: "Resume — full CV", d: "All sections", k: ["resume", "cv"] },
+      ];
+      const q = document.getElementById("q"),
+        results = document.getElementById("results"),
+        root = document.documentElement;
+      const unlock = (hint = "") => {
+        root.dataset.siteMode = "resume";
+        if (hint)
+          document.getElementById("resume-body").innerHTML =
+            "Matched: <mark>" + hint + "</mark>. Production uses Nucleo WASM.";
+        document.getElementById("resume").scrollIntoView({ behavior: "smooth" });
+      };
+      const render = () => {
+        const term = q.value.trim().toLowerCase();
+        results.innerHTML = "";
+        if (!term) {
+          results.classList.remove("open");
+          return;
+        }
+        const hits = INDEX.filter(
+          (i) =>
+            i.t.toLowerCase().includes(term) ||
+            i.d.toLowerCase().includes(term) ||
+            i.k.some((k) => k.includes(term)),
+        );
+        for (const hit of hits.slice(0, 5)) {
+          const li = document.createElement("li");
+          const b = document.createElement("button");
+          b.innerHTML = hit.t + "<small>" + hit.d + "</small>";
+          b.onclick = () => unlock(hit.t);
+          li.appendChild(b);
+          results.appendChild(li);
+        }
+        results.classList.toggle("open", hits.length > 0);
+      };
+      q.addEventListener("input", render);
+      q.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          unlock(q.value || "all");
+        }
+      });
+      document.getElementById("back").onclick = () => {
+        root.dataset.siteMode = "splash";
+        scrollTo(0, 0);
+      };
+    </script>
+  </body>
+</html>
+```

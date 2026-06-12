@@ -1,4 +1,4 @@
-# PRs into `dev` — same `bun run verify` as PR — main, without uploading a Worker.
+# PRs into `dev` — same `pnpm run verify` as PR — main, without uploading a Worker.
 # Deploy remains push-only (avoids double upload when a PR merges into `dev`).
 name: yanai-sh / PR — dev
 

@@ -1,21 +1,23 @@
-/// <reference types="astro/client" />
-/// <reference types="@astrojs/cloudflare" />
-/// <reference path="./worker-configuration.d.ts" />
+/// <reference types="@cloudflare/workers-types" />
 
 interface ImportMetaEnv {
-  /** Cloudflare Turnstile site key (public — safe to expose in client). */
-  readonly PUBLIC_TURNSTILE_SITE_KEY: string | undefined;
-  /** Local-only fallback for the server-side resume release proxy. */
-  readonly RESUME_REPO_TOKEN: string | undefined;
+  readonly PUBLIC_TURNSTILE_SITE_KEY?: string;
+  readonly RESUME_REPO_TOKEN?: string;
+  readonly DEV: boolean;
+  readonly PROD: boolean;
+  readonly MODE: string;
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-declare global {
-  interface Request {
-    /** Present on Cloudflare; absent in some dev environments. */
-    cf?: CfProperties;
-  }
+declare module '*.css?url' {
+  const url: string;
+  export default url;
+}
+
+declare module '*?url' {
+  const url: string;
+  export default url;
 }

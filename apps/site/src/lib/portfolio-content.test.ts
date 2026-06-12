@@ -1,13 +1,13 @@
-import { expect, test } from 'bun:test';
+import { expect, test } from 'vitest';
 import { featuredHomepageProjects, sortHomepageExperience } from './portfolio-content';
 
 test('sortHomepageExperience orders entries by frontmatter order', () => {
   const entries = [
-    { data: { order: 20, company: 'Later' } },
-    { data: { order: 10, company: 'Earlier' } },
+    { order: 20, company: 'Later' },
+    { order: 10, company: 'Earlier' },
   ];
 
-  expect(sortHomepageExperience(entries).map((entry) => entry.data.company)).toEqual([
+  expect(sortHomepageExperience(entries).map((entry) => entry.company)).toEqual([
     'Earlier',
     'Later',
   ]);
@@ -15,12 +15,12 @@ test('sortHomepageExperience orders entries by frontmatter order', () => {
 
 test('featuredHomepageProjects filters unfeatured projects and orders the rest', () => {
   const entries = [
-    { data: { order: 30, featured: true, title: 'Third' } },
-    { data: { order: 10, featured: false, title: 'Hidden' } },
-    { data: { order: 20, featured: true, title: 'Second' } },
+    { order: 30, featured: true, title: 'Third' },
+    { order: 10, featured: false, title: 'Hidden' },
+    { order: 20, featured: true, title: 'Second' },
   ];
 
-  expect(featuredHomepageProjects(entries).map((entry) => entry.data.title)).toEqual([
+  expect(featuredHomepageProjects(entries).map((entry) => entry.title)).toEqual([
     'Second',
     'Third',
   ]);

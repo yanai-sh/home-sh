@@ -12,22 +12,23 @@
 
 ## File map (expected churn)
 
-| Area | Primary files |
-| --- | --- |
-| Home composition | `apps/site/src/pages/index.astro`, `apps/site/src/components/*` (split new `HomeSystems.astro` or similar from workspace patterns) |
-| Former workspace UI | `apps/site/src/pages/workspace/index.astro` (thin redirect or removal), `apps/site/src/config/workspace.ts`, workspace client scripts under `apps/site/src/` (grep `ws-`, `workspace`) |
-| Edge headers | `apps/site/src/middleware.ts` |
-| Layout / meta | `apps/site/src/layouts/Layout.astro`, `apps/site/src/config/site.ts`, `README.md` |
-| Contact | `apps/site/src/pages/api/contact.ts`, `apps/site/src/components/ContactForm.astro`, `apps/site/src/__tests__/` or colocated `*.test.ts` |
-| Telemetry UI client | Whatever script powers `data-telemetry-stat` today (grep from workspace); relocate init to `/` section |
-| Smoke | `apps/site/tests/smoke/landing.spec.ts`, `apps/site/tests/smoke/workspace.spec.ts` |
-| Planning source of truth | `ROADMAP.md` |
+| Area                     | Primary files                                                                                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home composition         | `apps/site/src/pages/index.astro`, `apps/site/src/components/*` (split new `HomeSystems.astro` or similar from workspace patterns)                                                     |
+| Former workspace UI      | `apps/site/src/pages/workspace/index.astro` (thin redirect or removal), `apps/site/src/config/workspace.ts`, workspace client scripts under `apps/site/src/` (grep `ws-`, `workspace`) |
+| Edge headers             | `apps/site/src/middleware.ts`                                                                                                                                                          |
+| Layout / meta            | `apps/site/src/layouts/Layout.astro`, `apps/site/src/config/site.ts`, `README.md`                                                                                                      |
+| Contact                  | `apps/site/src/pages/api/contact.ts`, `apps/site/src/components/ContactForm.astro`, `apps/site/src/__tests__/` or colocated `*.test.ts`                                                |
+| Telemetry UI client      | Whatever script powers `data-telemetry-stat` today (grep from workspace); relocate init to `/` section                                                                                 |
+| Smoke                    | `apps/site/tests/smoke/landing.spec.ts`, `apps/site/tests/smoke/workspace.spec.ts`                                                                                                     |
+| Planning source of truth | `ROADMAP.md`                                                                                                                                                                           |
 
 ---
 
 ### Task 0: Align `ROADMAP.md` with single-URL primary experience
 
 **Files:**
+
 - Modify: `ROADMAP.md` (Product Direction, Route Model `/` and `/workspace`, Milestone 5 framing, risk “`/workspace` becomes redundant”)
 
 - [ ] **Step 1: Edit Product Direction** so `/` is the only required surface for the “technical first impression + resume path,” and `/workspace` is deprecated, redirect-only, or explicitly “legacy demo” with no unique capability.
@@ -48,6 +49,7 @@ git commit -m "docs(roadmap): single-URL primary experience on /"
 ### Task 1: Primary CTAs on `/` use in-document targets (no navigation for happy path)
 
 **Files:**
+
 - Modify: `apps/site/src/components/ResumeShowcase.astro` (or the component that renders `href="/resume"` / `href="/resume.pdf"`)
 - Modify: `apps/site/src/components/Lede.astro`, `apps/site/src/components/Hero.astro` if they contain outbound resume links
 - Possibly modify: `apps/site/src/components/Footer.astro` for secondary “Printable `/resume`” link
@@ -85,6 +87,7 @@ Expected: PASS (fix any duplicate-import or circular layout issues).
 ### Task 2: Embed “systems / wow” strip on `/` (migrate off `/workspace` dependency)
 
 **Files:**
+
 - Create: `apps/site/src/components/HomeSystems.astro` (static shell: heading, mount points `id="home-search-root"`, `id="home-canvas"`, `data-telemetry-stat` slots mirroring workspace)
 - Modify: `apps/site/src/pages/index.astro` — include `<HomeSystems />` after `ResumeShowcase` and before `ContactForm` (order adjustable)
 - Modify: move or re-export client entry from workspace scripts — locate with:
@@ -108,6 +111,7 @@ rg 'ws-rust-canvas|ws-search|workspace' apps/site/src --glob '*.{ts,astro,mjs}'
 ### Task 3: Telemetry readout + beacon on `/` (parity with workspace pane)
 
 **Files:**
+
 - Grep-driven modify: client that POSTs `/api/telemetry/beacon` and GETs `/api/telemetry/stats` (today likely only on workspace)
 - Modify: `apps/site/src/middleware.ts` only if CSP `connect-src` blocks fetches (today `'self'` should allow same-origin XHR/fetch to `/api/*`)
 
@@ -130,6 +134,7 @@ rg 'telemetry/beacon|telemetry/stats|data-telemetry-stat' apps/site/src
 ### Task 4: Deprecate `/workspace` as a destination
 
 **Files:**
+
 - Modify: `apps/site/src/pages/workspace/index.astro` **or** replace with `apps/site/src/pages/workspace/index.ts` redirect response (Astro static redirect in frontmatter if supported; otherwise middleware redirect)
 
 Preferred pattern (middleware, single source of truth):
@@ -139,9 +144,9 @@ Preferred pattern (middleware, single source of truth):
 ```ts
 // Inside onRequest, before const response = await next();
 const url = new URL(context.request.url);
-if (url.pathname === '/workspace' || url.pathname.startsWith('/workspace/')) {
-  const target = new URL('/', url.origin);
-  target.hash = 'systems';
+if (url.pathname === "/workspace" || url.pathname.startsWith("/workspace/")) {
+  const target = new URL("/", url.origin);
+  target.hash = "systems";
   return Response.redirect(target.toString(), 308);
 }
 ```
@@ -161,6 +166,7 @@ if (url.pathname === '/workspace' || url.pathname.startsWith('/workspace/')) {
 ### Task 5: M2 — Lazy WASM / motion contract on `/`
 
 **Files:**
+
 - Modify: `apps/site/src/components/SceneCanvas.astro`, `HomeLattice.astro`, new `HomeSystems` client mount, `apps/site/src/design/tokens.ts` only if budget tokens needed
 
 - [ ] **Step 1: Document the contract** in a short comment block at top of `SceneCanvas.astro` (or `apps/site/src/lib/home-enhancement.ts`): enhancement loads after `requestAnimationFrame` + WASM probe; max bundle size budget stated as a number (e.g. “WASM fetch < 300KB gzip” — measure with `ls -la apps/site/dist/client/_astro/*wasm*` after build).
@@ -176,6 +182,7 @@ if (url.pathname === '/workspace' || url.pathname.startsWith('/workspace/')) {
 ### Task 6: M4 — Contact pipeline confidence
 
 **Files:**
+
 - Modify: `apps/site/src/pages/api/contact.ts`
 - Modify: `apps/site/src/components/ContactForm.astro`
 - Test: `apps/site/src/__tests__/` (glob `contact`)
@@ -187,10 +194,10 @@ if (url.pathname === '/workspace' || url.pathname.startsWith('/workspace/')) {
 Example Playwright expectation (adapt selectors):
 
 ```ts
-test('contact form shows error for oversized message', async ({ page }) => {
+test("contact form shows error for oversized message", async ({ page }) => {
   await page.goto(`${BASE}/`);
   const body = page.locator('#contact-form textarea[name="message"]');
-  await body.fill('x'.repeat(20000));
+  await body.fill("x".repeat(20000));
   await page.locator('#contact-form button[type="submit"]').click();
   await expect(page.locator('#contact-form [role="alert"]')).toBeVisible();
 });
@@ -205,6 +212,7 @@ test('contact form shows error for oversized message', async ({ page }) => {
 ### Task 7: Brand / OG / README consistency pass
 
 **Files:**
+
 - Modify: `apps/site/src/config/site.ts`, `README.md`, `apps/site/src/layouts/Layout.astro` if `SITE_OG_IMAGE_PATH` wrong
 - Verify asset: `apps/site/public/brand/` (og image path)
 
@@ -219,6 +227,7 @@ test('contact form shows error for oversized message', async ({ page }) => {
 ### Task 8: M3 — Playwright smoke updates for single-URL model
 
 **Files:**
+
 - Modify: `apps/site/tests/smoke/landing.spec.ts`
 - Modify: `apps/site/tests/smoke/workspace.spec.ts` (retarget to `/` + `#systems` or delete if redundant)
 - Modify: `apps/site/tests/smoke/playwright.config.ts` only if preview command needs change
@@ -226,7 +235,7 @@ test('contact form shows error for oversized message', async ({ page }) => {
 - [ ] **Step 1: Update first test** — replace `a[href="/resume"]` visibility with `#resume-full` heading visibility (pick a stable selector from the shared resume partial).
 
 ```ts
-test('first viewport shows in-page resume target', async ({ page }) => {
+test("first viewport shows in-page resume target", async ({ page }) => {
   await page.goto(`${BASE}/`);
   await expect(page.locator('a[href="#resume-full"]').first()).toBeVisible();
 });
@@ -237,8 +246,8 @@ test('first viewport shows in-page resume target', async ({ page }) => {
 - [ ] **Step 3: Add test** `goto('/workspace')` expects final URL pathname `/` and hash `#systems` (if middleware redirect).
 
 ```ts
-test('legacy /workspace redirects to /#systems', async ({ page }) => {
-  const res = await page.goto(`${BASE}/workspace`, { waitUntil: 'commit' });
+test("legacy /workspace redirects to /#systems", async ({ page }) => {
+  const res = await page.goto(`${BASE}/workspace`, { waitUntil: "commit" });
   expect(res?.status()).toBe(308); // or 200 + meta refresh—match implementation
 });
 ```
@@ -281,17 +290,17 @@ Expected: PASS locally against preview (fix skips if secrets missing).
 
 ## Self-review (spec coverage)
 
-| Requirement | Task |
-| --- | --- |
-| Wow on initial landing | Tasks 2, 5 |
-| No required navigation away from `/` | Tasks 1, 4 |
-| No full page reload for primary UX | Tasks 1 (same-doc), 4 (remove workspace), optional Task 9 |
-| M2 lazy WASM + fallback | Task 5 + existing SSR in Task 1 |
-| M3 smoke | Task 8 |
-| M4 contact | Task 6 |
-| Brand/meta | Task 7 |
-| Planning alignment | Task 0 |
-| SAB / COOP risk | Called out in Task 4 Step 2 |
+| Requirement                          | Task                                                      |
+| ------------------------------------ | --------------------------------------------------------- |
+| Wow on initial landing               | Tasks 2, 5                                                |
+| No required navigation away from `/` | Tasks 1, 4                                                |
+| No full page reload for primary UX   | Tasks 1 (same-doc), 4 (remove workspace), optional Task 9 |
+| M2 lazy WASM + fallback              | Task 5 + existing SSR in Task 1                           |
+| M3 smoke                             | Task 8                                                    |
+| M4 contact                           | Task 6                                                    |
+| Brand/meta                           | Task 7                                                    |
+| Planning alignment                   | Task 0                                                    |
+| SAB / COOP risk                      | Called out in Task 4 Step 2                               |
 
 **Placeholder scan:** None intentional; implementer must fill exact selectors (`#resume-full`, `#systems`) after Task 1 markup exists.
 

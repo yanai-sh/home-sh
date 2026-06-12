@@ -2,9 +2,9 @@
 # Schema TBD in apps/site/src/content/config.ts.
 
 [header]
-name     = "Yanai Klugman"
+name = "Yanai Klugman"
 headline = ""
-email    = "me@yanai.sh"
+email = "me@yanai.sh"
 location = ""
 
 # jobs = [ { company, role, period, location, highlights = [] } ]

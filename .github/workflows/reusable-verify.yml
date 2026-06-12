@@ -47,7 +47,7 @@ jobs:
               - 'infra/**'
               - 'apps/site/wrangler.jsonc'
             root_config:
-              - 'bun.lock'
+              - 'pnpm-lock.yaml'
               - 'package.json'
               - 'scripts/**'
 
@@ -65,11 +65,11 @@ jobs:
             echo "| infra / wrangler | \`${{ steps.paths.outputs.infra }}\` |"
             echo "| root lockfile / scripts | \`${{ steps.paths.outputs.root_config }}\` |"
             echo ""
-            echo "Runner: **${{ inputs.runs-on }}**. Full \`bun run verify\` runs on every PR."
+            echo "Runner: **${{ inputs.runs-on }}**. Full \`pnpm run verify\` runs on every PR."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: ./.github/actions/actionlint
 
-      - uses: ./.github/actions/bun-verify
+      - uses: ./.github/actions/pnpm-verify
         with:
           public_turnstile_site_key: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}

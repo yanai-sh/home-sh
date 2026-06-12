@@ -4,34 +4,36 @@
 default:
     @just --list
 
-# ── JS / Astro ──────────────────────────────────────────────────────────────
+# ── JS / Vite+ site ─────────────────────────────────────────────────────────
 
 dev:
-    bun run dev
+    pnpm run dev
 
 build:
-    bun run build
+    pnpm run build
 
 verify:
-    bun run verify
+    pnpm run verify
 
 check:
-    bun run check
+    pnpm run check
 
 fix:
-    bun run fix
+    pnpm run fix
 
 preview:
-    bun run preview
+    pnpm run preview
 
 # ── Rust / WASM ─────────────────────────────────────────────────────────────
 
-# Build all WASM modules (requires wasm-pack)
+# Build all WASM modules (requires wasm-pack + rust wasm32 target).
+# wasm-opt is disabled in crate metadata — no Binaryen prebuilt needed on Windows ARM64.
 wasm-build:
-    wasm-pack build apps/wasm/bridge --target web --out-dir ../../site/public/wasm/bridge
     wasm-pack build apps/wasm/canvas --target web --out-dir ../../site/public/wasm/canvas
-    wasm-pack build apps/wasm/search --target web --out-dir ../../site/public/wasm/search
-    rm -f apps/site/public/wasm/*/.gitignore
+    @just wasm-clean-gitignore
+
+wasm-clean-gitignore:
+    node -e "const fs=require('fs');const p='apps/site/public/wasm';for(const d of fs.readdirSync(p)){try{fs.unlinkSync(p+'/'+d+'/.gitignore')}catch{}}"
 
 # Check all Rust crates compile for wasm32
 wasm-check:
@@ -45,15 +47,15 @@ wasm-lint:
 
 # Generate TypeScript types from wrangler bindings (run after changing wrangler.jsonc)
 worker-types:
-    cd apps/site && bun run wrangler-types
+    cd apps/site && pnpm wrangler-types
 
 # Run D1 migrations against local dev database
 migrate-local:
-    cd apps/site && bunx wrangler d1 migrations apply home-sh-telemetry --local
+    cd apps/site && pnpm exec wrangler d1 migrations apply home-sh-telemetry --local
 
 # Run D1 migrations against remote database (production — use carefully)
 migrate-remote:
-    cd apps/site && bunx wrangler d1 migrations apply home-sh-telemetry --remote
+    cd apps/site && pnpm exec wrangler d1 migrations apply home-sh-telemetry --remote
 
 # ── OpenTofu / Infrastructure ────────────────────────────────────────────────
 # OpenTofu reads cloudflare_api_token + cloudflare_account_id from gitignored
@@ -85,20 +87,20 @@ tf-secrets:
 # Push runtime secrets into the Workers Secrets Store. Idempotent. Worker reads
 # them via `secrets_store_secrets` in apps/site/wrangler.jsonc.
 push-secrets:
-    bun run scripts/push-secrets.ts
+    pnpm exec tsx scripts/push-secrets.ts
 
 # Optional (not portable / not CI): Bitwarden → local JSON or gh. See scripts/optional/README.md
 optional-bitwarden-pull:
-    bun run optional:bitwarden-to-secrets -- --write
+    pnpm run optional:bitwarden-to-secrets -- --write
 optional-bitwarden-github:
-    bun run optional:bitwarden-to-secrets -- --gh
+    pnpm run optional:bitwarden-to-secrets -- --gh
 optional-bitwarden-sync:
-    bun run optional:bitwarden-to-secrets -- --write --gh
+    pnpm run optional:bitwarden-to-secrets -- --write --gh
 
 # ── Resume PDF ───────────────────────────────────────────────────────────────
 # Canonical CV is built in yanai-sh/resume (LaTeX → PDF) and attached to each
 # `vX.Y.Z` GitHub Release. Download lands in **gitignored** `artifacts/resume/`
-# (outside Astro `public/` so it never shadows the SSR **`/resume.pdf`** route).
+# (outside static assets so it never shadows the SSR **`/resume.pdf`** route).
 
 sync-resume-pdf:
     mkdir -p artifacts/resume

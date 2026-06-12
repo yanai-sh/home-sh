@@ -8,7 +8,7 @@
 #
 # Find the target version_id:
 #   - Cloudflare Dashboard → Workers & Pages → yanai-sh → Deployments
-#   - OR locally: `bun run --cwd apps/site exec wrangler versions list --config apps/site/dist/server/wrangler.json`
+#   - OR locally: `pnpm --dir apps/site exec wrangler versions list --config apps/site/dist/wrangler.json`
 #
 # Note: Cloudflare retains the last ~10 versions per Worker. Older deploys age
 # out of the rollback-eligible set.
@@ -32,12 +32,7 @@ permissions:
   contents: read
 
 concurrency:
-  # Share the deploy group — a rollback IS a deploy (different version pointer).
-  # Mixing them in one group prevents a Deploy from racing a Rollback or
-  # vice-versa, which could leave the Worker pointing at an unintended version.
   group: yanai-sh-deploy-${{ github.ref }}
-  # Never cancel a rollback in progress — incident response is the highest
-  # priority; if a rollback is running, anything else waits.
   cancel-in-progress: false
 
 jobs:
@@ -53,19 +48,17 @@ jobs:
           submodules: recursive
           token: ${{ secrets.RESUME_REPO_TOKEN }}
 
-      - uses: ./.github/actions/bun-install
+      - uses: ./.github/actions/pnpm-install
 
-      # Root `bun run build` runs `sync:resume` (pinned `resume/` submodule) then
-      # Astro — emits dist/server/wrangler.json for wrangler version-deploy.
       - name: Build site (emit wrangler.json)
-        run: bun run build
+        run: pnpm run build
         env:
           PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
 
       - name: Promote rollback version to production (100%)
         run: |
           set -euo pipefail
-          bun run --cwd apps/site version-deploy -- \
+          pnpm --dir apps/site version-deploy -- \
             "${{ inputs.version_id }}@100%" \
             --message "rollback by ${{ github.actor }}: ${{ inputs.reason }}" \
             --yes
@@ -76,7 +69,6 @@ jobs:
       - name: Curl smoke (origin)
         run: |
           set -euo pipefail
-          # Give the edge a few seconds to propagate the new active version.
           sleep 10
           curl -fsSL --http1.1 -4 -o /dev/null -w "HTTP %{http_code}\n" https://yanai.sh/
           curl -fsSL --http1.1 -4 -o /dev/null -w "HTTP %{http_code} /resume\n" https://yanai.sh/resume

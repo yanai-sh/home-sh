@@ -1,148 +1,31 @@
 use js_sys::{Object, Reflect};
-use lyon::{
-    math::{point, Point},
-    path::Path,
-    tessellation::{BuffersBuilder, StrokeOptions, StrokeTessellator, StrokeVertex, VertexBuffers},
-};
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 const TAU: f64 = core::f64::consts::TAU;
 const THEME_LIGHT: u32 = 1;
 const PHASE_CAREER: f64 = 1.0;
-const PHASE_PROJECTS: f64 = 2.0;
 const PHASE_CONTACT: f64 = 3.0;
 
-#[wasm_bindgen]
-pub fn render_lattice(
-    canvas: HtmlCanvasElement,
-    width: f64,
-    height: f64,
-    mouse_x_norm: f64,
-    mouse_y_norm: f64,
-    time_ms: f64,
-) -> Result<u32, JsValue> {
-    let dpr = web_sys::window()
-        .map(|window| window.device_pixel_ratio())
-        .unwrap_or(1.0)
-        .clamp(1.0, 2.0);
+const FORM_IDLE: f64 = 0.0;
+const FORM_FOCUS: f64 = 1.0;
+const FORM_SENDING: f64 = 2.0;
+const FORM_SUCCESS: f64 = 3.0;
+const FORM_ERROR: f64 = 4.0;
 
-    let pixel_width = (width * dpr).max(1.0).round() as u32;
-    let pixel_height = (height * dpr).max(1.0).round() as u32;
-    canvas.set_width(pixel_width);
-    canvas.set_height(pixel_height);
-
-    let context = canvas
-        .get_context("2d")?
-        .ok_or_else(|| JsValue::from_str("2d canvas context unavailable"))?
-        .dyn_into::<CanvasRenderingContext2d>()?;
-
-    context.set_transform(dpr, 0.0, 0.0, dpr, 0.0, 0.0)?;
-    context.clear_rect(0.0, 0.0, width, height);
-    context.set_fill_style_str("#0a0a0a");
-    context.fill_rect(0.0, 0.0, width, height);
-
-    let spacing = (width / 12.0).clamp(48.0, 96.0);
-    let cols = (width / spacing).ceil() as u32 + 2;
-    let rows = (height / spacing).ceil() as u32 + 2;
-    let mut node_count = 0;
-
-    // mouse_x_norm / mouse_y_norm are clamped to [0, 1] by the caller. Convert
-    // to lattice coordinates so a node directly under the pointer experiences
-    // the strongest pull.
-    let mx = mouse_x_norm.clamp(0.0, 1.0) * cols as f64;
-    let my = mouse_y_norm.clamp(0.0, 1.0) * rows as f64;
-    // time_ms ticks at 1 ms/frame from performance.now(); 0.0008 rad/ms ≈
-    // one full sin cycle per ~1.3 s, which reads as a slow lattice "breathe".
-    let time_phase = time_ms * 0.0008;
-
-    let mut path = Path::builder();
-
-    for row in 0..rows {
-        for col in 0..cols {
-            let x = col as f64 * spacing - spacing * 0.5;
-            let y = row as f64 * spacing - spacing * 0.5;
-
-            // dy is dampened by 0.7 so the falloff stretches vertically a touch
-            // — a circle in lattice space draws a slightly taller ellipse in
-            // pixel space, which reads better under the cursor than a sphere.
-            let dx = col as f64 - mx;
-            let dy = (row as f64 - my) * 0.7;
-            let mouse_falloff = (-(dx * dx + dy * dy) * 0.04).exp();
-            // 10 px base lean + up to 18 px boost under the pointer (peaks at
-            // 28 px). Tuned by eye; bump the second coefficient for a heavier
-            // pull or drop the first for less ambient sway.
-            let lean =
-                ((row + col) as f64 * 0.73 + time_phase).sin() * (10.0 + mouse_falloff * 18.0);
-
-            if col + 1 < cols {
-                path.begin(point(x as f32, y as f32));
-                path.line_to(point((x + spacing + lean) as f32, (y + lean * 0.25) as f32));
-                path.end(false);
-            }
-
-            if row + 1 < rows {
-                path.begin(point(x as f32, y as f32));
-                path.line_to(point((x - lean * 0.2) as f32, (y + spacing) as f32));
-                path.end(false);
-            }
-
-            node_count += 1;
-        }
-    }
-
-    let path = path.build();
-    let mut geometry: VertexBuffers<Point, u16> = VertexBuffers::new();
-    let mut tessellator = StrokeTessellator::new();
-    tessellator
-        .tessellate_path(
-            &path,
-            &StrokeOptions::default().with_line_width(1.0),
-            &mut BuffersBuilder::new(&mut geometry, |vertex: StrokeVertex| vertex.position()),
-        )
-        .map_err(|err| JsValue::from_str(&format!("lattice tessellation failed: {err:?}")))?;
-
-    context.set_fill_style_str("rgba(47, 107, 255, 0.18)");
-    for triangle in geometry.indices.chunks_exact(3) {
-        let a = geometry.vertices[triangle[0] as usize];
-        let b = geometry.vertices[triangle[1] as usize];
-        let c = geometry.vertices[triangle[2] as usize];
-        context.begin_path();
-        context.move_to(a.x as f64, a.y as f64);
-        context.line_to(b.x as f64, b.y as f64);
-        context.line_to(c.x as f64, c.y as f64);
-        context.close_path();
-        context.fill();
-    }
-
-    context.set_fill_style_str("rgba(215, 185, 122, 0.52)");
-    for row in 0..rows {
-        for col in 0..cols {
-            let x = col as f64 * spacing - spacing * 0.5;
-            let y = row as f64 * spacing - spacing * 0.5;
-            context.begin_path();
-            context.arc(x, y, 1.3, 0.0, core::f64::consts::TAU)?;
-            context.fill();
-        }
-    }
-
-    Ok(node_count)
-}
+const DOC_NONE: f64 = 0.0;
+const DOC_LOADING: f64 = 1.0;
+const DOC_READY: f64 = 2.0;
+const DOC_ERROR: f64 = 3.0;
 
 #[derive(Clone, Copy)]
-struct Node {
-    x_norm: f64,
-    y_norm: f64,
-    drift: f64,
-    pulse: f64,
-}
-
-#[derive(Clone, Copy)]
-struct Gate {
-    x_norm: f64,
-    y_norm: f64,
-    width: f64,
-    phase: f64,
+struct Particle {
+    x: f64,
+    y: f64,
+    prev_x: f64,
+    prev_y: f64,
+    speed: f64,
+    tint: f64,
 }
 
 struct Rng {
@@ -179,6 +62,15 @@ fn phase_weight(current: f64, target: f64) -> f64 {
     (1.0 - (current - target).abs()).clamp(0.0, 1.0)
 }
 
+fn flow_angle(nx: f64, ny: f64, t: f64) -> f64 {
+    let x = nx * TAU * 1.35;
+    let y = ny * TAU * 1.12;
+    (x + t * 0.14).sin() * 1.65
+        + (y - t * 0.11).cos() * 1.35
+        + (x * 0.62 + y * 1.28 + t * 0.06).sin() * 0.95
+        + (x * 1.9 - y * 1.4 + t * 0.04).cos() * 0.55
+}
+
 #[wasm_bindgen]
 pub struct SystemsFieldRenderer {
     canvas: HtmlCanvasElement,
@@ -194,8 +86,21 @@ pub struct SystemsFieldRenderer {
     target_theme: f64,
     page_phase: f64,
     target_page_phase: f64,
-    nodes: Vec<Node>,
-    gates: Vec<Gate>,
+    split_progress: f64,
+    split_target: f64,
+    boot_progress: f64,
+    focus_x: f64,
+    focus_y: f64,
+    focus_strength: f64,
+    form_state: f64,
+    target_form_state: f64,
+    form_intensity: f64,
+    target_form_intensity: f64,
+    doc_state: f64,
+    target_doc_state: f64,
+    reveal: f64,
+    target_reveal: f64,
+    particles: Vec<Particle>,
     frame_count: u32,
     last_render_ms: f64,
     disposed: bool,
@@ -228,8 +133,21 @@ impl SystemsFieldRenderer {
             target_theme: 0.0,
             page_phase: 0.0,
             target_page_phase: 0.0,
-            nodes: Vec::new(),
-            gates: Vec::new(),
+            split_progress: 0.0,
+            split_target: 0.0,
+            boot_progress: 1.0,
+            focus_x: 0.5,
+            focus_y: 0.5,
+            focus_strength: 0.0,
+            form_state: 0.0,
+            target_form_state: 0.0,
+            form_intensity: 0.0,
+            target_form_intensity: 0.0,
+            doc_state: 0.0,
+            target_doc_state: 0.0,
+            reveal: 0.0,
+            target_reveal: 0.0,
+            particles: Vec::new(),
             frame_count: 0,
             last_render_ms: 0.0,
             disposed: false,
@@ -259,8 +177,8 @@ impl SystemsFieldRenderer {
         self.context
             .set_transform(self.dpr, 0.0, 0.0, self.dpr, 0.0, 0.0)?;
 
-        if layout_changed || self.nodes.is_empty() {
-            self.generate_layout();
+        if layout_changed || self.particles.is_empty() {
+            self.seed_particles();
         }
 
         Ok(())
@@ -279,6 +197,40 @@ impl SystemsFieldRenderer {
         self.target_page_phase = (phase.min(3)) as f64;
     }
 
+    pub fn set_split_progress(&mut self, progress: f64) {
+        self.split_progress = progress.clamp(0.0, 1.0);
+    }
+
+    pub fn set_split_target(&mut self, target: u32) {
+        self.split_target = if target == 1 { 1.0 } else { 0.0 };
+    }
+
+    pub fn set_boot_progress(&mut self, progress: f64) {
+        self.boot_progress = progress.clamp(0.0, 1.0);
+    }
+
+    pub fn set_focus(&mut self, x: f64, y: f64, strength: f64) {
+        self.focus_x = x.clamp(0.0, 1.0);
+        self.focus_y = y.clamp(0.0, 1.0);
+        self.focus_strength = strength.clamp(0.0, 1.0);
+    }
+
+    pub fn set_form_state(&mut self, state: u32) {
+        self.target_form_state = (state.min(4)) as f64;
+    }
+
+    pub fn set_form_intensity(&mut self, intensity: f64) {
+        self.target_form_intensity = intensity.clamp(0.0, 1.0);
+    }
+
+    pub fn set_doc_state(&mut self, state: u32) {
+        self.target_doc_state = (state.min(3)) as f64;
+    }
+
+    pub fn set_reveal(&mut self, progress: f64) {
+        self.target_reveal = progress.clamp(0.0, 1.0);
+    }
+
     pub fn render(&mut self, time_ms: f64) -> Result<u32, JsValue> {
         if self.disposed || self.width <= 0.0 || self.height <= 0.0 {
             return Ok(0);
@@ -288,14 +240,22 @@ impl SystemsFieldRenderer {
         if self.frame_count == 0 {
             self.theme = self.target_theme;
             self.page_phase = self.target_page_phase;
+            self.form_state = self.target_form_state;
+            self.form_intensity = self.target_form_intensity;
+            self.doc_state = self.target_doc_state;
+            self.reveal = self.target_reveal;
         } else {
             self.theme = mix(self.theme, self.target_theme, 0.075);
             self.page_phase = mix(self.page_phase, self.target_page_phase, 0.08);
+            self.form_state = mix(self.form_state, self.target_form_state, 0.14);
+            self.form_intensity = mix(self.form_intensity, self.target_form_intensity, 0.18);
+            self.doc_state = mix(self.doc_state, self.target_doc_state, 0.12);
+            self.reveal = mix(self.reveal, self.target_reveal, 0.11);
         }
         self.draw(time_ms)?;
         self.last_render_ms = js_sys::Date::now() - started;
         self.frame_count = self.frame_count.wrapping_add(1);
-        Ok(self.nodes.len() as u32)
+        Ok(self.particles.len() as u32)
     }
 
     pub fn metrics(&self) -> Result<JsValue, JsValue> {
@@ -305,224 +265,336 @@ impl SystemsFieldRenderer {
         Reflect::set(
             &object,
             &"nodeCount".into(),
-            &(self.nodes.len() as u32).into(),
+            &(self.particles.len() as u32).into(),
         )?;
         Reflect::set(&object, &"renderMs".into(), &self.last_render_ms.into())?;
         Reflect::set(&object, &"theme".into(), &self.theme.into())?;
         Reflect::set(&object, &"pagePhase".into(), &self.page_phase.into())?;
+        Reflect::set(&object, &"splitProgress".into(), &self.split_progress.into())?;
         Ok(object.into())
     }
 
     pub fn dispose(&mut self) {
         self.disposed = true;
-        self.nodes.clear();
-        self.gates.clear();
+        self.particles.clear();
         self.context.clear_rect(0.0, 0.0, self.width, self.height);
     }
 }
 
 impl SystemsFieldRenderer {
-    fn generate_layout(&mut self) {
-        let spacing = match self.quality {
-            1 => (self.width / 8.0).clamp(92.0, 140.0),
-            2 => (self.width / 11.0).clamp(68.0, 112.0),
-            _ => (self.width / 14.0).clamp(52.0, 92.0),
-        };
-        let cols = (self.width / spacing).ceil() as u32 + 3;
-        let rows = (self.height / spacing).ceil() as u32 + 3;
-        let mut rng = Rng::new(self.seed ^ (self.quality * 0x9e37_79b9) ^ cols ^ (rows << 8));
-
-        self.nodes.clear();
-        self.nodes.reserve((cols * rows) as usize);
-        for row in 0..rows {
-            for col in 0..cols {
-                let jitter_x = (rng.next() - 0.5) * spacing * 0.24;
-                let jitter_y = (rng.next() - 0.5) * spacing * 0.2;
-                let x = col as f64 * spacing - spacing + jitter_x;
-                let y = row as f64 * spacing - spacing + jitter_y;
-                self.nodes.push(Node {
-                    x_norm: x / self.width.max(1.0),
-                    y_norm: y / self.height.max(1.0),
-                    drift: rng.next() * TAU,
-                    pulse: rng.next() * TAU,
-                });
-            }
+    fn particle_count(&self) -> usize {
+        match self.quality {
+            1 => 160,
+            2 => 300,
+            _ => 480,
         }
+    }
 
-        self.gates.clear();
-        for index in 0..(3 + self.quality) {
-            self.gates.push(Gate {
-                x_norm: 0.16 + rng.next() * 0.72,
-                y_norm: 0.14 + rng.next() * 0.62,
-                width: 46.0 + rng.next() * 54.0,
-                phase: index as f64 * 0.77 + rng.next() * TAU,
+    fn seed_particles(&mut self) {
+        let count = self.particle_count();
+        let mut rng = Rng::new(self.seed ^ (self.quality * 0x9e37_79b9));
+        self.particles.clear();
+        self.particles.reserve(count);
+        for _ in 0..count {
+            let x = rng.next();
+            let y = rng.next();
+            self.particles.push(Particle {
+                x,
+                y,
+                prev_x: x,
+                prev_y: y,
+                speed: 0.55 + rng.next() * 0.85,
+                tint: rng.next(),
             });
         }
     }
 
-    fn draw(&self, time_ms: f64) -> Result<(), JsValue> {
-        let t = time_ms * 0.001;
-        let career = phase_weight(self.page_phase, PHASE_CAREER);
-        let projects = phase_weight(self.page_phase, PHASE_PROJECTS);
-        let contact = phase_weight(self.page_phase, PHASE_CONTACT);
-        let pulse_speed = 1.0 - contact * 0.34;
-        let alpha_scale = (1.0 - contact * 0.18) * mix(1.0, 1.22, self.theme);
-        let route_diagonal = projects * 34.0;
-        let vertical_drift = career * 24.0;
-        let pointer_screen_x = self.pointer_x * self.width;
-        let pointer_screen_y = self.pointer_y * self.height;
-        let ripple_phase = (t * 1.45).sin() * 0.5 + 0.5;
-
-        self.context.clear_rect(0.0, 0.0, self.width, self.height);
-        self.context.set_line_cap("round");
-
-        let wake = self.context.create_radial_gradient(
-            pointer_screen_x,
-            pointer_screen_y,
-            0.0,
-            pointer_screen_x,
-            pointer_screen_y,
-            260.0 + ripple_phase * 90.0,
-        )?;
-        wake.add_color_stop(
-            0.0,
-            &color_rgba((47, 107, 255), (31, 95, 255), 0.18, self.theme),
-        )?;
-        wake.add_color_stop(
-            0.42,
-            &color_rgba((129, 222, 190), (0, 126, 118), 0.08, self.theme),
-        )?;
-        wake.add_color_stop(
-            1.0,
-            &color_rgba((47, 107, 255), (31, 95, 255), 0.0, self.theme),
-        )?;
-        self.context.set_fill_style_canvas_gradient(&wake);
-        self.context.fill_rect(0.0, 0.0, self.width, self.height);
-
-        for (index, node) in self.nodes.iter().enumerate() {
-            let phase = t * 0.46 * pulse_speed + node.drift;
-            let x = node.x_norm * self.width + phase.sin() * 9.0 + route_diagonal * 0.18;
-            let y = node.y_norm * self.height + phase.cos() * 7.0 + vertical_drift;
-            let pointer_dx = x / self.width.max(1.0) - self.pointer_x;
-            let pointer_dy = y / self.height.max(1.0) - self.pointer_y;
-            let pointer_distance = (pointer_dx * pointer_dx + pointer_dy * pointer_dy).sqrt();
-            let pointer_pull = (-(pointer_distance * pointer_distance) * 34.0).exp();
-            let ripple = (1.0 - (pointer_distance * 5.2 - ripple_phase).abs()).clamp(0.0, 1.0);
-            let wake_strength = (pointer_pull * 0.82 + ripple * 0.42).clamp(0.0, 1.0);
-            let pulse = ((t * 1.28 * pulse_speed + node.pulse).sin() + 1.0) * 0.5;
-
-            if let Some(next) = self.nodes.get(index + 1) {
-                let is_same_band = (next.y_norm - node.y_norm).abs() < 0.12;
-                if is_same_band {
-                    let nx = next.x_norm * self.width + phase.sin() * 5.0 + route_diagonal;
-                    let ny = next.y_norm * self.height + (phase + 0.8).cos() * 5.0 + vertical_drift;
-                    let alpha = (0.07 + wake_strength * 0.24 + pulse * 0.046) * alpha_scale;
-                    self.context.set_stroke_style_str(&color_rgba(
-                        (105, 151, 255),
-                        (16, 73, 184),
-                        alpha,
-                        self.theme,
-                    ));
-                    self.context.set_line_width(0.9 + wake_strength * 0.85);
-                    self.context.begin_path();
-                    self.context.move_to(x, y);
-                    self.context.line_to(nx, ny);
-                    self.context.stroke();
-                }
-            }
-
-            if projects > 0.08 && index % 5 == 0 {
-                let alpha = (0.04 + wake_strength * 0.11) * projects * alpha_scale;
-                self.context.set_stroke_style_str(&color_rgba(
-                    (129, 222, 190),
-                    (0, 126, 118),
-                    alpha,
-                    self.theme,
-                ));
-                self.context.set_line_width(0.9 + projects * 0.35);
-                self.context.begin_path();
-                self.context.move_to(x, y);
-                self.context.line_to(x + route_diagonal * 1.8, y + 42.0);
-                self.context.stroke();
-            }
-
-            if wake_strength > 0.18 && index % 3 == 0 {
-                let alpha = wake_strength * 0.16 * alpha_scale;
-                self.context.set_stroke_style_str(&color_rgba(
-                    (255, 205, 118),
-                    (145, 82, 18),
-                    alpha,
-                    self.theme,
-                ));
-                self.context.set_line_width(0.8 + wake_strength * 0.45);
-                self.context.begin_path();
-                self.context.move_to(x, y);
-                self.context.line_to(
-                    pointer_screen_x + (x - pointer_screen_x) * 0.18,
-                    pointer_screen_y + (y - pointer_screen_y) * 0.18,
-                );
-                self.context.stroke();
-            }
-
-            let radius = 0.85 + wake_strength * 2.75 + pulse * 0.5;
-            let node_alpha = (0.2 + wake_strength * 0.52) * alpha_scale;
-            self.context.set_fill_style_str(&color_rgba(
-                (233, 242, 255),
-                (8, 35, 77),
-                node_alpha,
-                self.theme,
-            ));
-            self.context.begin_path();
-            self.context.arc(x, y, radius, 0.0, TAU)?;
-            self.context.fill();
-        }
-
-        for gate in &self.gates {
-            let sweep = ((t * 0.72 * pulse_speed + gate.phase).sin() + 1.0) * 0.5;
-            let x = gate.x_norm * self.width;
-            let y = gate.y_norm * self.height + vertical_drift * 0.6;
-            let width = gate.width + sweep * 28.0;
-            self.context.set_stroke_style_str(&color_rgba(
-                (255, 205, 118),
-                (145, 82, 18),
-                (0.15 + sweep * 0.16) * alpha_scale,
-                self.theme,
-            ));
-            self.context.set_line_width(1.15);
-            self.context.stroke_rect(x, y, width, 10.0);
-            self.context.set_fill_style_str(&color_rgba(
-                (255, 205, 118),
-                (145, 82, 18),
-                (0.07 + sweep * 0.09) * alpha_scale,
-                self.theme,
-            ));
-            self.context.fill_rect(x, y, width * sweep, 10.0);
-        }
-
-        self.draw_vignette()
+    fn form_sending(&self) -> f64 {
+        phase_weight(self.form_state, FORM_SENDING)
     }
 
-    fn draw_vignette(&self) -> Result<(), JsValue> {
+    fn form_error(&self) -> f64 {
+        phase_weight(self.form_state, FORM_ERROR)
+    }
+
+    fn form_success(&self) -> f64 {
+        phase_weight(self.form_state, FORM_SUCCESS)
+    }
+
+    fn form_focus(&self) -> f64 {
+        phase_weight(self.form_state, FORM_FOCUS)
+    }
+
+    fn doc_loading(&self) -> f64 {
+        phase_weight(self.doc_state, DOC_LOADING)
+    }
+
+    fn doc_error(&self) -> f64 {
+        phase_weight(self.doc_state, DOC_ERROR)
+    }
+
+    fn draw(&mut self, time_ms: f64) -> Result<(), JsValue> {
+        let t = time_ms * 0.001;
+        let career = phase_weight(self.page_phase, PHASE_CAREER);
+        let contact = phase_weight(self.page_phase, PHASE_CONTACT);
+        let boot_alpha = mix(0.25, 1.0, self.boot_progress);
+        let split_left = mix(1.0, 0.42, self.split_progress);
+        let split_pour = self.split_progress;
+
+        let accent_blue = (47.0, 107.0, 255.0);
+        let accent_cool = (58.0, 120.0, 220.0);
+        let accent_warm = (255.0, 178.0, 92.0);
+        let accent_error = (255.0, 120.0, 88.0);
+
+        let mut accent_r = mix(accent_blue.0, accent_cool.0, career * 0.65);
+        let mut accent_g = mix(accent_blue.1, accent_cool.1, career * 0.65);
+        let mut accent_b = mix(accent_blue.2, accent_cool.2, career * 0.65);
+        accent_r = mix(accent_r, accent_warm.0, contact * 0.55);
+        accent_g = mix(accent_g, accent_warm.1, contact * 0.55);
+        accent_b = mix(accent_b, accent_warm.2, contact * 0.55);
+        accent_r = mix(accent_r, accent_error.0, self.form_error() * 0.45);
+        accent_g = mix(accent_g, accent_error.1, self.form_error() * 0.45);
+        accent_b = mix(accent_b, accent_error.2, self.form_error() * 0.45);
+
+        let sending_pulse = if self.form_sending() > 0.05 {
+            1.0 + (t * 4.0).sin() * 0.22 * self.form_sending()
+        } else {
+            1.0
+        };
+
+        let success_fade_boost = self.form_success() * 0.06;
+        let reveal_lift = self.reveal * 0.85;
+
+        // Ink-in-glass trails: resume = longer (lower fade), contact/success = shorter smear.
+        let mut fade_alpha = mix(0.11, 0.08, self.theme) * boot_alpha;
+        fade_alpha += career * 0.015;
+        fade_alpha -= contact * 0.012;
+        fade_alpha += success_fade_boost;
+        fade_alpha -= self.doc_loading() * 0.018;
+        fade_alpha = fade_alpha.clamp(0.06, 0.22);
+
+        self.context.set_fill_style_str(&color_rgba(
+            (4, 7, 10),
+            (244, 247, 252),
+            fade_alpha,
+            self.theme,
+        ));
+        self.context.fill_rect(0.0, 0.0, self.width, self.height);
+
+        let pointer_x = self.pointer_x;
+        let pointer_y = self.pointer_y;
+        let focus_x = self.focus_x;
+        let focus_y = self.focus_y;
+        let focus_strength = self.focus_strength;
+        let intensity = self.form_intensity;
+        let width = self.width;
+        let height = self.height;
+        let mut rng = Rng::new(self.seed ^ (self.frame_count as u32).wrapping_mul(0x85eb_ca6b));
+
+        self.context.set_line_cap("round");
+
+        let speed_scale_base = mix(0.00145, 0.00115, career);
+        let speed_scale = speed_scale_base * sending_pulse;
+        let form_focus_w = self.form_focus();
+        let doc_dim = 1.0 - self.doc_loading() * 0.35;
+
+        for particle in &mut self.particles {
+            let nx = particle.x;
+            let ny = particle.y;
+
+            if self.split_progress > 0.02 && nx > split_left + 0.02 {
+                respawn_particle_splash(particle, &mut rng, split_left);
+                continue;
+            }
+
+            let mut angle = flow_angle(nx, ny, t);
+            // Pour motion toward the detail pane as the split opens.
+            angle += split_pour * 0.38;
+
+            let pdx = nx - pointer_x;
+            let pdy = ny - pointer_y;
+            let pointer_dist = (pdx * pdx + pdy * pdy).sqrt();
+            let pointer_pull = (-pointer_dist * pointer_dist * 28.0).exp();
+            if pointer_pull > 0.001 {
+                angle += (pointer_y - ny).atan2(pointer_x - nx) * pointer_pull * 0.85;
+            }
+
+            let fdx = nx - focus_x;
+            let fdy = ny - focus_y;
+            let focus_dist = (fdx * fdx + fdy * fdy).sqrt();
+            let focus_pull = (-focus_dist * focus_dist * 22.0).exp() * focus_strength;
+            if focus_pull > 0.001 {
+                angle += (focus_x - nx).atan2(focus_y - ny) * focus_pull * 1.4;
+            }
+
+            let speed = particle.speed
+                * speed_scale
+                * (1.0 + pointer_pull * 1.2 + focus_pull * 0.9 + intensity * 0.35);
+            let next_x = nx + angle.cos() * speed;
+            let next_y = ny + angle.sin() * speed;
+
+            let px = nx * width;
+            let py = ny * height;
+            let npx = next_x * width;
+            let npy = next_y * height;
+
+            let velocity = ((npx - px).powi(2) + (npy - py).powi(2)).sqrt();
+            let wake = (pointer_pull * 0.75 + focus_pull * 0.65 + intensity * 0.4 + form_focus_w * 0.15)
+                .clamp(0.0, 1.0);
+            let mut line_alpha =
+                (0.035 + wake * 0.24 + velocity * 0.016 + particle.tint * 0.025) * boot_alpha * doc_dim;
+            line_alpha *= 1.0 + intensity * 0.35 + reveal_lift * 0.12;
+            let line_width = 0.55 + wake * 1.2 + velocity * 0.035 + intensity * 0.25;
+
+            let tint_mix = particle.tint * 0.3 + contact * 0.22 + career * 0.18;
+            let stroke = color_rgba(
+                (
+                    (accent_r * (1.0 - tint_mix) + 129.0 * tint_mix).round() as u8,
+                    (accent_g * (1.0 - tint_mix) + 222.0 * tint_mix).round() as u8,
+                    (accent_b * (1.0 - tint_mix) + 190.0 * tint_mix).round() as u8,
+                ),
+                (
+                    (accent_r * 0.35 + 16.0 * tint_mix).round() as u8,
+                    (accent_g * 0.35 + 73.0 * tint_mix).round() as u8,
+                    (accent_b * 0.35 + 184.0 * tint_mix).round() as u8,
+                ),
+                line_alpha,
+                self.theme,
+            );
+
+            self.context.set_stroke_style_str(&stroke);
+            self.context.set_line_width(line_width);
+            self.context.begin_path();
+            self.context.move_to(px, py);
+            self.context.line_to(npx, npy);
+            self.context.stroke();
+
+            particle.prev_x = nx;
+            particle.prev_y = ny;
+            particle.x = next_x;
+            particle.y = next_y;
+
+            if next_x < -0.04 || next_x > 1.04 || next_y < -0.04 || next_y > 1.04 {
+                respawn_particle_splash(particle, &mut rng, split_left);
+            }
+        }
+
+        // Pointer bloom — scales with split pour and form intensity.
+        let bloom_radius = (180.0 + split_pour * 90.0 + intensity * 70.0 + reveal_lift * 50.0)
+            + (t * 1.2).sin() * 32.0;
+        let bloom = self.context.create_radial_gradient(
+            pointer_x * width,
+            pointer_y * height,
+            0.0,
+            pointer_x * width,
+            pointer_y * height,
+            bloom_radius,
+        )?;
+        bloom.add_color_stop(
+            0.0,
+            &format!(
+                "rgba({}, {}, {}, {:.3})",
+                accent_r.round(),
+                accent_g.round(),
+                accent_b.round(),
+                (0.1 + self.form_focus() * 0.06 + intensity * 0.05) * boot_alpha
+            ),
+        )?;
+        bloom.add_color_stop(
+            0.55,
+            &color_rgba((129, 222, 190), (0, 126, 118), 0.035 * boot_alpha, self.theme),
+        )?;
+        bloom.add_color_stop(1.0, "rgba(0, 0, 0, 0)")?;
+        self.context.set_fill_style_canvas_gradient(&bloom);
+        self.context.fill_rect(0.0, 0.0, width, height);
+
+        // Contact pane warmth on the detail (right) side.
+        if contact > 0.05 || split_pour > 0.05 {
+            let pane_x = mix(width * 0.62, width * 0.78, split_pour);
+            let pane_bloom = self.context.create_radial_gradient(
+                pane_x,
+                height * 0.48,
+                0.0,
+                pane_x,
+                height * 0.48,
+                width * 0.42,
+            )?;
+            pane_bloom.add_color_stop(
+                0.0,
+                &format!(
+                    "rgba({}, {}, {}, {:.3})",
+                    accent_warm.0.round(),
+                    accent_warm.1.round(),
+                    accent_warm.2.round(),
+                    (0.04 + contact * 0.07 + split_pour * 0.05) * boot_alpha
+                ),
+            )?;
+            pane_bloom.add_color_stop(1.0, "rgba(0, 0, 0, 0)")?;
+            self.context.set_fill_style_canvas_gradient(&pane_bloom);
+            self.context.fill_rect(0.0, 0.0, width, height);
+        }
+
+        // PDF loading shimmer
+        if self.doc_loading() > 0.05 {
+            let shimmer = (t * 2.4).sin() * 0.5 + 0.5;
+            let cool = (
+                accent_cool.0.round() as u8,
+                accent_cool.1.round() as u8,
+                accent_cool.2.round() as u8,
+            );
+            self.context.set_fill_style_str(&color_rgba(
+                cool,
+                cool,
+                shimmer * 0.025 * self.doc_loading() * boot_alpha,
+                self.theme,
+            ));
+            self.context.fill_rect(0.0, 0.0, width, height);
+        }
+
+        if self.split_progress > 0.02 {
+            let divider_x = split_left * width;
+            self.context.set_fill_style_str(&format!(
+                "rgba({}, {}, {}, {:.3})",
+                accent_r.round(),
+                accent_g.round(),
+                accent_b.round(),
+                0.05 + self.split_progress * 0.14 + reveal_lift * 0.04
+            ));
+            self.context
+                .fill_rect(divider_x - 1.0, 0.0, 2.0 + self.split_progress * 2.5, height);
+        }
+
+        self.draw_vignette(accent_r, accent_g, accent_b)
+    }
+
+    fn draw_vignette(&self, accent_r: f64, accent_g: f64, accent_b: f64) -> Result<(), JsValue> {
+        let lift = self.reveal * 0.12;
         let vignette = self.context.create_radial_gradient(
-            self.width * 0.38,
-            self.height * 0.32,
-            self.width * 0.08,
+            self.width * 0.34,
+            self.height * 0.28,
+            self.width * (0.06 + lift),
             self.width * 0.5,
-            self.height * 0.52,
-            self.width.max(self.height) * 0.82,
+            self.height * 0.5,
+            self.width.max(self.height) * (0.88 - lift * 0.15),
         )?;
         let edge = color_rgba(
             (4, 7, 10),
             (16, 22, 29),
-            mix(0.2, 0.08, self.theme),
+            mix(0.28, 0.12, self.theme) - lift * 0.06,
             self.theme,
         );
         vignette.add_color_stop(
             0.0,
-            &color_rgba((47, 107, 255), (31, 95, 255), 0.02, self.theme),
+            &format!(
+                "rgba({}, {}, {}, {:.3})",
+                accent_r.round(),
+                accent_g.round(),
+                accent_b.round(),
+                mix(0.04, 0.02, self.theme) + lift
+            ),
         )?;
         vignette.add_color_stop(
-            0.5,
+            0.45,
             &color_rgba((21, 27, 34), (255, 255, 255), 0.0, self.theme),
         )?;
         vignette.add_color_stop(1.0, &edge)?;
@@ -532,30 +604,13 @@ impl SystemsFieldRenderer {
     }
 }
 
-#[wasm_bindgen]
-pub fn render_systems_field(
-    canvas: HtmlCanvasElement,
-    width: f64,
-    height: f64,
-    pointer_x_norm: f64,
-    pointer_y_norm: f64,
-    time_ms: f64,
-    render_options: u32,
-) -> Result<u32, JsValue> {
-    let quality = (render_options & 0b11).clamp(1, 3);
-    let dpr = web_sys::window()
-        .map(|window| window.device_pixel_ratio())
-        .unwrap_or(1.0)
-        .clamp(1.0, 1.75);
-
-    let mut renderer = SystemsFieldRenderer::new(canvas, 0x59a1_f17d, quality)?;
-    renderer.resize(width, height, dpr)?;
-    renderer.set_pointer(pointer_x_norm, pointer_y_norm);
-    renderer.set_theme(if render_options & 0b100 != 0 {
-        THEME_LIGHT
-    } else {
-        0
-    });
-    renderer.theme = renderer.target_theme;
-    renderer.render(time_ms)
+fn respawn_particle_splash(particle: &mut Particle, rng: &mut Rng, split_left: f64) {
+    // Bias respawn to the splash (left) side; pour toward the pane as split opens.
+    let max_x = (split_left - 0.06).clamp(0.12, 0.92);
+    particle.x = rng.next() * max_x;
+    particle.y = rng.next();
+    particle.prev_x = particle.x;
+    particle.prev_y = particle.y;
+    particle.speed = 0.55 + rng.next() * 0.85;
+    particle.tint = rng.next();
 }

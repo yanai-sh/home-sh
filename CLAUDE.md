@@ -4,12 +4,12 @@
 
 ## Cold-start essentials
 
-- **Bun monorepo** — Astro 6 SSR as a Cloudflare Worker with Static Assets + Rust/WASM (`apps/wasm/*`); `/api/contact`, `/api/telemetry/*`, **`/resume`/home resume** (pinned **`resume/`** git submodule → `sync:resume` → `resume.generated.json`), and **`/resume.pdf`** (Release proxy; **`RESUME_REPO_TOKEN`** for private **`yanai-sh/resume`** releases) on the site Worker (`DB` = D1 telemetry).
-- **Bun only** — `bun install`, `bun run`, `bun test`, `bunx`. No npm/yarn/pnpm. `.env` auto-loaded.
-- **Verify before claiming done:** `bun run verify` (= check → typecheck → test → build; mirrors CI). **`bun run smoke`** — Playwright smoke (`apps/site`).
+- **pnpm monorepo** — Hono + Vite 8 SSR as a Cloudflare Worker with Static Assets + Rust/WASM (`apps/wasm/*`); `/api/contact`, **`/resume.pdf`** (Release proxy; **`RESUME_REPO_TOKEN`**), on the site Worker. Toolchain: **VoidZero Vite+** (`vp`).
+- **pnpm + Vite+** — `pnpm install`, `pnpm run`, `vp check/test/build`. Node **22+** (`.node-version`).
+- **Verify before claiming done:** `pnpm run verify` (= sync:resume → check → test → build; mirrors CI). **`pnpm run smoke`** — Playwright smoke (`apps/site`). **Windows ARM64:** run **`pnpm run setup:wsl`** once, then all scripts use **WSL2** automatically.
 - **Polyglot tasks:** `just --list` (WASM, Workers, OpenTofu). Infra: **[infra/README.md](infra/README.md)**.
-- **CSS:** Panda CSS preset in `packages/ui-system` *and* `src/design/tokens.ts` → `:root` vars in `Layout.astro`. `dev`/`build` run `panda codegen` first.
-- **Path aliases** (`apps/site/tsconfig.json`; Vite mirrors `@resume/generated` in `astro.config.mjs`): `@/`, `@components/*`, `@layouts/*`, `@lib/*`, `@config/*`, `@resume/generated` → `content/resume.generated.json`.
-- **direnv** (`.envrc`): **`direnv allow`** → **`GIT_CONFIG_*`** scopes **Git** to **`yanai-sh`** on GitHub; **`GH_TOKEN`** from **`gh auth token -u yanai-sh`** when available. Cleared outside this repo. Restore default **`gh`** account elsewhere with **`gh auth switch -u <account>`**.
-- **Client scripts:** `*-client.ts` naming, loaded as `<script>` tags — never build-time imports.
+- **CSS:** Tailwind v4 + CSS custom properties in **`src/styles/global.css`**.
+- **Path aliases** (`apps/site/tsconfig.json`; `vite.config.ts`): `@/`, `@components/*`, `@views/*`, `@lib/*`, `@config/*`, `#content`, `@resume/generated` → `content/resume.generated.json`.
+- **direnv** (`.envrc`): **`direnv allow`** → **`GIT_CONFIG_*`** scopes **Git** to **`yanai-sh`** on GitHub; **`GH_TOKEN`** from **`gh auth token -u yanai-sh`** when available.
+- **Client scripts:** `*-client.ts` naming, loaded via Vite `?url` script tags.
 - **Lefthook `pre-push`** runs `verify`. Skip with `LEFTHOOK=0` (rare).

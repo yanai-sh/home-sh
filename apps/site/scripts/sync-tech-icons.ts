@@ -1,11 +1,10 @@
-#!/usr/bin/env bun
+#!/usr/bin/env tsx
 /**
- * Extract a fixed list of simple-icons SVGs into `src/icons/` so astro-icon
- * inlines them at build time. Done this way because the Cloudflare worker
- * runtime has no filesystem and astro-icon's iconify-pack lookup throws
- * "Unable to locate the 'simple-icons' icon set!" when used live.
+ * Extract a fixed list of simple-icons SVGs into `src/icons/` for build-time
+ * inlining in `lib/icons.tsx`. The Cloudflare Worker runtime has no filesystem,
+ * so icons must be vendored as static assets.
  *
- * Re-run from repo root: `bun apps/site/scripts/sync-tech-icons.ts`
+ * Re-run from repo root: `pnpm exec tsx apps/site/scripts/sync-tech-icons.ts`
  * (after adding names here; requires `@iconify-json/simple-icons` in the workspace).
  */
 import { mkdirSync, writeFileSync } from 'node:fs';

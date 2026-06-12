@@ -1,4 +1,4 @@
-import { z } from 'astro/zod';
+import { z } from 'zod';
 
 const Link = z.object({
   label: z.string(),

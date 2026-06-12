@@ -1,38 +1,29 @@
 {
-  "extends": "astro/tsconfigs/strict",
-  "exclude": ["public/wasm/**/*.js", "dist"],
   "compilerOptions": {
-    "plugins": [
-      {
-        "name": "@astrojs/ts-plugin"
-      }
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "@resume/generated": [
-        "../../content/resume.generated.json"
-      ],
-      "@components/*": [
-        "src/components/*"
-      ],
-      "@layouts/*": [
-        "src/layouts/*"
-      ],
-      "@lib/*": [
-        "src/lib/*"
-      ],
-      "@config/*": [
-        "src/config/*"
-      ],
-      "@/*": [
-        "src/*"
-      ]
-    },
-    "types": ["@astrojs/cloudflare", "bun", "node"],
-    "strict": true,
-    "skipLibCheck": true,
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "noEmit": true
-  }
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "types": ["vite/client", "@cloudflare/workers-types", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@resume/generated": ["../../content/resume.generated.json"],
+      "@components/*": ["src/components/*"],
+      "@views/*": ["src/views/*"],
+      "@lib/*": ["src/lib/*"],
+      "@config/*": ["src/config/*"],
+      "@/*": ["src/*"],
+      "#content": [".velite/index.d.ts", ".velite/index.js"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "velite.config.ts"],
+  "exclude": ["public/wasm/**/*.js", "dist", ".velite"]
 }
