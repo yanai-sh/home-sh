@@ -1,15 +1,15 @@
 {
   "name": "canvas",
-  "type": "module",
   "version": "0.1.0",
   "files": [
     "canvas_bg.wasm",
     "canvas.js",
     "canvas.d.ts"
   ],
-  "main": "canvas.js",
-  "types": "canvas.d.ts",
+  "type": "module",
   "sideEffects": [
     "./snippets/*"
-  ]
+  ],
+  "main": "canvas.js",
+  "types": "canvas.d.ts"
 }

@@ -25,6 +25,8 @@ export const contact = {
       sending: 'sending...',
       sent: 'sent - thanks',
       networkError: 'network error - try again',
+      invalidEmail: 'enter a valid email address',
+      missingFields: 'fill in name, email, and message',
     },
   },
 } as const;

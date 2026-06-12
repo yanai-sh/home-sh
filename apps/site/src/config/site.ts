@@ -18,6 +18,9 @@ export const SITE_DESCRIPTION =
 
 export const SITE_EMAIL = 'me@yanai.sh';
 
+/** Public source repository — linked from the splash figure caption. */
+export const SITE_SOURCE_URL = 'https://github.com/yanai-sh/home-sh';
+
 export const SITE_BRAND = {
   prefix: 'yanai',
   suffix: '.sh',

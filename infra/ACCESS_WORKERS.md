@@ -31,13 +31,13 @@ OpenTofu in **`infra/tofu/`** manages:
 4. **Discover UUIDs for `tofu import`** (token needs **Access: Applications and Policies → Read**):
 
    ```bash
-   bun run cf:list-access-apps
+   pnpm run cf:list-access-apps
    # optional filter (substring match on domain or name):
-   bun run cf:list-access-apps workers.dev
+   pnpm run cf:list-access-apps workers.dev
    ```
 
 5. **If apply fails** because the dashboard already created apps with the same hostnames, either:
-   - **Import** each application and the shared policy into state (IDs from Zero Trust → Access → Applications / Policies), or  
+   - **Import** each application and the shared policy into state (IDs from Zero Trust → Access → Applications / Policies), or
    - Remove the duplicate application in the dashboard once, then re-apply so Tofu owns it.
 
    Import shape (replace IDs from the dashboard / API):
@@ -58,14 +58,14 @@ Cloudflare may also show a single **“Cloudflare Workers Preview URLs”** appl
 
 ## CI — drift plan
 
-Workflow **`.github/workflows/infra-plan.yml`** runs **`tofu init` + `tofu plan`** when **`infra/tofu/**`** or **`infra/ACCESS_WORKERS.md`** changes.
+Workflow **`.github/workflows/infra-plan.yml`** runs **`tofu init` + `tofu plan`** when **`infra/tofu/**`** or **`infra/ACCESS_WORKERS.md`\*\* changes.
 
 Preferred: add the creds as GitHub **Environment** secrets (this repo uses environments as canonical). Fallback: repo-level Actions secrets.
 
-| Secret | Purpose |
-|--------|---------|
-| **`CLOUDFLARE_API_TOKEN`** | Same scoped token you use for deploys / API scripts |
-| **`CLOUDFLARE_ACCOUNT_ID`** | Account id (dashboard URL or Workers overview) |
+| Secret                      | Purpose                                             |
+| --------------------------- | --------------------------------------------------- |
+| **`CLOUDFLARE_API_TOKEN`**  | Same scoped token you use for deploys / API scripts |
+| **`CLOUDFLARE_ACCOUNT_ID`** | Account id (dashboard URL or Workers overview)      |
 
 If either is missing, the job **skips** plan with a warning (forks without secrets do not fail).
 

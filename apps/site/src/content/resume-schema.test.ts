@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test';
+import { expect, test } from 'vitest';
 import fallback from '../../../../content/resume.snapshot.json';
 import { ResumeSnapshotSchema } from './resume-schema';
 

@@ -1,17 +1,13 @@
 type OrderedEntry = {
-  data: {
-    order: number;
-  };
+  order: number;
 };
 
 type FeaturedProjectEntry = OrderedEntry & {
-  data: {
-    featured: boolean;
-  };
+  featured: boolean;
 };
 
 function byOrder<T extends OrderedEntry>(left: T, right: T) {
-  return left.data.order - right.data.order;
+  return left.order - right.order;
 }
 
 export function sortHomepageExperience<T extends OrderedEntry>(entries: readonly T[]) {
@@ -19,5 +15,5 @@ export function sortHomepageExperience<T extends OrderedEntry>(entries: readonly
 }
 
 export function featuredHomepageProjects<T extends FeaturedProjectEntry>(entries: readonly T[]) {
-  return entries.filter((entry) => entry.data.featured).sort(byOrder);
+  return entries.filter((entry) => entry.featured).sort(byOrder);
 }

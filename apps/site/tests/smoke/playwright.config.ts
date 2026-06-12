@@ -2,7 +2,7 @@ import { defineConfig } from 'playwright/test';
 import { getPublicTurnstileSiteKey } from './smoke-worker-secrets';
 
 // `cwd` defaults to the config file's directory (apps/site/tests/smoke/).
-// `../..` resolves to apps/site so `bun run preview` can find package.json.
+// `../..` resolves to apps/site so `pnpm run preview` can find package.json.
 const publicTurnstileSiteKey = getPublicTurnstileSiteKey();
 
 const accessClientId = process.env.CF_ACCESS_CLIENT_ID?.trim() ?? '';
@@ -31,14 +31,12 @@ export default defineConfig({
         // `PUBLIC_TURNSTILE_SITE_KEY` at build time: shell / `apps/site/.env`, or
         // `public_turnstile_site_key` in `infra/secrets/worker-secrets.local.json`
         // (same file optional Bitwarden import writes); see `smoke-worker-secrets.ts`.
-        command: 'bun run build && bun run preview',
+        command: 'pnpm build && pnpm preview',
         cwd: '../..',
         url: 'http://localhost:4321/',
         env: {
           ...process.env,
-          ...(publicTurnstileSiteKey
-            ? { PUBLIC_TURNSTILE_SITE_KEY: publicTurnstileSiteKey }
-            : {}),
+          ...(publicTurnstileSiteKey ? { PUBLIC_TURNSTILE_SITE_KEY: publicTurnstileSiteKey } : {}),
         },
         reuseExistingServer: false,
         timeout: 120_000,

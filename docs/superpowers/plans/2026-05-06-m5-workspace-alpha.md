@@ -17,7 +17,7 @@
 - `apps/site/src/pages/workspace/index.astro` renders all five panes server-side; pane navigation is a sticky sidebar (collapsing to a horizontal scroll on mobile <860px).
 - `apps/site/src/lib/workspace-wip-client.ts` mounts: SAB writers (pointermove → mouse_x/y, scroll → scroll_vx, visibility → tick_target), one-shot canvas render via `render_lattice`, search modal client (Web Worker + WASM nucleo), and pane navigation (IntersectionObserver → aria-current; hashchange → aria-current).
 - `apps/site/src/lib/workspace-search-worker.ts` runs the WASM search index in a Worker; hand-rolled message-id correlator (no Comlink — kept as-is per ROADMAP's "where it improves the experience" qualifier).
-- `apps/wasm/bridge/src/lib.rs` defines a 32-byte `SharedState` struct (mouse_x, mouse_y, scroll_vx, tilt_x, tilt_y, tick_target, frame_counter, _padding); JS reads/writes it via `Float32Array`/`Uint32Array` views in `apps/site/src/lib/shared-state.ts`.
+- `apps/wasm/bridge/src/lib.rs` defines a 32-byte `SharedState` struct (mouse_x, mouse_y, scroll_vx, tilt_x, tilt_y, tick_target, frame_counter, \_padding); JS reads/writes it via `Float32Array`/`Uint32Array` views in `apps/site/src/lib/shared-state.ts`.
 - `apps/wasm/canvas/src/lib.rs` exports `render_lattice(canvas, width, height) -> Result<u32, JsValue>` using lyon's stroke tessellator; static lean (`((row + col) * 0.73).sin() * 10.0`).
 - `apps/site/public/_headers` scopes COOP/COEP to `/workspace/*` only; `apps/site/src/middleware.ts` mirrors the same condition for SSR responses.
 - WASM artifacts (`apps/site/public/wasm/{bridge,canvas,search}/`) are **committed** to git, not built in CI; rebuild via `just wasm-build` after Rust changes.
@@ -25,22 +25,24 @@
 
 **M5 acceptance criteria (ROADMAP.md:440-446) and where each lands:**
 
-| # | Criterion | Status pre-M5 | Closed by |
-|---|---|---|---|
-| 1 | Deep links like `/workspace#stack` open the right pane | ✓ (browser fragment-nav) | covered by smoke (Task 5) |
-| 2 | Keyboard users can enter, navigate, scroll inside a pane, and exit | ✗ (no focus management on hash nav) | Task 2 + smoke (Task 5) |
-| 3 | Reduced-motion users get full content without animated canvas requirements | partial (canvas hidden but pane-grid stays 2-col) | Task 1 + smoke (Task 5) |
-| 4 | WASM load failure leaves readable content and a visible fallback | ✓ (status strip + `<p>` fallback already present) | covered by smoke (Task 5) |
-| 5 | COOP/COEP headers appear on `/workspace` | ✓ (closed in M2) | covered by smoke (Task 5) |
+| #   | Criterion                                                                  | Status pre-M5                                     | Closed by                 |
+| --- | -------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------- |
+| 1   | Deep links like `/workspace#stack` open the right pane                     | ✓ (browser fragment-nav)                          | covered by smoke (Task 5) |
+| 2   | Keyboard users can enter, navigate, scroll inside a pane, and exit         | ✗ (no focus management on hash nav)               | Task 2 + smoke (Task 5)   |
+| 3   | Reduced-motion users get full content without animated canvas requirements | partial (canvas hidden but pane-grid stays 2-col) | Task 1 + smoke (Task 5)   |
+| 4   | WASM load failure leaves readable content and a visible fallback           | ✓ (status strip + `<p>` fallback already present) | covered by smoke (Task 5) |
+| 5   | COOP/COEP headers appear on `/workspace`                                   | ✓ (closed in M2)                                  | covered by smoke (Task 5) |
 
 Animated canvas is in scope under "Wire Rust/WASM canvas into the workspace background or pane preview" (line 435). Tasks 3+4 cover it.
 
 **What's NOT in this plan:**
+
 - M6 telemetry (live counters in the telemetry pane) — separate plan.
 - Comlink refactor of the search worker — current hand-rolled client is ~40 lines and works; ROADMAP qualifier "where it improves the experience" gives latitude.
 - Horizontal pane layout — current vertical-stack-with-sticky-sidebar is acceptance-compliant.
 
 **Conventions:**
+
 - File paths are absolute from repo root (`apps/site/...`, `apps/wasm/...`).
 - Each step is one action, ≤5 minutes.
 - Smoke tests run via `bun run --cwd apps/site smoke` after `bun run --cwd apps/site build`.
@@ -51,6 +53,7 @@ Animated canvas is in scope under "Wire Rust/WASM canvas into the workspace back
 ### Task 1: Reduced-motion layout collapse (CSS only)
 
 **Files:**
+
 - Modify: `apps/site/src/pages/workspace/index.astro:663-667` (the existing `@media (prefers-reduced-motion: reduce)` block)
 
 **Why:** ROADMAP M5 acceptance criterion #3 requires reduced-motion users to "get full content without animated canvas requirements." The current rule hides the `<canvas>` but `pane--canvas` keeps `grid-template-columns: minmax(0, 0.88fr) minmax(18rem, 1fr)`, so the right column is empty and the prose column is needlessly cramped. Collapse to single column on reduced-motion.
@@ -72,27 +75,27 @@ pkill -f 'astro preview'
 In `apps/site/src/pages/workspace/index.astro`, find the existing block:
 
 ```css
-  @media (prefers-reduced-motion: reduce) {
-    .canvas-frame canvas {
-      display: none;
-    }
+@media (prefers-reduced-motion: reduce) {
+  .canvas-frame canvas {
+    display: none;
   }
+}
 ```
 
 Replace it with:
 
 ```css
-  @media (prefers-reduced-motion: reduce) {
-    .canvas-frame canvas {
-      display: none;
-    }
-    .canvas-frame {
-      display: none;
-    }
-    .pane--canvas {
-      grid-template-columns: 1fr;
-    }
+@media (prefers-reduced-motion: reduce) {
+  .canvas-frame canvas {
+    display: none;
   }
+  .canvas-frame {
+    display: none;
+  }
+  .pane--canvas {
+    grid-template-columns: 1fr;
+  }
+}
 ```
 
 The `.canvas-frame { display: none }` rule removes the empty placeholder block entirely (the `<p>` fallback inside is informational only — removing it on reduced-motion is intentional, since the prose column already explains the projects).
@@ -120,15 +123,18 @@ git commit -m "fix(workspace): collapse projects pane to single column on reduce
 ### Task 2: Pane focus management on hash navigation
 
 **Files:**
+
 - Modify: `apps/site/src/pages/workspace/index.astro` (add `tabindex="-1"` to each `<h2>` inside a pane, so it's programmatically focusable)
 - Modify: `apps/site/src/lib/workspace-wip-client.ts:319-350` (`mountPaneNavigation` — focus the pane heading on `hashchange` and on initial-load deep-link)
 
 **Why:** ROADMAP M5 acceptance criterion #2 requires "Keyboard users can enter, navigate, scroll inside a pane, and exit." Currently:
+
 - Clicking a pane-nav link uses default `<a href="#stack">` behavior — the browser scrolls to `#stack` but **does not** move focus into the pane (focus stays on the link).
 - A screen-reader user clicking a nav link doesn't get the pane heading announced.
 - Tab order from the nav link goes back to the next nav link, not into pane content.
 
 Fix: on `hashchange` (and initial load when `location.hash` is present), focus the pane's heading. This:
+
 - Moves the focus ring into the pane, so subsequent Tab presses traverse pane content.
 - Announces the heading to screen readers.
 - "Exit" works via Shift+Tab back into the nav, or by clicking another nav link (idiomatic web-app pattern; no special exit key needed).
@@ -165,13 +171,13 @@ In `apps/site/src/lib/workspace-wip-client.ts`, replace the entire `mountPaneNav
 
 ```ts
 function mountPaneNavigation(): void {
-  const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-pane-link]')];
-  const panes = [...document.querySelectorAll<HTMLElement>('[data-pane]')];
+  const links = [...document.querySelectorAll<HTMLAnchorElement>("[data-pane-link]")];
+  const panes = [...document.querySelectorAll<HTMLElement>("[data-pane]")];
   if (links.length === 0 || panes.length === 0) return;
 
   const setActive = (id: string) => {
     for (const link of links) {
-      link.setAttribute('aria-current', String(link.dataset.paneLink === id));
+      link.setAttribute("aria-current", String(link.dataset.paneLink === id));
     }
   };
 
@@ -188,7 +194,7 @@ function mountPaneNavigation(): void {
     // focusing earlier can race the scroll and leave the heading off-screen.
     requestAnimationFrame(() => focusPaneHeading(id));
   } else {
-    setActive(panes[0]?.id ?? '');
+    setActive(panes[0]?.id ?? "");
   }
 
   const observer = new IntersectionObserver(
@@ -200,12 +206,12 @@ function mountPaneNavigation(): void {
         setActive(visible.target.id);
       }
     },
-    { rootMargin: '-24% 0px -58% 0px', threshold: [0.12, 0.4, 0.72] },
+    { rootMargin: "-24% 0px -58% 0px", threshold: [0.12, 0.4, 0.72] },
   );
 
   for (const pane of panes) observer.observe(pane);
 
-  window.addEventListener('hashchange', () => {
+  window.addEventListener("hashchange", () => {
     const id = location.hash.slice(1);
     setActive(id);
     focusPaneHeading(id);
@@ -214,6 +220,7 @@ function mountPaneNavigation(): void {
 ```
 
 Two changes from the previous version:
+
 1. `focusPaneHeading(id)` called on initial-load deep-link (deferred via `requestAnimationFrame` so the browser's fragment-scroll lands first) and on every `hashchange`.
 2. `preventScroll: true` keeps focus from re-scrolling on top of the browser's own scroll — without it, `.focus()` would scroll the heading to a slightly different position than the browser's fragment-scroll, causing a visible jump.
 
@@ -244,6 +251,7 @@ git commit -m "feat(workspace): focus pane heading on hash navigation (a11y)"
 ### Task 3: Rust canvas — animation parameters
 
 **Files:**
+
 - Modify: `apps/wasm/canvas/src/lib.rs` (extend `render_lattice` signature with mouse + time params; perturb the lattice using them)
 - Regenerate: `apps/site/public/wasm/canvas/canvas.{js,d.ts,_bg.wasm,_bg.wasm.d.ts,package.json}` (committed artifacts produced by `wasm-pack`)
 
@@ -365,6 +373,7 @@ pub fn render_lattice(
 ```
 
 Three substantive changes vs the previous body:
+
 1. Signature gains `mouse_x_norm: f64, mouse_y_norm: f64, time_ms: f64`.
 2. `lean` now blends a time-phased base (`time_phase`) with a Gaussian-falloff mouse pull (`mouse_falloff` = `e^(-r²·0.04)`), so nodes near the pointer lean more.
 3. Old constant `((row + col) * 0.73).sin() * 10.0` becomes `((row + col) * 0.73 + time_phase).sin() * (10.0 + mouse_falloff * 18.0)`.
@@ -406,6 +415,7 @@ git commit -m "feat(canvas): render_lattice accepts mouse + time params for anim
 ### Task 4: JS rAF loop reading SAB, IntersectionObserver-gated
 
 **Files:**
+
 - Modify: `apps/site/src/lib/workspace-wip-client.ts:1-13` (extend `CanvasModule` interface for the new signature)
 - Modify: `apps/site/src/lib/workspace-wip-client.ts:124-153` (`mountCanvas` — replace static draw + ResizeObserver with a SAB-driven rAF loop, gated by IntersectionObserver)
 - Modify: `apps/site/src/lib/workspace-wip-client.ts:65-77` (`mountWorkspaceWip` — pass SAB writers from `mountSharedState` into `mountCanvas` so the canvas can read them)
@@ -561,14 +571,14 @@ async function mountSharedState(
 At the end of the `try` block (after the `visibilitychange` listener registration), add:
 
 ```ts
-    return writers;
+return writers;
 ```
 
 In the `catch` block, change `setStatus(targets.sab, 'off');` to:
 
 ```ts
-    setStatus(targets.sab, 'off');
-    return undefined;
+setStatus(targets.sab, "off");
+return undefined;
 ```
 
 The complete updated function:
@@ -576,27 +586,27 @@ The complete updated function:
 ```ts
 async function mountSharedState(
   targets: StatusTargets,
-): Promise<import('@lib/shared-state').SharedStateWriters | undefined> {
+): Promise<import("@lib/shared-state").SharedStateWriters | undefined> {
   try {
     const { writers } = createSharedState();
-    const moduleUrl = new URL('/wasm/bridge/bridge.js', globalThis.location.href).href;
+    const moduleUrl = new URL("/wasm/bridge/bridge.js", globalThis.location.href).href;
     const bridge = (await import(/* @vite-ignore */ moduleUrl)) as unknown as BridgeModule;
     await bridge.default();
-    if (bridge.shared_state_bytes() !== 32 || bridge.shared_state_offset('frame_counter') !== 24) {
-      throw new Error('bridge WASM wire format does not match the JS SharedArrayBuffer view');
+    if (bridge.shared_state_bytes() !== 32 || bridge.shared_state_offset("frame_counter") !== 24) {
+      throw new Error("bridge WASM wire format does not match the JS SharedArrayBuffer view");
     }
-    setStatus(targets.sab, 'ready');
+    setStatus(targets.sab, "ready");
 
     let lastX = window.scrollX;
     window.addEventListener(
-      'pointermove',
+      "pointermove",
       (event) => {
         writers.setMouse(event.clientX, event.clientY);
       },
       { passive: true },
     );
     window.addEventListener(
-      'scroll',
+      "scroll",
       () => {
         const vx = window.scrollX - lastX;
         lastX = window.scrollX;
@@ -604,14 +614,14 @@ async function mountSharedState(
       },
       { passive: true },
     );
-    document.addEventListener('visibilitychange', () => {
+    document.addEventListener("visibilitychange", () => {
       writers.setTickTarget(
-        document.hidden ? 1 : matchMedia('(pointer: coarse)').matches ? 30 : 60,
+        document.hidden ? 1 : matchMedia("(pointer: coarse)").matches ? 30 : 60,
       );
     });
     return writers;
   } catch {
-    setStatus(targets.sab, 'off');
+    setStatus(targets.sab, "off");
     return undefined;
   }
 }
@@ -624,28 +634,26 @@ In `apps/site/src/lib/workspace-wip-client.ts`, replace the entire existing `mou
 ```ts
 async function mountCanvas(
   targets: StatusTargets,
-  sharedStatePromise: Promise<
-    import('@lib/shared-state').SharedStateWriters | undefined
-  >,
+  sharedStatePromise: Promise<import("@lib/shared-state").SharedStateWriters | undefined>,
 ): Promise<void> {
-  const canvas = document.getElementById('ws-rust-canvas');
+  const canvas = document.getElementById("ws-rust-canvas");
   if (!(canvas instanceof HTMLCanvasElement)) return;
 
   // prefers-reduced-motion users get a single static render (or none if the
   // CSS rule has hidden the canvas entirely — `display: none` short-circuits
   // getBoundingClientRect to width=0/height=0, which we guard below).
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let mod: CanvasModule;
   try {
-    const moduleUrl = new URL('/wasm/canvas/canvas.js', globalThis.location.href).href;
+    const moduleUrl = new URL("/wasm/canvas/canvas.js", globalThis.location.href).href;
     mod = (await import(/* @vite-ignore */ moduleUrl)) as unknown as CanvasModule;
     await mod.default();
-    setStatus(targets.wasm, 'ready');
+    setStatus(targets.wasm, "ready");
   } catch (error) {
-    console.error('canvas: WASM load failed', error);
-    setStatus(targets.wasm, 'error');
-    setStatus(targets.canvas, 'error');
+    console.error("canvas: WASM load failed", error);
+    setStatus(targets.wasm, "error");
+    setStatus(targets.canvas, "error");
     return;
   }
 
@@ -662,7 +670,7 @@ async function mountCanvas(
   // First paint so the canvas is never empty even before the rAF loop starts
   // (e.g. SAB unavailable, or pane briefly off-screen at mount).
   drawFrame(performance.now());
-  setStatus(targets.canvas, 'ready');
+  setStatus(targets.canvas, "ready");
 
   if (reducedMotion) return;
 
@@ -697,6 +705,7 @@ async function mountCanvas(
 ```
 
 Key behaviors:
+
 - WASM-load failure → status `error` + early return; no rAF scheduled. Pane remains readable (the `<p>` fallback was always visible).
 - SAB unavailable → loop still runs but `mxNorm`/`myNorm` are `0.5` (lattice stays centered). `setStatus(targets.canvas, 'ready')` still fires.
 - `prefers-reduced-motion: reduce` → one static render only, no loop.
@@ -732,6 +741,7 @@ git commit -m "feat(workspace): SAB-driven rAF canvas, gated by IntersectionObse
 ### Task 5: Playwright workspace.spec.ts
 
 **Files:**
+
 - Create: `apps/site/tests/smoke/workspace.spec.ts`
 
 **Why:** Locks in every M5 acceptance criterion as automated regression. ROADMAP M5 #1, #2, #3, #4, #5.
@@ -740,104 +750,104 @@ git commit -m "feat(workspace): SAB-driven rAF canvas, gated by IntersectionObse
 
 ```ts
 // apps/site/tests/smoke/workspace.spec.ts
-import { expect, test } from 'playwright/test';
+import { expect, test } from "playwright/test";
 
-const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:4321';
+const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:4321";
 
-test('deep link /workspace#stack opens stack pane in viewport', async ({ page }) => {
+test("deep link /workspace#stack opens stack pane in viewport", async ({ page }) => {
   await page.goto(`${BASE}/workspace#stack`);
   // Browser fragment-nav scrolls #stack into view; we assert the heading is on screen.
-  const heading = page.locator('#stack-title');
+  const heading = page.locator("#stack-title");
   await expect(heading).toBeInViewport();
 });
 
-test('deep link /workspace#stack focuses the stack heading', async ({ page }) => {
+test("deep link /workspace#stack focuses the stack heading", async ({ page }) => {
   await page.goto(`${BASE}/workspace#stack`);
   // Task 2 defers focus by one rAF; wait for it.
   await expect(async () => {
-    const focusedId = await page.evaluate(() => document.activeElement?.id ?? '');
-    expect(focusedId).toBe('stack-title');
+    const focusedId = await page.evaluate(() => document.activeElement?.id ?? "");
+    expect(focusedId).toBe("stack-title");
   }).toPass({ timeout: 2000 });
 });
 
-test('clicking a pane-nav link focuses the target heading', async ({ page }) => {
+test("clicking a pane-nav link focuses the target heading", async ({ page }) => {
   await page.goto(`${BASE}/workspace`);
   await page.click('a[data-pane-link="uses"]');
   await expect(async () => {
-    const focusedId = await page.evaluate(() => document.activeElement?.id ?? '');
-    expect(focusedId).toBe('uses-title');
+    const focusedId = await page.evaluate(() => document.activeElement?.id ?? "");
+    expect(focusedId).toBe("uses-title");
   }).toPass({ timeout: 2000 });
 });
 
-test('aria-current updates to the active pane on scroll', async ({ page }) => {
+test("aria-current updates to the active pane on scroll", async ({ page }) => {
   await page.goto(`${BASE}/workspace`);
-  await page.locator('#stack-title').scrollIntoViewIfNeeded();
+  await page.locator("#stack-title").scrollIntoViewIfNeeded();
   // IntersectionObserver fires async; allow it a beat.
-  await expect(page.locator('a[data-pane-link="stack"]')).toHaveAttribute(
-    'aria-current',
-    'true',
-    { timeout: 2000 },
-  );
+  await expect(page.locator('a[data-pane-link="stack"]')).toHaveAttribute("aria-current", "true", {
+    timeout: 2000,
+  });
 });
 
-test('runtime strip transitions wasm/sab/canvas/search out of pending', async ({ page }) => {
+test("runtime strip transitions wasm/sab/canvas/search out of pending", async ({ page }) => {
   await page.goto(`${BASE}/workspace`);
-  for (const item of ['wasm', 'sab', 'canvas', 'search']) {
+  for (const item of ["wasm", "sab", "canvas", "search"]) {
     const status = page.locator(`[data-wip-status="${item}"]`);
     // Each status is "pending" at SSR; M5 mount logic flips it to ready / error / off.
     await expect(status).not.toHaveText(/pending/i, { timeout: 5000 });
   }
 });
 
-test('reduced-motion: canvas frame is hidden, prose fills the projects pane', async ({ browser }) => {
-  const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+test("reduced-motion: canvas frame is hidden, prose fills the projects pane", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext({ reducedMotion: "reduce" });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/workspace#projects`);
   // The canvas-frame block has `display: none` under the Task 1 rule; child <canvas>
   // shouldn't be in the viewport even if the projects pane is.
-  const canvas = page.locator('#ws-rust-canvas');
+  const canvas = page.locator("#ws-rust-canvas");
   await expect(canvas).toBeHidden();
   // The prose column ("current build surface" heading) is on screen.
-  await expect(page.locator('#projects-title')).toBeInViewport();
+  await expect(page.locator("#projects-title")).toBeInViewport();
   await ctx.close();
 });
 
-test('WASM load failure: pane content remains readable, fallback visible', async ({ browser }) => {
+test("WASM load failure: pane content remains readable, fallback visible", async ({ browser }) => {
   // Block the canvas WASM module to simulate a failure.
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
-  await page.route('**/wasm/canvas/**', (route) => route.abort());
+  await page.route("**/wasm/canvas/**", (route) => route.abort());
   await page.goto(`${BASE}/workspace`);
   // Pane content (project list) still renders.
-  await expect(page.locator('#projects-title')).toBeInViewport();
+  await expect(page.locator("#projects-title")).toBeInViewport();
   // Visible fallback paragraph inside .canvas-frame.
-  await expect(page.locator('.canvas-frame p')).toContainText(/Rust lyon/i);
+  await expect(page.locator(".canvas-frame p")).toContainText(/Rust lyon/i);
   // Status flips to "error".
-  await expect(page.locator('[data-wip-status="canvas"]')).toHaveAttribute('data-state', 'error', {
+  await expect(page.locator('[data-wip-status="canvas"]')).toHaveAttribute("data-state", "error", {
     timeout: 5000,
   });
   await ctx.close();
 });
 
-test('COOP/COEP headers present on /workspace, absent on /', async ({ request }) => {
+test("COOP/COEP headers present on /workspace, absent on /", async ({ request }) => {
   // Smoke depends on the deployed Worker (or `wrangler dev`) honoring the
   // public/_headers + middleware rules. SSR preview server doesn't apply them,
   // so this test runs ONLY against SMOKE_BASE_URL when it's a real Worker URL.
-  test.skip(!process.env.SMOKE_BASE_URL, 'header scope requires deployed Worker');
+  test.skip(!process.env.SMOKE_BASE_URL, "header scope requires deployed Worker");
   const ws = await request.get(`${process.env.SMOKE_BASE_URL}/workspace`);
-  expect(ws.headers()['cross-origin-embedder-policy']).toBe('require-corp');
-  expect(ws.headers()['cross-origin-opener-policy']).toBe('same-origin');
+  expect(ws.headers()["cross-origin-embedder-policy"]).toBe("require-corp");
+  expect(ws.headers()["cross-origin-opener-policy"]).toBe("same-origin");
   const root = await request.get(`${process.env.SMOKE_BASE_URL}/`);
-  expect(root.headers()['cross-origin-embedder-policy']).toBeUndefined();
-  expect(root.headers()['cross-origin-opener-policy']).toBeUndefined();
+  expect(root.headers()["cross-origin-embedder-policy"]).toBeUndefined();
+  expect(root.headers()["cross-origin-opener-policy"]).toBeUndefined();
 });
 
-test('mobile viewport (375px) renders pane-nav as horizontal scroll', async ({ browser }) => {
+test("mobile viewport (375px) renders pane-nav as horizontal scroll", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/workspace`);
   // Mobile media-query at <860px collapses the sidebar nav into a horizontal scroll row.
-  const navBox = await page.locator('.pane-nav').boundingBox();
+  const navBox = await page.locator(".pane-nav").boundingBox();
   expect(navBox).not.toBeNull();
   if (navBox) {
     expect(navBox.width).toBeGreaterThan(navBox.height);
@@ -875,6 +885,7 @@ git commit -m "test(smoke): workspace.spec.ts covers M5 acceptance gates"
 ### Task 6: Open PR, merge, tag v2.2.0, smoke prod
 
 **Files:**
+
 - Modify: `CHANGELOG.md` (roll `[Unreleased]` → `[2.2.0]` after the feat branch merges)
 
 - [ ] **Step 1: Push the feat branch + open PR**
@@ -965,15 +976,15 @@ SMOKE_BASE_URL=https://yanai.sh bun run --cwd apps/site smoke
 
 ## Critical files referenced
 
-| File | Purpose | Tasks |
-|---|---|---|
-| `apps/site/src/pages/workspace/index.astro` | `/workspace` SSR — adds `tabindex="-1"` to pane headings + reduced-motion CSS | 1, 2 |
-| `apps/site/src/lib/workspace-wip-client.ts` | Mounts SAB writers + readers, animated canvas, search, pane navigation with focus management | 2, 4 |
-| `apps/site/src/lib/shared-state.ts` | SAB façade — extended with `readMouseX` / `readMouseY` | 4 |
-| `apps/wasm/canvas/src/lib.rs` | `render_lattice` Rust function — gains mouse + time params, animation math | 3 |
-| `apps/site/public/wasm/canvas/*` | Committed WASM artifacts; regenerated by `just wasm-build` after Rust changes | 3 |
-| `apps/site/tests/smoke/workspace.spec.ts` (new) | Playwright smoke covering all M5 acceptance gates | 5 |
-| `CHANGELOG.md` | Roll `[Unreleased]` → `[2.2.0]` | 6 |
+| File                                            | Purpose                                                                                      | Tasks |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------- | ----- |
+| `apps/site/src/pages/workspace/index.astro`     | `/workspace` SSR — adds `tabindex="-1"` to pane headings + reduced-motion CSS                | 1, 2  |
+| `apps/site/src/lib/workspace-wip-client.ts`     | Mounts SAB writers + readers, animated canvas, search, pane navigation with focus management | 2, 4  |
+| `apps/site/src/lib/shared-state.ts`             | SAB façade — extended with `readMouseX` / `readMouseY`                                       | 4     |
+| `apps/wasm/canvas/src/lib.rs`                   | `render_lattice` Rust function — gains mouse + time params, animation math                   | 3     |
+| `apps/site/public/wasm/canvas/*`                | Committed WASM artifacts; regenerated by `just wasm-build` after Rust changes                | 3     |
+| `apps/site/tests/smoke/workspace.spec.ts` (new) | Playwright smoke covering all M5 acceptance gates                                            | 5     |
+| `CHANGELOG.md`                                  | Roll `[Unreleased]` → `[2.2.0]`                                                              | 6     |
 
 ---
 

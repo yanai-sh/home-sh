@@ -103,7 +103,7 @@ jobs:
               - 'infra/**'
               - 'apps/site/wrangler.jsonc'
             root_config:
-              - 'bun.lock'
+              - 'pnpm-lock.yaml'
               - 'package.json'
               - 'scripts/**'
 
@@ -128,14 +128,14 @@ jobs:
 
       # Embedded into the SSR'd HTML at build time so the contact form's
       # Turnstile widget renders. Public value (widget id), not a secret.
-      - uses: ./.github/actions/bun-verify
+      - uses: ./.github/actions/pnpm-verify
         with:
           public_turnstile_site_key: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
 
       - name: Sync runtime secrets (Secrets Store)
         # Keep runtime bindings fresh for the version being tested.
         # Reads values from GitHub Environment secrets when PUSH_SECRETS_FROM_ENV=1.
-        run: bun run push-secrets
+        run: pnpm run push-secrets
         env:
           PUSH_SECRETS_FROM_ENV: "1"
           TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
@@ -211,7 +211,7 @@ jobs:
           if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
             NAME_FLAGS=(--name yanai-sh-staging)
           fi
-          OUTPUT="$(bun run --cwd apps/site version-upload -- \
+          OUTPUT="$(pnpm --dir apps/site version-upload -- \
             "${NAME_FLAGS[@]}" \
             --message "$(git log --format='%s' -1)" \
             --tag "${{ steps.tag.outputs.next }}")"
@@ -238,7 +238,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           set -euo pipefail
-          bun run --cwd apps/site version-deploy -- \
+          pnpm --dir apps/site version-deploy -- \
             "${{ steps.upload.outputs.version_id }}@100%" \
             --message "auto-promote ${GITHUB_SHA:0:7} from $(git log --format='%s' -1 | head -c 60)" \
             --yes
@@ -372,7 +372,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: ./.github/actions/bun-install
+      - uses: ./.github/actions/pnpm-install
       - uses: ./.github/actions/playwright-chromium
       - name: Preflight (Access + origin)
         env:
@@ -381,7 +381,7 @@ jobs:
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
-          bun - <<'EOF'
+          node --input-type=module - <<'EOF'
           const base = process.env.SMOKE_BASE_URL;
           const id = process.env.CF_ACCESS_CLIENT_ID ?? "";
           const secret = process.env.CF_ACCESS_CLIENT_SECRET ?? "";
@@ -413,4 +413,4 @@ jobs:
           SMOKE_BASE_URL: ${{ needs.publish.outputs.staging_preview_url }}
           CF_ACCESS_CLIENT_ID: ${{ vars.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-        run: bun run smoke
+        run: pnpm run smoke

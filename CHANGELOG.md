@@ -7,18 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.13] - 2026-06-12
+
 ### Changed
 
-- **Site UX — design pass** — Unified slash-prefixed section headings (`/ Resume`, `/ Systems`, `/ Contact`, plus sub-sections) and a single `.card` + `.tag-chip` recipe across `Layout.astro`, `ResumeShowcase`, `HomeSystems`, and `ContactForm` (heavy gradient/glass chrome dropped). Pulsing dot on the current-role timeline entry. Inspiration: `nbakh16/career-portfolio-template`.
-- **Hero contact row** — `EmailPill` removed in favor of a single `Socials` row (GitHub, LinkedIn, **click-to-copy email** button) with hover-revealed labels; clipboard write replaces the previous `mailto:` for the in-hero contact action. Server `mailto:` contact CTA is preserved in `ContactForm`.
-- **Technical profile icons** — Each skill now renders a brand glyph (Simple Icons SVGs vendored under `apps/site/src/icons/`) via `astro-icon`; no proficiency stars. `scripts/sync-tech-icons.ts` regenerates the SVGs from `@iconify-json/simple-icons` at dev time so the Worker has no runtime Iconify dependency.
-- **Site UX** — Full semantic résumé on **`/#resume-full`** (shared **`ResumeDocument`** with **`/resume`**), systems strip on **`/#systems`** (canvas, search, telemetry, reading), and idle-mounted client boot on **`/`**. **`GET /workspace`** returns **`308`** to **`/#systems`** (page removed). **`ROADMAP.md`** reflects the single-URL primary experience.
-- **README** — brand assets path points at **`apps/site/public/brand/`**; OG/canonical pointers reference **`apps/site/src/config/site.ts`** instead of a missing root **`manifest.json`**.
-- **Contact** — **`POST /api/contact`** unit tests cover over-long **`message`** and disallowed **`Origin`** (honeypot + rate limit behavior unchanged). Playwright smoke asserts **`400`** + **`invalid_input`** for an oversized JSON body (runs against local preview and deployed **`SMOKE_BASE_URL`**).
-- **Static `_headers`** — dropped legacy **COOP/COEP** block for **`/workspace/*`** now that the route is redirect-only; other static security headers unchanged.
-- **Deploy** — production **git**/**GitHub Release** tags are SemVer **`v0.y.z`**. The next tag after any legacy **`v1+.*`** release (e.g. **`v2.7.0`**) is **`v0.1.0`** (hard reset). **Staging** uploads use **`dev-<run_id>`** only (no git tags on **`dev`**). **`workflow_dispatch`** on **`main`**: **patch** / **minor** on **`0.y.z`**, or **major** → **`v1.0.0`**. If an experimental **four-part** **`v0.*.*.*`** tag exists locally or on the remote, delete it so **`git tag -l`** ordering stays unambiguous. **GitHub release** checks out the repo before **`gh release create --generate-notes`** (avoids `fatal: not a git repository` on the runner).
-- **Dependabot** — **monthly** schedule, **Bun** updates grouped (runtime / tooling / root scripts), lower concurrent PR limits.
-- **Local** — **direnv** (`.envrc`) scopes **Git**/**`gh`** to **`yanai-sh`** under this repo via **`GIT_CONFIG_*`** and optional **`GH_TOKEN`**.
+- **Big-bang stack migration** — Replaced **Astro 6 + Bun + Biome** with **Hono + hono/jsx**, **VoidZero Vite+** (`vp`: Oxlint, Oxfmt, Vitest, Rolldown), **Velite** content collections, **`@cloudflare/vite-plugin`**, and **pnpm** workspaces. Deploy artifact: **`apps/site/dist/wrangler.json`**. CI composites: **`pnpm-install`**, **`pnpm-verify`**. Operational docs (**`README.md`**, **`infra/*`**, **`ROADMAP.md`**, script headers) updated to match.
+- **Splash UX** — Minimal split-pane shell (resume PDF, contact, project detail), flow-field canvas WASM, project rows with GitHub metadata; search WASM removed.
+- **Canvas WASM** — Flow field reacts to site mode, split progress, contact-form lifecycle (length only), and resume PDF load state.
+- **Contact** — **`POST /api/contact`** with Turnstile + Resend on deployed origins; **`/resume.pdf`** proxies latest **`yanai-sh/resume`** GitHub Release asset via **`RESUME_REPO_TOKEN`**.
+- **Deploy** — production **git**/**GitHub Release** tags are SemVer **`v0.y.z`**. **Staging** uploads use **`dev-<run_id>`** only (no git tags on **`dev`**).
+- **Dependabot** — **monthly** schedule, **pnpm** updates grouped (runtime / tooling / root scripts), lower concurrent PR limits.
+- **Local** — **direnv** (`.envrc`) scopes **Git**/**`gh`** to **`yanai-sh`** under this repo via **`GIT_CONFIG_*`** and optional **`GH_TOKEN`**. **Windows ARM64** routes JS tooling through **WSL2** (`pnpm run setup:wsl`).
 
 ## [2.7.0] - 2026-05-10
 

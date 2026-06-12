@@ -1,0 +1,16 @@
+name: yanai-sh / setup — pnpm-verify
+description: pnpm install then vp run verify (expects repo checkout before this action)
+inputs:
+  public_turnstile_site_key:
+    description: Public Turnstile site key for build-time embed (same as Deploy)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/pnpm-install
+    - name: Run monorepo verify
+      run: pnpm run verify
+      shell: bash
+      env:
+        PUBLIC_TURNSTILE_SITE_KEY: ${{ inputs.public_turnstile_site_key }}

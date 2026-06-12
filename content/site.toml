@@ -1,27 +1,27 @@
 # Canonical site metadata — source of truth for bio, contact, social links.
-# Consumed by Astro Content Layer (schema in apps/site/src/content/config.ts — TBD).
+# Consumed by Velite / portfolio config (schema TBD).
 
 [meta]
-title       = "yanai.sh"
+title = "yanai.sh"
 description = "Personal homepage at yanai.sh."
-url         = "https://yanai.sh"
-email       = "me@yanai.sh"
+url = "https://yanai.sh"
+email = "me@yanai.sh"
 
 [brand]
 prefix = "yanai"
 suffix = ".sh"
 
 [bio]
-name     = "Yanai Klugman"
+name = "Yanai Klugman"
 headline = ""
-lede     = ""
+lede = ""
 
 [[social]]
 platform = "github"
-url      = "https://github.com/yanai-klugman"
-handle   = "@yanai-klugman"
+url = "https://github.com/yanai-klugman"
+handle = "@yanai-klugman"
 
 [[social]]
 platform = "linkedin"
-url      = "https://www.linkedin.com/in/yanai-klugman"
-handle   = "Yanai Klugman"
+url = "https://www.linkedin.com/in/yanai-klugman"
+handle = "Yanai Klugman"

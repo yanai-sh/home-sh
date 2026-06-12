@@ -1,9 +1,7 @@
 # Native GitHub dependency PRs (no Renovate / third-party app).
-# Monthly cadence + Bun groups keep PR volume low; security advisories
-# still surface in the Security tab.
 version: 2
 updates:
-  - package-ecosystem: bun
+  - package-ecosystem: npm
     directory: /
     schedule:
       interval: monthly
@@ -11,22 +9,25 @@ updates:
     groups:
       runtime-ui:
         patterns:
-          - "astro"
-          - "@astrojs/*"
-          - "three"
-          - "gsap"
+          - "hono"
+          - "@cloudflare/*"
+          - "velite"
           - "@fontsource/*"
+          - "tailwindcss"
+          - "@tailwindcss/*"
       tool-types-lint:
         patterns:
           - "wrangler"
-          - "@biomejs/*"
-          - "@pandacss/*"
+          - "vite-plus"
+          - "vitest"
           - "@types/*"
           - "typescript"
       root-scripts:
         patterns:
           - "lefthook"
           - "playwright"
+          - "tsx"
+          - "smol-toml"
     labels:
       - dependencies
   - package-ecosystem: github-actions

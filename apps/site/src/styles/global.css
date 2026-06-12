@@ -1,15 +1,24 @@
-@import "tailwindcss";
-@import "@fontsource-variable/space-grotesk";
-@import "@fontsource-variable/inter";
+@import 'tailwindcss';
+@import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/inter';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import './layout.css';
+@import './splash.css';
+@import './document-page.css';
+@import './resume-document.css';
 
 @theme {
-  --font-heading: "Space Grotesk Variable", sans-serif;
-  --font-body: "Inter Variable", sans-serif;
+  --font-heading: 'Space Grotesk Variable', sans-serif;
+  --font-body: 'Inter Variable', sans-serif;
+  /* Mono is reserved for data values (figures, dates, captions) — never copy. */
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, 'Cascadia Code', 'SF Mono', 'Segoe UI Mono', monospace;
 }
 
 @layer base {
   :root,
-  [data-theme="dark"] {
+  [data-theme='dark'] {
     color-scheme: dark;
     --color-background: #151b22;
     --color-surface: #1d2630;
@@ -20,12 +29,16 @@
     --color-accent: #2f6bff;
     --color-accent-text: #78a4ff;
     --color-accent-ink: #ffffff;
+    /* Success / contact accent (mint) — pairs with the canvas split target. */
+    --color-ok: #76ffd5;
+    /* Warm accent — matches the golden "gates" inside the WASM field. */
+    --color-accent-warm: #ffcd76;
     --color-rule: rgba(245, 247, 250, 0.12);
     --color-rule-strong: rgba(245, 247, 250, 0.24);
     --shadow-soft: 0 18px 44px rgba(0, 0, 0, 0.24);
   }
 
-  [data-theme="light"] {
+  [data-theme='light'] {
     color-scheme: light;
     --color-background: #fbfcf8;
     --color-surface: #ffffff;
@@ -36,6 +49,8 @@
     --color-accent: #1f5fff;
     --color-accent-text: #174fc7;
     --color-accent-ink: #ffffff;
+    --color-ok: #0c8a68;
+    --color-accent-warm: #915212;
     --color-rule: rgba(16, 22, 29, 0.14);
     --color-rule-strong: rgba(16, 22, 29, 0.26);
     --shadow-soft: 0 18px 44px rgba(26, 42, 56, 0.13);
@@ -50,12 +65,12 @@
     color: var(--color-accent-ink);
   }
 
-  html {
+  html:not([data-site-mode='splash']) {
     background: var(--color-background);
     scroll-behavior: smooth;
   }
 
-  body {
+  body:not(.splash-body) {
     min-height: 100vh;
     margin: 0;
     overflow-x: hidden;
@@ -105,10 +120,6 @@
     display: block;
   }
 
-  section[id] {
-    scroll-margin-top: 6rem;
-  }
-
   .skip-link {
     position: fixed;
     top: 1rem;
@@ -136,56 +147,6 @@
 }
 
 @layer components {
-  .site-shell {
-    width: min(1180px, calc(100% - 2rem));
-    margin: 0 auto;
-  }
-
-  .section-block {
-    position: relative;
-    padding: 6rem 0;
-    border-top: 1px solid var(--color-rule);
-  }
-
-  .section-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    margin: 0 0 0.75rem;
-    color: var(--color-accent-text);
-    font-family: var(--font-heading);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-  }
-
-  .section-eyebrow::before {
-    content: "/";
-    color: var(--color-accent-text);
-    font-weight: 850;
-  }
-
-  .section-title {
-    margin: 0;
-    color: var(--color-maintext);
-    font-family: var(--font-heading);
-    max-width: 13ch;
-    font-size: 3.35rem;
-    font-weight: 750;
-    line-height: 0.98;
-    letter-spacing: 0;
-    text-wrap: balance;
-  }
-
-  .section-deck {
-    max-width: 42rem;
-    margin: 1rem 0 0;
-    color: var(--color-subtext);
-    font-size: clamp(1rem, 1.7vw, 1.125rem);
-    line-height: 1.68;
-  }
-
   .panel {
     border: 1px solid var(--color-rule);
     border-radius: 8px;
@@ -200,31 +161,6 @@
   .panel:focus-within {
     border-color: color-mix(in srgb, var(--color-accent) 44%, transparent);
     background: color-mix(in srgb, var(--color-surface-raised) 86%, transparent);
-  }
-
-  .chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 1.8rem;
-    border: 1px solid var(--color-rule);
-    border-radius: 999px;
-    padding: 0.36rem 0.62rem;
-    background: transparent;
-    color: color-mix(in srgb, var(--color-maintext) 86%, transparent);
-    font-size: 0.72rem;
-    font-weight: 650;
-    letter-spacing: 0.02em;
-    line-height: 1;
-    text-transform: uppercase;
   }
 
   .button-link {
@@ -276,29 +212,11 @@
 }
 
 @media (max-width: 720px) {
-  body {
+  body:not(.splash-body) {
     background-size:
       auto,
       3.25rem 3.25rem,
       3.25rem 3.25rem,
       auto;
-  }
-
-  .site-shell {
-    width: min(100% - 1rem, 1180px);
-  }
-
-  .section-block {
-    padding: 3.5rem 0;
-  }
-
-  .section-title {
-    font-size: 2.45rem;
-  }
-}
-
-@media (min-width: 1100px) {
-  .section-title {
-    font-size: 3.85rem;
   }
 }

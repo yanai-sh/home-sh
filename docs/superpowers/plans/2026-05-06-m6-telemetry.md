@@ -13,6 +13,7 @@
 ## Context
 
 **Current state pre-M6** (post-v2.2.0):
+
 - `infra/tofu/main.tf` provisions `cloudflare_d1_database.telemetry` named `home-sh-telemetry` (id `b37f9fce-9ee6-458d-9fa8-27356464788c`, exposed via `tofu output -raw d1_database_id`).
 - `infra/migrations/0001_init.sql` defines `sessions` and `frame_samples` tables with appropriate indexes. **The migration has never been applied to the remote D1.**
 - `infra/workers/telemetry-write/index.ts` and `infra/workers/telemetry-read/index.ts` exist as **unbuilt skeletons** — their `wrangler.jsonc` files still contain `REPLACE_WITH_D1_DATABASE_ID`, no deploy workflow runs them, and they have never been bound to a Cloudflare route.
@@ -22,6 +23,7 @@
 - `apps/site/src/pages/api/contact.ts` is the canonical pattern for site-Worker API endpoints (Astro `APIRoute` + `import { env } from 'cloudflare:workers'`).
 
 **Why merge into the site Worker rather than deploy two extra workers:**
+
 1. The two skeleton workers were never deployed. Removing them is no regression.
 2. Site Worker already hosts `/api/contact`; adding `/api/telemetry/*` keeps a single ingress and a single deploy artifact (matches the M4 architectural decision to consolidate `/api/contact` into the site Worker).
 3. Worker Routes for telemetry endpoints would shadow the site's Custom Domain catch-all — the merge avoids that whole layer of routing config.
@@ -30,23 +32,23 @@
 
 **Acceptance criteria (ROADMAP.md:460-465) and where each lands:**
 
-| # | Criterion | Closed by |
-|---|---|---|
-| 1 | Read endpoint returns cached aggregate data with no raw identifiers | Task 3 (Cache API + aggregates only) |
-| 2 | Write endpoint rejects malformed UUIDs and unbounded sample arrays | Task 2 (regex validation + 300-sample cap) |
-| 3 | Telemetry pane explains data through labels and numbers | Task 5 (live render replacing static articles) |
-| 4 | A user can block telemetry without breaking the site | Task 4 (DNT respect + opt-out flag, fail-soft on error) |
+| #   | Criterion                                                           | Closed by                                               |
+| --- | ------------------------------------------------------------------- | ------------------------------------------------------- |
+| 1   | Read endpoint returns cached aggregate data with no raw identifiers | Task 3 (Cache API + aggregates only)                    |
+| 2   | Write endpoint rejects malformed UUIDs and unbounded sample arrays  | Task 2 (regex validation + 300-sample cap)              |
+| 3   | Telemetry pane explains data through labels and numbers             | Task 5 (live render replacing static articles)          |
+| 4   | A user can block telemetry without breaking the site                | Task 4 (DNT respect + opt-out flag, fail-soft on error) |
 
 **Beacon payload (kept coarse — no PII):**
 
 ```ts
 type SessionBeacon = {
-  id: string;                  // UUIDv4 generated client-side once per session
-  started_at: number;          // Date.now() at first /workspace render
-  device_class?: 'desktop' | 'mobile' | 'tablet';
-  ua_family?: string;          // Browser family string, ≤64 chars
-  lcp_ms?: number;             // Largest Contentful Paint
-  wasm_init_ms?: number;       // Time from script eval to canvas ready
+  id: string; // UUIDv4 generated client-side once per session
+  started_at: number; // Date.now() at first /workspace render
+  device_class?: "desktop" | "mobile" | "tablet";
+  ua_family?: string; // Browser family string, ≤64 chars
+  lcp_ms?: number; // Largest Contentful Paint
+  wasm_init_ms?: number; // Time from script eval to canvas ready
   frame_samples?: { t: number; fps?: number; tick_rate?: number }[];
 };
 ```
@@ -54,11 +56,13 @@ type SessionBeacon = {
 Country is derived server-side from `CF-IPCountry` (never trusts client). IP is **never** stored.
 
 **What's NOT in this plan:**
+
 - Site-wide telemetry — telemetry runs only on `/workspace` (the page with WASM whose perf is the actual point of measurement). Site-wide page-load metrics could be a follow-up.
 - Comlink for the search Worker — covered (and skipped) under M5.
 - D1 migration runbook for future schema changes — `wrangler d1 migrations apply` is idempotent; the plan documents the one-time apply for the existing `0001_init.sql` and that's all M6 needs.
 
 **Conventions:**
+
 - Repo root: `/home/yanai/dev/sandbox/home-sh`. All paths absolute from there.
 - Commits land on a single feat branch `feat/m6-telemetry` for tasks 1–7; release flow in task 8 ships changelog roll on `chore/release-v2.3.0`.
 - Each step is one action, ≤5 minutes.
@@ -69,6 +73,7 @@ Country is derived server-side from `CF-IPCountry` (never trusts client). IP is 
 ### Task 1: Apply D1 migration + bind D1 to site Worker
 
 **Files:**
+
 - Modify: `/home/yanai/dev/sandbox/home-sh/apps/site/wrangler.jsonc` (add `d1_databases` block)
 
 **Why:** Two changes that have to land together — applying the schema to the remote D1 database, and giving the site Worker a `DB` binding so endpoints can read/write it. Without both, every subsequent task fails at runtime.
@@ -154,6 +159,7 @@ git commit -m "feat(infra): bind home-sh-telemetry D1 to site Worker"
 ### Task 2: Beacon endpoint as an Astro API route
 
 **Files:**
+
 - Create: `/home/yanai/dev/sandbox/home-sh/apps/site/src/pages/api/telemetry/beacon.ts`
 - Create: `/home/yanai/dev/sandbox/home-sh/apps/site/src/pages/api/telemetry/beacon.test.ts`
 
@@ -164,7 +170,7 @@ git commit -m "feat(infra): bind home-sh-telemetry D1 to site Worker"
 Create `/home/yanai/dev/sandbox/home-sh/apps/site/src/pages/api/telemetry/beacon.test.ts`:
 
 ```ts
-import { expect, mock, test } from 'bun:test';
+import { expect, mock, test } from "bun:test";
 
 type StmtMock = {
   bind: ReturnType<typeof mock>;
@@ -189,46 +195,46 @@ const dbMock = {
   }),
 };
 
-mock.module('cloudflare:workers', () => ({ env: { DB: dbMock } }));
+mock.module("cloudflare:workers", () => ({ env: { DB: dbMock } }));
 
-const { POST } = await import('./beacon');
+const { POST } = await import("./beacon");
 
 function buildRequest(body: unknown): Request {
-  return new Request('https://yanai.sh/api/telemetry/beacon', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'CF-IPCountry': 'US' },
-    body: typeof body === 'string' ? body : JSON.stringify(body),
+  return new Request("https://yanai.sh/api/telemetry/beacon", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "CF-IPCountry": "US" },
+    body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
 
-test('rejects malformed UUID', async () => {
+test("rejects malformed UUID", async () => {
   // @ts-expect-error — Astro APIRoute signature
-  const res = await POST({ request: buildRequest({ id: 'not-a-uuid', started_at: Date.now() }) });
+  const res = await POST({ request: buildRequest({ id: "not-a-uuid", started_at: Date.now() }) });
   expect(res.status).toBe(400);
 });
 
-test('rejects missing started_at', async () => {
+test("rejects missing started_at", async () => {
   // @ts-expect-error
   const res = await POST({
-    request: buildRequest({ id: '11111111-1111-4111-8111-111111111111' }),
+    request: buildRequest({ id: "11111111-1111-4111-8111-111111111111" }),
   });
   expect(res.status).toBe(400);
 });
 
-test('rejects invalid JSON', async () => {
+test("rejects invalid JSON", async () => {
   // @ts-expect-error
-  const res = await POST({ request: buildRequest('not json') });
+  const res = await POST({ request: buildRequest("not json") });
   expect(res.status).toBe(400);
 });
 
-test('caps frame_samples at 300', async () => {
+test("caps frame_samples at 300", async () => {
   prepared.length = 0;
   batchCalls.length = 0;
   const samples = Array.from({ length: 1000 }, (_, i) => ({ t: i, fps: 60 }));
   // @ts-expect-error
   const res = await POST({
     request: buildRequest({
-      id: '22222222-2222-4222-8222-222222222222',
+      id: "22222222-2222-4222-8222-222222222222",
       started_at: Date.now(),
       frame_samples: samples,
     }),
@@ -239,16 +245,16 @@ test('caps frame_samples at 300', async () => {
   expect(batchCalls[0]).toHaveLength(300);
 });
 
-test('accepts a clean beacon and returns ok:true', async () => {
+test("accepts a clean beacon and returns ok:true", async () => {
   prepared.length = 0;
   batchCalls.length = 0;
   // @ts-expect-error
   const res = await POST({
     request: buildRequest({
-      id: '33333333-3333-4333-8333-333333333333',
+      id: "33333333-3333-4333-8333-333333333333",
       started_at: Date.now(),
-      device_class: 'desktop',
-      ua_family: 'firefox',
+      device_class: "desktop",
+      ua_family: "firefox",
       lcp_ms: 1200,
       wasm_init_ms: 240,
       frame_samples: [{ t: 1, fps: 58 }],
@@ -259,13 +265,14 @@ test('accepts a clean beacon and returns ok:true', async () => {
   expect(body.ok).toBe(true);
 });
 
-test('rejects non-POST methods', async () => {
-  const req = new Request('https://yanai.sh/api/telemetry/beacon', { method: 'GET' });
+test("rejects non-POST methods", async () => {
+  const req = new Request("https://yanai.sh/api/telemetry/beacon", { method: "GET" });
   // @ts-expect-error
-  const res = await (await import('./beacon')).GET?.({ request: req }) ??
+  const res =
+    (await (await import("./beacon")).GET?.({ request: req })) ??
     new Response(null, { status: 405 });
   // The Astro route only exports POST; verify GET isn't reachable as a side effect.
-  expect(typeof (await import('./beacon')).GET).toBe('undefined');
+  expect(typeof (await import("./beacon")).GET).toBe("undefined");
 });
 ```
 
@@ -288,8 +295,8 @@ Create `/home/yanai/dev/sandbox/home-sh/apps/site/src/pages/api/telemetry/beacon
 // arrays. Country comes from the Cloudflare edge (`CF-IPCountry` header), never
 // from the client. IPs are not stored.
 
-import { env } from 'cloudflare:workers';
-import type { APIRoute } from 'astro';
+import { env } from "cloudflare:workers";
+import type { APIRoute } from "astro";
 
 export const prerender = false;
 
@@ -310,13 +317,13 @@ interface SessionBeacon {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const VALID_DEVICE_CLASSES = new Set(['desktop', 'mobile', 'tablet']);
+const VALID_DEVICE_CLASSES = new Set(["desktop", "mobile", "tablet"]);
 const FRAME_SAMPLE_CAP = 300;
 
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
   });
 
 export const POST: APIRoute = async ({ request }) => {
@@ -324,23 +331,23 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     beacon = (await request.json()) as SessionBeacon;
   } catch {
-    return json({ error: 'invalid_json' }, 400);
+    return json({ error: "invalid_json" }, 400);
   }
 
   if (
-    typeof beacon.id !== 'string' ||
+    typeof beacon.id !== "string" ||
     !UUID_RE.test(beacon.id) ||
-    typeof beacon.started_at !== 'number' ||
+    typeof beacon.started_at !== "number" ||
     !Number.isFinite(beacon.started_at)
   ) {
-    return json({ error: 'invalid_beacon' }, 400);
+    return json({ error: "invalid_beacon" }, 400);
   }
 
-  const country = request.headers.get('CF-IPCountry') ?? null;
-  const deviceClass = VALID_DEVICE_CLASSES.has(beacon.device_class ?? '')
+  const country = request.headers.get("CF-IPCountry") ?? null;
+  const deviceClass = VALID_DEVICE_CLASSES.has(beacon.device_class ?? "")
     ? beacon.device_class!
     : null;
-  const uaFamily = typeof beacon.ua_family === 'string' ? beacon.ua_family.slice(0, 64) : null;
+  const uaFamily = typeof beacon.ua_family === "string" ? beacon.ua_family.slice(0, 64) : null;
   const lcpMs = Number.isFinite(beacon.lcp_ms) ? beacon.lcp_ms! : null;
   const wasmInitMs = Number.isFinite(beacon.wasm_init_ms) ? beacon.wasm_init_ms! : null;
 
@@ -396,6 +403,7 @@ git commit -m "feat(telemetry): /api/telemetry/beacon endpoint with UUID + sampl
 ### Task 3: Stats endpoint as an Astro API route
 
 **Files:**
+
 - Create: `/home/yanai/dev/sandbox/home-sh/apps/site/src/pages/api/telemetry/stats.ts`
 - Create: `/home/yanai/dev/sandbox/home-sh/apps/site/src/pages/api/telemetry/stats.test.ts`
 
@@ -406,7 +414,7 @@ git commit -m "feat(telemetry): /api/telemetry/beacon endpoint with UUID + sampl
 Create `/home/yanai/dev/sandbox/home-sh/apps/site/src/pages/api/telemetry/stats.test.ts`:
 
 ```ts
-import { expect, mock, test } from 'bun:test';
+import { expect, mock, test } from "bun:test";
 
 const dbMock = {
   batch: mock(async () => [
@@ -414,53 +422,68 @@ const dbMock = {
     { results: [{ n: 17 }] },
     { results: [{ v: 1234 }] },
     { results: [{ v: 58.5 }] },
-    { results: [{ country: 'US', count: 10 }, { country: 'IL', count: 5 }] },
-    { results: [{ device_class: 'desktop', count: 30 }, { device_class: 'mobile', count: 12 }] },
+    {
+      results: [
+        { country: "US", count: 10 },
+        { country: "IL", count: 5 },
+      ],
+    },
+    {
+      results: [
+        { device_class: "desktop", count: 30 },
+        { device_class: "mobile", count: 12 },
+      ],
+    },
   ]),
 };
 
-mock.module('cloudflare:workers', () => ({ env: { DB: dbMock } }));
+mock.module("cloudflare:workers", () => ({ env: { DB: dbMock } }));
 
-const { GET } = await import('./stats');
+const { GET } = await import("./stats");
 
-test('returns aggregate JSON shape with all expected keys', async () => {
+test("returns aggregate JSON shape with all expected keys", async () => {
   const ctx = {
-    request: new Request('https://yanai.sh/api/telemetry/stats'),
+    request: new Request("https://yanai.sh/api/telemetry/stats"),
     waitUntil: () => undefined,
   };
   // @ts-expect-error — Astro APIContext shape; we exercise GET directly.
   const res = await GET(ctx);
   expect(res.status).toBe(200);
   const body = (await res.json()) as Record<string, unknown>;
-  expect(Object.keys(body).sort()).toEqual(
-    ['avg_fps', 'avg_lcp_ms', 'device_breakdown', 'sessions_last_30d', 'top_countries', 'total_sessions'],
-  );
+  expect(Object.keys(body).sort()).toEqual([
+    "avg_fps",
+    "avg_lcp_ms",
+    "device_breakdown",
+    "sessions_last_30d",
+    "top_countries",
+    "total_sessions",
+  ]);
   expect(body.total_sessions).toBe(42);
   expect(body.sessions_last_30d).toBe(17);
 });
 
-test('response carries cache + CORS headers', async () => {
+test("response carries cache + CORS headers", async () => {
   const ctx = {
-    request: new Request('https://yanai.sh/api/telemetry/stats'),
+    request: new Request("https://yanai.sh/api/telemetry/stats"),
     waitUntil: () => undefined,
   };
   // @ts-expect-error
   const res = await GET(ctx);
-  expect(res.headers.get('Cache-Control')).toContain('max-age=60');
-  expect(res.headers.get('Cache-Control')).toContain('stale-while-revalidate=120');
-  expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://yanai.sh');
+  expect(res.headers.get("Cache-Control")).toContain("max-age=60");
+  expect(res.headers.get("Cache-Control")).toContain("stale-while-revalidate=120");
+  expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://yanai.sh");
 });
 
-test('aggregate response carries no session-id field', async () => {
+test("aggregate response carries no session-id field", async () => {
   const ctx = {
-    request: new Request('https://yanai.sh/api/telemetry/stats'),
+    request: new Request("https://yanai.sh/api/telemetry/stats"),
     waitUntil: () => undefined,
   };
   // @ts-expect-error
   const res = await GET(ctx);
   const body = (await res.json()) as Record<string, unknown>;
   // Acceptance criterion: "no raw identifiers" — id is forbidden in any form.
-  expect(JSON.stringify(body)).not.toContain('id');
+  expect(JSON.stringify(body)).not.toContain("id");
 });
 ```
 
@@ -481,8 +504,8 @@ Create `/home/yanai/dev/sandbox/home-sh/apps/site/src/pages/api/telemetry/stats.
 // home-sh-telemetry D1 database. Response is cached at the edge for 60s with
 // 120s stale-while-revalidate; no per-session identifiers are emitted.
 
-import { env } from 'cloudflare:workers';
-import type { APIRoute } from 'astro';
+import { env } from "cloudflare:workers";
+import type { APIRoute } from "astro";
 
 export const prerender = false;
 
@@ -516,15 +539,15 @@ const jsonResponse = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=60, stale-while-revalidate=120',
-      'Access-Control-Allow-Origin': 'https://yanai.sh',
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=120",
+      "Access-Control-Allow-Origin": "https://yanai.sh",
     },
   });
 
 export const GET: APIRoute = async ({ request }) => {
   const cache = caches.default;
-  const cacheKey = new Request(new URL('/api/telemetry/stats', request.url).toString());
+  const cacheKey = new Request(new URL("/api/telemetry/stats", request.url).toString());
   const cached = await cache.match(cacheKey);
   if (cached) return cached;
 
@@ -593,6 +616,7 @@ git commit -m "feat(telemetry): /api/telemetry/stats endpoint with edge cache + 
 ### Task 4: Client telemetry library + DNT gating
 
 **Files:**
+
 - Create: `/home/yanai/dev/sandbox/home-sh/apps/site/src/lib/telemetry-client.ts`
 - Create: `/home/yanai/dev/sandbox/home-sh/apps/site/src/lib/telemetry-client.test.ts`
 
@@ -603,10 +627,10 @@ git commit -m "feat(telemetry): /api/telemetry/stats endpoint with edge cache + 
 Create `/home/yanai/dev/sandbox/home-sh/apps/site/src/lib/telemetry-client.test.ts`:
 
 ```ts
-import { expect, mock, test } from 'bun:test';
-import { isTelemetryAllowed, randomUuidV4, deviceClass } from './telemetry-client';
+import { expect, mock, test } from "bun:test";
+import { isTelemetryAllowed, randomUuidV4, deviceClass } from "./telemetry-client";
 
-test('randomUuidV4 returns a valid UUIDv4 string', () => {
+test("randomUuidV4 returns a valid UUIDv4 string", () => {
   for (let i = 0; i < 50; i += 1) {
     const id = randomUuidV4();
     expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
@@ -615,13 +639,13 @@ test('randomUuidV4 returns a valid UUIDv4 string', () => {
 
 test('isTelemetryAllowed returns false when navigator.doNotTrack is "1"', () => {
   const result = isTelemetryAllowed({
-    doNotTrack: '1',
+    doNotTrack: "1",
     optOut: false,
   });
   expect(result).toBe(false);
 });
 
-test('isTelemetryAllowed returns false when optOut flag is set', () => {
+test("isTelemetryAllowed returns false when optOut flag is set", () => {
   const result = isTelemetryAllowed({
     doNotTrack: null,
     optOut: true,
@@ -629,7 +653,7 @@ test('isTelemetryAllowed returns false when optOut flag is set', () => {
   expect(result).toBe(false);
 });
 
-test('isTelemetryAllowed returns true when neither signal is set', () => {
+test("isTelemetryAllowed returns true when neither signal is set", () => {
   const result = isTelemetryAllowed({
     doNotTrack: null,
     optOut: false,
@@ -639,18 +663,18 @@ test('isTelemetryAllowed returns true when neither signal is set', () => {
 
 test('isTelemetryAllowed treats "yes" doNotTrack value as opt-out (older Firefox)', () => {
   const result = isTelemetryAllowed({
-    doNotTrack: 'yes',
+    doNotTrack: "yes",
     optOut: false,
   });
   expect(result).toBe(false);
 });
 
 test('deviceClass returns "mobile" / "desktop" / "tablet" for typical UA strings', () => {
-  expect(deviceClass('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)')).toBe('mobile');
-  expect(deviceClass('Mozilla/5.0 (iPad; CPU OS 17_0)')).toBe('tablet');
-  expect(deviceClass('Mozilla/5.0 (X11; Linux x86_64)')).toBe('desktop');
-  expect(deviceClass('Mozilla/5.0 (Android 14; Mobile)')).toBe('mobile');
-  expect(deviceClass('Mozilla/5.0 (Android 14; Tablet)')).toBe('tablet');
+  expect(deviceClass("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)")).toBe("mobile");
+  expect(deviceClass("Mozilla/5.0 (iPad; CPU OS 17_0)")).toBe("tablet");
+  expect(deviceClass("Mozilla/5.0 (X11; Linux x86_64)")).toBe("desktop");
+  expect(deviceClass("Mozilla/5.0 (Android 14; Mobile)")).toBe("mobile");
+  expect(deviceClass("Mozilla/5.0 (Android 14; Tablet)")).toBe("tablet");
 });
 ```
 
@@ -687,14 +711,14 @@ interface FrameSample {
 interface SessionBeacon {
   id: string;
   started_at: number;
-  device_class?: 'desktop' | 'mobile' | 'tablet';
+  device_class?: "desktop" | "mobile" | "tablet";
   ua_family?: string;
   lcp_ms?: number;
   wasm_init_ms?: number;
   frame_samples?: FrameSample[];
 }
 
-const BEACON_PATH = '/api/telemetry/beacon';
+const BEACON_PATH = "/api/telemetry/beacon";
 const FRAME_SAMPLE_INTERVAL_MS = 5_000;
 const FRAME_SAMPLE_CAP = 60; // 5 min @ 1 sample / 5s, well under server cap of 300
 
@@ -709,22 +733,22 @@ export function isTelemetryAllowed(signals: {
   optOut: boolean;
 }): boolean {
   if (signals.optOut) return false;
-  if (signals.doNotTrack === '1' || signals.doNotTrack === 'yes') return false;
+  if (signals.doNotTrack === "1" || signals.doNotTrack === "yes") return false;
   return true;
 }
 
-export function deviceClass(ua: string): 'desktop' | 'mobile' | 'tablet' {
-  if (/iPad|Android(?!.*Mobile).*Tablet/i.test(ua)) return 'tablet';
-  if (/iPhone|Android.*Mobile|Mobile/i.test(ua)) return 'mobile';
-  return 'desktop';
+export function deviceClass(ua: string): "desktop" | "mobile" | "tablet" {
+  if (/iPad|Android(?!.*Mobile).*Tablet/i.test(ua)) return "tablet";
+  if (/iPhone|Android.*Mobile|Mobile/i.test(ua)) return "mobile";
+  return "desktop";
 }
 
 function uaFamily(ua: string): string {
-  if (/Firefox\//.test(ua)) return 'firefox';
-  if (/Edg\//.test(ua)) return 'edge';
-  if (/Chrome\//.test(ua)) return 'chrome';
-  if (/Safari\//.test(ua)) return 'safari';
-  return 'other';
+  if (/Firefox\//.test(ua)) return "firefox";
+  if (/Edg\//.test(ua)) return "edge";
+  if (/Chrome\//.test(ua)) return "chrome";
+  if (/Safari\//.test(ua)) return "safari";
+  return "other";
 }
 
 export interface TelemetryHandle {
@@ -733,13 +757,13 @@ export interface TelemetryHandle {
 }
 
 export function mountTelemetry(): TelemetryHandle | null {
-  if (typeof navigator === 'undefined' || typeof window === 'undefined') return null;
+  if (typeof navigator === "undefined" || typeof window === "undefined") return null;
 
   const allowed = isTelemetryAllowed({
     doNotTrack: navigator.doNotTrack,
     optOut: (() => {
       try {
-        return localStorage.getItem('telemetry:opt-out') === '1';
+        return localStorage.getItem("telemetry:opt-out") === "1";
       } catch {
         return false;
       }
@@ -762,14 +786,14 @@ export function mountTelemetry(): TelemetryHandle | null {
       const last = entries[entries.length - 1];
       if (last) beacon.lcp_ms = Math.round(last.startTime);
     });
-    observer.observe({ type: 'largest-contentful-paint', buffered: true });
+    observer.observe({ type: "largest-contentful-paint", buffered: true });
   } catch {
     // PerformanceObserver may not support this entry type — leave lcp_ms undefined.
   }
 
   // WASM init — workspace-wip-client.ts dispatches this once canvas is ready.
   window.addEventListener(
-    'telemetry:wasm-ready',
+    "telemetry:wasm-ready",
     (event) => {
       const detail = (event as CustomEvent<{ ms: number }>).detail;
       if (detail && Number.isFinite(detail.ms)) beacon.wasm_init_ms = Math.round(detail.ms);
@@ -804,7 +828,7 @@ export function mountTelemetry(): TelemetryHandle | null {
       // navigation away even when the document is being torn down.
       const ok = navigator.sendBeacon(
         BEACON_PATH,
-        new Blob([JSON.stringify(beacon)], { type: 'application/json' }),
+        new Blob([JSON.stringify(beacon)], { type: "application/json" }),
       );
       return ok;
     } catch {
@@ -815,9 +839,9 @@ export function mountTelemetry(): TelemetryHandle | null {
   // Cover both the standard pagehide event AND visibility→hidden, since some
   // mobile browsers (notably iOS Safari) skip pagehide when the user
   // backgrounds the tab.
-  window.addEventListener('pagehide', send, { once: false });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') send();
+  window.addEventListener("pagehide", send, { once: false });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") send();
   });
 
   return { flush: send };
@@ -852,6 +876,7 @@ git commit -m "feat(telemetry): client beacon library with DNT + opt-out gating"
 ### Task 5: Wire client into workspace + live pane numbers
 
 **Files:**
+
 - Modify: `/home/yanai/dev/sandbox/home-sh/apps/site/src/lib/workspace-wip-client.ts` (dispatch `telemetry:wasm-ready` after canvas first-paint succeeds)
 - Modify: `/home/yanai/dev/sandbox/home-sh/apps/site/src/pages/workspace/index.astro` (add `data-telemetry-stat` slots inside the telemetry pane, swap article content; add `<script>` that mounts telemetry and fetches stats)
 - Create: `/home/yanai/dev/sandbox/home-sh/apps/site/src/lib/telemetry-stats-client.ts`
@@ -863,41 +888,41 @@ git commit -m "feat(telemetry): client beacon library with DNT + opt-out gating"
 In `/home/yanai/dev/sandbox/home-sh/apps/site/src/lib/workspace-wip-client.ts`, find the inside of `mountCanvas` where the WASM module is awaited. Locate this block:
 
 ```ts
-  let mod: CanvasModule;
-  try {
-    const moduleUrl = new URL('/wasm/canvas/canvas.js', globalThis.location.href).href;
-    mod = (await import(/* @vite-ignore */ moduleUrl)) as unknown as CanvasModule;
-    await mod.default();
-    setStatus(targets.wasm, 'ready');
-  } catch (error) {
-    console.error('canvas: WASM load failed', error);
-    setStatus(targets.wasm, 'error');
-    setStatus(targets.canvas, 'error');
-    return;
-  }
+let mod: CanvasModule;
+try {
+  const moduleUrl = new URL("/wasm/canvas/canvas.js", globalThis.location.href).href;
+  mod = (await import(/* @vite-ignore */ moduleUrl)) as unknown as CanvasModule;
+  await mod.default();
+  setStatus(targets.wasm, "ready");
+} catch (error) {
+  console.error("canvas: WASM load failed", error);
+  setStatus(targets.wasm, "error");
+  setStatus(targets.canvas, "error");
+  return;
+}
 ```
 
 Replace with:
 
 ```ts
-  const wasmStart = performance.now();
-  let mod: CanvasModule;
-  try {
-    const moduleUrl = new URL('/wasm/canvas/canvas.js', globalThis.location.href).href;
-    mod = (await import(/* @vite-ignore */ moduleUrl)) as unknown as CanvasModule;
-    await mod.default();
-    setStatus(targets.wasm, 'ready');
-    // Telemetry hook: fires once per page-session. The telemetry-client picks
-    // it up to populate `wasm_init_ms` in the outgoing beacon.
-    window.dispatchEvent(
-      new CustomEvent('telemetry:wasm-ready', { detail: { ms: performance.now() - wasmStart } }),
-    );
-  } catch (error) {
-    console.error('canvas: WASM load failed', error);
-    setStatus(targets.wasm, 'error');
-    setStatus(targets.canvas, 'error');
-    return;
-  }
+const wasmStart = performance.now();
+let mod: CanvasModule;
+try {
+  const moduleUrl = new URL("/wasm/canvas/canvas.js", globalThis.location.href).href;
+  mod = (await import(/* @vite-ignore */ moduleUrl)) as unknown as CanvasModule;
+  await mod.default();
+  setStatus(targets.wasm, "ready");
+  // Telemetry hook: fires once per page-session. The telemetry-client picks
+  // it up to populate `wasm_init_ms` in the outgoing beacon.
+  window.dispatchEvent(
+    new CustomEvent("telemetry:wasm-ready", { detail: { ms: performance.now() - wasmStart } }),
+  );
+} catch (error) {
+  console.error("canvas: WASM load failed", error);
+  setStatus(targets.wasm, "error");
+  setStatus(targets.canvas, "error");
+  return;
+}
 ```
 
 Two changes: capture `wasmStart` before the import, and dispatch the custom event after `setStatus(targets.wasm, 'ready')`.
@@ -927,8 +952,8 @@ interface Stats {
   device_breakdown: DeviceRow[];
 }
 
-function fmt(value: number | null, suffix = ''): string {
-  if (value === null || !Number.isFinite(value)) return '—';
+function fmt(value: number | null, suffix = ""): string {
+  if (value === null || !Number.isFinite(value)) return "—";
   const rounded = Math.round(value);
   return `${rounded}${suffix}`;
 }
@@ -941,28 +966,28 @@ function setSlot(name: string, value: string): void {
 export async function mountTelemetryStats(): Promise<void> {
   let stats: Stats;
   try {
-    const res = await fetch('/api/telemetry/stats', { credentials: 'omit' });
+    const res = await fetch("/api/telemetry/stats", { credentials: "omit" });
     if (!res.ok) return;
     stats = (await res.json()) as Stats;
   } catch {
     return;
   }
 
-  setSlot('total-sessions', fmt(stats.total_sessions));
-  setSlot('sessions-30d', fmt(stats.sessions_last_30d));
-  setSlot('avg-lcp', fmt(stats.avg_lcp_ms, ' ms'));
-  setSlot('avg-fps', fmt(stats.avg_fps, ' fps'));
+  setSlot("total-sessions", fmt(stats.total_sessions));
+  setSlot("sessions-30d", fmt(stats.sessions_last_30d));
+  setSlot("avg-lcp", fmt(stats.avg_lcp_ms, " ms"));
+  setSlot("avg-fps", fmt(stats.avg_fps, " fps"));
 
   const countries = stats.top_countries
     .slice(0, 5)
     .map((row) => `${row.country} (${row.count})`)
-    .join(' · ');
-  if (countries) setSlot('countries', countries);
+    .join(" · ");
+  if (countries) setSlot("countries", countries);
 
   const devices = stats.device_breakdown
     .map((row) => `${row.device_class} (${row.count})`)
-    .join(' · ');
-  if (devices) setSlot('devices', devices);
+    .join(" · ");
+  if (devices) setSlot("devices", devices);
 }
 ```
 
@@ -1113,6 +1138,7 @@ git commit -m "feat(telemetry): live aggregates in workspace pane + wasm-ready h
 ### Task 6: Drop skeleton telemetry workers + update justfile
 
 **Files:**
+
 - Delete: `/home/yanai/dev/sandbox/home-sh/infra/workers/telemetry-write/` (entire directory)
 - Delete: `/home/yanai/dev/sandbox/home-sh/infra/workers/telemetry-read/` (entire directory)
 - Modify: `/home/yanai/dev/sandbox/home-sh/justfile` (point `migrate-remote` at the site Worker config)
@@ -1212,6 +1238,7 @@ git commit -m "chore(telemetry): drop unbuilt /infra/workers/telemetry-{read,wri
 ### Task 7: Workspace smoke spec additions
 
 **Files:**
+
 - Modify: `/home/yanai/dev/sandbox/home-sh/apps/site/tests/smoke/workspace.spec.ts`
 
 **Why:** Locks the four M6 acceptance gates as automated regression — read endpoint shape, write endpoint defenses, pane labels/numbers visible, and DNT-suppression.
@@ -1221,30 +1248,37 @@ git commit -m "chore(telemetry): drop unbuilt /infra/workers/telemetry-{read,wri
 In `/home/yanai/dev/sandbox/home-sh/apps/site/tests/smoke/workspace.spec.ts`, append at the end of the file (after the existing mobile-viewport test):
 
 ```ts
-test('telemetry pane renders aggregate stat slots', async ({ page }) => {
+test("telemetry pane renders aggregate stat slots", async ({ page }) => {
   await page.goto(`${BASE}/workspace#telemetry`);
   // Each `data-telemetry-stat` slot is server-rendered as `—` and overwritten
   // (or left as `—`) by the client fetch. The slot existence is what the
   // acceptance gate cares about — labels + numbers, not specific values.
-  for (const name of ['total-sessions', 'sessions-30d', 'avg-lcp', 'avg-fps', 'countries', 'devices']) {
+  for (const name of [
+    "total-sessions",
+    "sessions-30d",
+    "avg-lcp",
+    "avg-fps",
+    "countries",
+    "devices",
+  ]) {
     await expect(page.locator(`[data-telemetry-stat="${name}"]`)).toBeAttached();
   }
 });
 
-test('beacon endpoint rejects malformed UUID', async ({ request }) => {
-  test.skip(!process.env.SMOKE_BASE_URL, 'beacon endpoint requires deployed Worker (D1 binding)');
+test("beacon endpoint rejects malformed UUID", async ({ request }) => {
+  test.skip(!process.env.SMOKE_BASE_URL, "beacon endpoint requires deployed Worker (D1 binding)");
   const res = await request.post(`${BASE}/api/telemetry/beacon`, {
-    data: { id: 'not-a-uuid', started_at: Date.now() },
+    data: { id: "not-a-uuid", started_at: Date.now() },
   });
   expect(res.status()).toBe(400);
 });
 
-test('beacon endpoint accepts oversized frame_samples without erroring', async ({ request }) => {
-  test.skip(!process.env.SMOKE_BASE_URL, 'beacon endpoint requires deployed Worker (D1 binding)');
+test("beacon endpoint accepts oversized frame_samples without erroring", async ({ request }) => {
+  test.skip(!process.env.SMOKE_BASE_URL, "beacon endpoint requires deployed Worker (D1 binding)");
   const samples = Array.from({ length: 1000 }, (_, i) => ({ t: i, fps: 60 }));
   const res = await request.post(`${BASE}/api/telemetry/beacon`, {
     data: {
-      id: '44444444-4444-4444-8444-444444444444',
+      id: "44444444-4444-4444-8444-444444444444",
       started_at: Date.now(),
       frame_samples: samples,
     },
@@ -1253,20 +1287,27 @@ test('beacon endpoint accepts oversized frame_samples without erroring', async (
   expect(res.status()).toBe(200);
 });
 
-test('stats endpoint returns expected aggregate shape', async ({ request }) => {
-  test.skip(!process.env.SMOKE_BASE_URL, 'stats endpoint requires deployed Worker (D1 binding)');
+test("stats endpoint returns expected aggregate shape", async ({ request }) => {
+  test.skip(!process.env.SMOKE_BASE_URL, "stats endpoint requires deployed Worker (D1 binding)");
   const res = await request.get(`${BASE}/api/telemetry/stats`);
   expect(res.status()).toBe(200);
-  expect(res.headers()['cache-control']).toContain('max-age=60');
+  expect(res.headers()["cache-control"]).toContain("max-age=60");
   const body = await res.json();
-  for (const key of ['total_sessions', 'sessions_last_30d', 'avg_lcp_ms', 'avg_fps', 'top_countries', 'device_breakdown']) {
+  for (const key of [
+    "total_sessions",
+    "sessions_last_30d",
+    "avg_lcp_ms",
+    "avg_fps",
+    "top_countries",
+    "device_breakdown",
+  ]) {
     expect(body).toHaveProperty(key);
   }
   // No raw identifiers leak into the aggregate.
   expect(JSON.stringify(body)).not.toMatch(/\bid\b/);
 });
 
-test('DNT user does not POST a beacon', async ({ browser }) => {
+test("DNT user does not POST a beacon", async ({ browser }) => {
   // Playwright launches contexts with DNT off by default; explicitly enable.
   const ctx = await browser.newContext({
     extraHTTPHeaders: {},
@@ -1274,14 +1315,14 @@ test('DNT user does not POST a beacon', async ({ browser }) => {
   });
   const page = await ctx.newPage();
   await page.addInitScript(() => {
-    Object.defineProperty(Navigator.prototype, 'doNotTrack', {
+    Object.defineProperty(Navigator.prototype, "doNotTrack", {
       configurable: true,
-      get: () => '1',
+      get: () => "1",
     });
   });
   let beaconRequests = 0;
-  page.on('request', (req) => {
-    if (req.url().includes('/api/telemetry/beacon')) beaconRequests += 1;
+  page.on("request", (req) => {
+    if (req.url().includes("/api/telemetry/beacon")) beaconRequests += 1;
   });
   await page.goto(`${BASE}/workspace`);
   // Trigger the pagehide path by navigating away.
@@ -1315,6 +1356,7 @@ git commit -m "test(smoke): cover M6 acceptance gates (beacon, stats, pane, DNT)
 ### Task 8: PR + tag v2.3.0
 
 **Files:**
+
 - Modify: `/home/yanai/dev/sandbox/home-sh/CHANGELOG.md` (roll `[Unreleased]` → `[2.3.0]`)
 
 - [ ] **Step 1: Push the feat branch + open PR**
@@ -1425,22 +1467,22 @@ git tag -l --sort=-v:refname | head -3
 
 ## Critical files referenced
 
-| File | Purpose | Tasks |
-|---|---|---|
-| `apps/site/wrangler.jsonc` | adds `d1_databases` block binding `home-sh-telemetry` to the site Worker as `DB` | 1 |
-| `apps/site/src/pages/api/telemetry/beacon.ts` (new) | POST handler — UUID validation, sample cap, D1 INSERT | 2 |
-| `apps/site/src/pages/api/telemetry/beacon.test.ts` (new) | bun:test coverage of rejection branches + happy path | 2 |
-| `apps/site/src/pages/api/telemetry/stats.ts` (new) | GET handler — batched aggregates, Cache API, CORS | 3 |
-| `apps/site/src/pages/api/telemetry/stats.test.ts` (new) | bun:test coverage of shape + headers + no-id leak | 3 |
-| `apps/site/src/lib/telemetry-client.ts` (new) | per-session UUID, LCP/wasm/fps capture, sendBeacon on pagehide, DNT gate | 4 |
-| `apps/site/src/lib/telemetry-client.test.ts` (new) | unit tests for UUID gen, allowed-checks, deviceClass | 4 |
-| `apps/site/src/lib/telemetry-stats-client.ts` (new) | fetches /api/telemetry/stats, fills `data-telemetry-stat` slots | 5 |
-| `apps/site/src/lib/workspace-wip-client.ts` | dispatches `telemetry:wasm-ready` after canvas first paint | 5 |
-| `apps/site/src/pages/workspace/index.astro` | telemetry pane: live stat slots; bootWorkspace mounts all three | 5 |
-| `infra/workers/telemetry-{write,read}/` | DELETED in Task 6 (skeletons, never deployed) | 6 |
-| `justfile` | `migrate-remote` retargeted at `apps/site/wrangler.jsonc`; `worker-types` cleaned up | 6 |
-| `apps/site/tests/smoke/workspace.spec.ts` | adds 5 M6 acceptance gate tests (3 deployed-only) | 7 |
-| `CHANGELOG.md` | rolls `[Unreleased]` → `[2.3.0]` | 8 |
+| File                                                     | Purpose                                                                              | Tasks |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----- |
+| `apps/site/wrangler.jsonc`                               | adds `d1_databases` block binding `home-sh-telemetry` to the site Worker as `DB`     | 1     |
+| `apps/site/src/pages/api/telemetry/beacon.ts` (new)      | POST handler — UUID validation, sample cap, D1 INSERT                                | 2     |
+| `apps/site/src/pages/api/telemetry/beacon.test.ts` (new) | bun:test coverage of rejection branches + happy path                                 | 2     |
+| `apps/site/src/pages/api/telemetry/stats.ts` (new)       | GET handler — batched aggregates, Cache API, CORS                                    | 3     |
+| `apps/site/src/pages/api/telemetry/stats.test.ts` (new)  | bun:test coverage of shape + headers + no-id leak                                    | 3     |
+| `apps/site/src/lib/telemetry-client.ts` (new)            | per-session UUID, LCP/wasm/fps capture, sendBeacon on pagehide, DNT gate             | 4     |
+| `apps/site/src/lib/telemetry-client.test.ts` (new)       | unit tests for UUID gen, allowed-checks, deviceClass                                 | 4     |
+| `apps/site/src/lib/telemetry-stats-client.ts` (new)      | fetches /api/telemetry/stats, fills `data-telemetry-stat` slots                      | 5     |
+| `apps/site/src/lib/workspace-wip-client.ts`              | dispatches `telemetry:wasm-ready` after canvas first paint                           | 5     |
+| `apps/site/src/pages/workspace/index.astro`              | telemetry pane: live stat slots; bootWorkspace mounts all three                      | 5     |
+| `infra/workers/telemetry-{write,read}/`                  | DELETED in Task 6 (skeletons, never deployed)                                        | 6     |
+| `justfile`                                               | `migrate-remote` retargeted at `apps/site/wrangler.jsonc`; `worker-types` cleaned up | 6     |
+| `apps/site/tests/smoke/workspace.spec.ts`                | adds 5 M6 acceptance gate tests (3 deployed-only)                                    | 7     |
+| `CHANGELOG.md`                                           | rolls `[Unreleased]` → `[2.3.0]`                                                     | 8     |
 
 ---
 

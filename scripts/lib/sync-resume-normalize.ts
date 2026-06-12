@@ -3,4 +3,4 @@ export {
   objectValue,
   stringList,
   stringValue,
-} from '../../apps/site/src/lib/resume-normalize';
+} from "../../apps/site/src/lib/resume-normalize";
