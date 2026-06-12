@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.14] - 2026-06-12
+
+### Fixed
+
+- **Production routing** — Set **`assets.run_worker_first`** so Hono SSR serves `/`, `/resume`, and API routes instead of a stale Astro **`index.html`** left in the static asset namespace.
+
 ## [v0.1.13] - 2026-06-12
 
 ### Changed
