@@ -2,7 +2,7 @@
 # Apply a branch ruleset for `main` via GitHub API (same as Settings → Rules → Rulesets).
 #   - Require pull request before merge (0 approvals)
 #   - Block force pushes and branch deletion
-#   - Prefer requiring checks "yanai-sh / verify (ubuntu-latest)" + macos (falls back if GitHub rejects unknown context)
+#   - Require check "yanai-sh / verify / yanai-sh / verify — run" (falls back if GitHub rejects unknown context)
 #
 # Usage: ./scripts/gh-protect-main.sh
 # Requires: gh CLI, admin on repo, `repo` scope.

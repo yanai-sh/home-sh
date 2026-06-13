@@ -1,4 +1,4 @@
-# Called from yanai-sh / PR — main and yanai-sh / PR — dev.
+# Called from yanai-sh / PR — verify.
 name: yanai-sh / Verify (reusable)
 
 on:
@@ -22,51 +22,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           submodules: recursive
-          # Dependabot PRs only see Dependabot secrets (not Actions/Environment). Add `RESUME_REPO_TOKEN`
-          # under Settings → Secrets and variables → Dependabot (same PAT as staging). Otherwise fall back
-          # to `github.token` so checkout is valid; private `resume/` may still need the Dependabot secret.
           token: ${{ secrets.RESUME_REPO_TOKEN || github.token }}
-
-      - name: Detect changed paths
-        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
-        id: paths
-        with:
-          filters: |
-            workflows:
-              - '.github/workflows/**'
-              - '.github/actions/**'
-            site:
-              - 'apps/site/**'
-            wasm:
-              - 'apps/wasm/**'
-            packages:
-              - 'packages/**'
-            infra:
-              - 'infra/**'
-              - 'apps/site/wrangler.jsonc'
-            root_config:
-              - 'pnpm-lock.yaml'
-              - 'package.json'
-              - 'scripts/**'
-
-      - name: Summarize path filters
-        run: |
-          {
-            echo "## Change detection (informational)"
-            echo ""
-            echo "| Area | Changed |"
-            echo "|------|---------|"
-            echo "| workflows / composite actions | \`${{ steps.paths.outputs.workflows }}\` |"
-            echo "| apps/site | \`${{ steps.paths.outputs.site }}\` |"
-            echo "| apps/wasm | \`${{ steps.paths.outputs.wasm }}\` |"
-            echo "| packages | \`${{ steps.paths.outputs.packages }}\` |"
-            echo "| infra / wrangler | \`${{ steps.paths.outputs.infra }}\` |"
-            echo "| root lockfile / scripts | \`${{ steps.paths.outputs.root_config }}\` |"
-            echo ""
-            echo "Runner: **${{ inputs.runs-on }}**. Full \`pnpm run verify\` runs on every PR."
-          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: ./.github/actions/actionlint
 

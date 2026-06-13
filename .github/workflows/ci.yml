@@ -1,26 +1,22 @@
-# Pull requests only — pushes to `main` are verified in the Deploy workflow.
-name: yanai-sh / PR — main
+# Pull requests to `main` or `dev` — full verify on ubuntu-latest.
+# Pushes to those branches are built and deployed in yanai-sh / Deploy.
+name: yanai-sh / PR — verify
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 permissions:
   contents: read
 
 concurrency:
-  group: yanai-sh-pr-main-${{ github.event.pull_request.number || github.ref }}
+  group: yanai-sh-pr-${{ github.event.pull_request.base.ref }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   verify:
-    # Required contexts for `main` ruleset — see scripts/ruleset-protect-main.json
-    name: yanai-sh / verify (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    name: yanai-sh / verify
     uses: ./.github/workflows/reusable-verify.yml
     with:
-      runs-on: ${{ matrix.os }}
+      runs-on: ubuntu-latest
     secrets: inherit
