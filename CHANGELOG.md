@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Deploy promote** — Use `wrangler versions deploy --version-id … --percentage 100` with `WRANGLER_CI=1` so CI never falls through to the interactive picker (which left legacy Astro at 100%). Production assert/smoke pass Cloudflare Access service-token headers when set.
+
 ### Changed
 
 - **CI/CD** — Single PR workflow (`yanai-sh / PR — verify`) for **`main`** and **`dev`**, **ubuntu-only** (drops macOS matrix). Deploy runs **build-only** (no duplicate verify) and skips per-deploy secret sync. Post-promote **production smoke** on **`main`** asserts Hono **`#shell`** at https://yanai.sh. Rollback promotes without rebuild. Actionlint binary cached. Dependabot auto-merge enabled at repo level.

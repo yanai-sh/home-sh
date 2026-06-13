@@ -39,23 +39,42 @@ jobs:
       - uses: ./.github/actions/pnpm-install
 
       - name: Promote rollback version to production (100%)
-        run: |
-          set -euo pipefail
-          pnpm --dir apps/site exec wrangler versions deploy --config wrangler.jsonc \
-            "${{ inputs.version_id }}@100%" \
-            --message "rollback by ${{ github.actor }}: ${{ inputs.reason }}" \
-            --yes
         env:
+          VERSION_ID: ${{ inputs.version_id }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          DEPLOY_OUTPUT="$(WRANGLER_CI=1 pnpm --dir apps/site exec wrangler versions deploy \
+            --config wrangler.jsonc \
+            --version-id "${VERSION_ID}" \
+            --percentage 100 \
+            --message "rollback by ${{ github.actor }}: ${{ inputs.reason }}" \
+            --yes)"
+          echo "$DEPLOY_OUTPUT"
+          if ! printf '%s\n' "$DEPLOY_OUTPUT" | grep -qE "\(100%\)[[:space:]]${VERSION_ID}"; then
+            LIST="$(WRANGLER_CI=1 pnpm --dir apps/site exec wrangler versions list --config wrangler.jsonc 2>&1 || true)"
+            echo "$LIST"
+            if ! printf '%s\n' "$LIST" | grep -qE "\(100%\)[[:space:]]${VERSION_ID}"; then
+              echo "::error::Rollback did not move 100% traffic to ${VERSION_ID}." >&2
+              exit 1
+            fi
+          fi
 
       - name: Assert production serves Hono splash
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ vars.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
           sleep 10
-          BODY="$(curl -fsSL --http1.1 -4 https://yanai.sh/)"
+          CURL=(curl -sS --http1.1 -4)
+          if [ -n "${CF_ACCESS_CLIENT_ID:-}" ] && [ -n "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
+            CURL+=(-H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}")
+          fi
+          BODY="$("${CURL[@]}" https://yanai.sh/ || true)"
           if ! printf '%s' "$BODY" | grep -q 'id="shell"'; then
             echo "::error::Rollback promote succeeded but https://yanai.sh still lacks Hono #shell." >&2
             exit 1
           fi
-          curl -fsSL --http1.1 -4 -o /dev/null -w "HTTP %{http_code} /resume\n" https://yanai.sh/resume
+          "${CURL[@]}" -o /dev/null -w "HTTP %{http_code} /resume\n" https://yanai.sh/resume
