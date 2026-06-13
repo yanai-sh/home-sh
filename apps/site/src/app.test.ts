@@ -29,11 +29,9 @@ describe('security middleware', () => {
       },
     };
 
-    const response = await app.request(
-      'https://yanai.sh/assets/splash-client.js',
-      {},
-      { ASSETS: assets } as Env,
-    );
+    const response = await app.request('https://yanai.sh/assets/splash-client.js', {}, {
+      ASSETS: assets,
+    } as Env);
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Content-Type')).toContain('javascript');
