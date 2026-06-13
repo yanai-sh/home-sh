@@ -167,14 +167,18 @@ jobs:
             --message "auto-promote ${GITHUB_SHA:0:7} from $(git log --format='%s' -1 | head -c 60)" \
             --yes)"
           echo "$DEPLOY_OUTPUT"
-          if printf '%s\n' "$DEPLOY_OUTPUT" | grep -qE "\(100%\)[[:space:]]${VERSION_ID}"; then
+          if printf '%s\n' "$DEPLOY_OUTPUT" | grep -qF "Deployed yanai-sh version ${VERSION_ID} at 100%"; then
             echo "Promoted ${VERSION_ID} to 100%."
             exit 0
           fi
-          LIST="$(WRANGLER_CI=1 pnpm --dir apps/site exec wrangler versions list --config "$WRANGLER_JSON" 2>&1 || true)"
+          if printf '%s\n' "$DEPLOY_OUTPUT" | grep -qE "\(100%\)[[:space:]]${VERSION_ID}"; then
+            echo "Promoted ${VERSION_ID} to 100% (traffic split output)."
+            exit 0
+          fi
+          LIST="$(WRANGLER_CI=1 pnpm --dir apps/site exec wrangler deployments list --config "$WRANGLER_JSON" 2>&1 || true)"
           echo "$LIST"
           if printf '%s\n' "$LIST" | grep -qE "\(100%\)[[:space:]]${VERSION_ID}"; then
-            echo "Promoted ${VERSION_ID} to 100% (confirmed via versions list)."
+            echo "Promoted ${VERSION_ID} to 100% (confirmed via deployments list)."
             exit 0
           fi
           echo "::error::Promote did not move 100% traffic to ${VERSION_ID}." >&2
