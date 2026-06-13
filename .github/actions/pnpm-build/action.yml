@@ -1,0 +1,16 @@
+name: yanai-sh / setup — pnpm-build
+description: pnpm install then vp build (Deploy path — no duplicate check/test)
+inputs:
+  public_turnstile_site_key:
+    description: Public Turnstile site key for build-time embed (same as Deploy)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/pnpm-install
+    - name: Build site (Worker bundle + wrangler.json)
+      run: pnpm run build
+      shell: bash
+      env:
+        PUBLIC_TURNSTILE_SITE_KEY: ${{ inputs.public_turnstile_site_key }}

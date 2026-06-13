@@ -1,0 +1,67 @@
+name: yanai-sh / setup — smoke-playwright
+description: Preflight origin then run Playwright smoke against SMOKE_BASE_URL
+inputs:
+  smoke_base_url:
+    description: Origin to test (e.g. staging preview or https://yanai.sh)
+    required: true
+  cf_access_client_id:
+    description: Optional Cloudflare Access service token id (staging previews)
+    required: false
+    default: ""
+  cf_access_client_secret:
+    description: Optional Cloudflare Access service token secret
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+    - uses: ./.github/actions/pnpm-install
+    - uses: ./.github/actions/playwright-chromium
+    - name: Preflight (Access + Hono markers)
+      env:
+        SMOKE_BASE_URL: ${{ inputs.smoke_base_url }}
+        CF_ACCESS_CLIENT_ID: ${{ inputs.cf_access_client_id }}
+        CF_ACCESS_CLIENT_SECRET: ${{ inputs.cf_access_client_secret }}
+      run: |
+        set -euo pipefail
+        node --input-type=module - <<'EOF'
+        const base = process.env.SMOKE_BASE_URL;
+        const id = process.env.CF_ACCESS_CLIENT_ID ?? "";
+        const secret = process.env.CF_ACCESS_CLIENT_SECRET ?? "";
+        if (!base) throw new Error("SMOKE_BASE_URL missing");
+        const headers = (id && secret)
+          ? { "CF-Access-Client-Id": id, "CF-Access-Client-Secret": secret }
+          : {};
+        const res = await fetch(`${base}/`, { redirect: "manual", headers });
+        const body = await res.text();
+        const title = (body.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? "").trim();
+        const location = res.headers.get("location") ?? "";
+        const looksLikeAccess =
+          /cloudflare access|access denied|cf-access|cloudflare\-access/i.test(body) ||
+          /\/cdn-cgi\/access\//i.test(body) ||
+          (title && /access/i.test(title)) ||
+          /cloudflareaccess\.com\/cdn-cgi\/access\/login/i.test(location);
+        const looksLikeAstro = /Layout\.astro|\/_astro\//i.test(body);
+        const hasHonoShell = /id="shell"/i.test(body);
+        console.log(`preflight: GET / -> ${res.status}`);
+        if (title) console.log(`preflight: title="${title}"`);
+        if (looksLikeAccess) {
+          throw new Error("Preflight looks like Cloudflare Access. Set CF_ACCESS_CLIENT_ID/SECRET for staging previews.");
+        }
+        if (looksLikeAstro && !hasHonoShell) {
+          throw new Error("Preflight looks like legacy Astro, not Hono splash (#shell missing).");
+        }
+        if (!hasHonoShell) {
+          throw new Error("Preflight missing Hono splash marker (#shell).");
+        }
+        EOF
+      shell: bash
+    - name: Run Playwright smoke
+      env:
+        SMOKE_BASE_URL: ${{ inputs.smoke_base_url }}
+        CF_ACCESS_CLIENT_ID: ${{ inputs.cf_access_client_id }}
+        CF_ACCESS_CLIENT_SECRET: ${{ inputs.cf_access_client_secret }}
+      run: pnpm run smoke
+      shell: bash

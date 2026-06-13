@@ -20,16 +20,12 @@
 name: yanai-sh / Deploy
 
 on:
-  # Staging only on `push` to `dev` (not `pull_request`): a PR preview deploy
-  # plus the post-merge push would upload twice for the same merge. Every push
-  # updating `refs/heads/dev` runs staging (Worker label only); `main` runs prod
-  # upload + promote + SemVer `v0.y.z` (or `v1.0.0`+) git tag + release. No path filters.
   push:
     branches: [main, dev]
   workflow_dispatch:
     inputs:
       skip_smoke:
-        description: "Skip staging smoke after upload (set true for hotfix paths)"
+        description: "Skip smoke after upload (set true for hotfix paths)"
         required: false
         default: "false"
         type: string
@@ -44,25 +40,18 @@ on:
           - major
 
 permissions:
-  # Auto-tagging pushes git tags back to the repository, so the workflow
-  # needs write access to repo contents (default token has read-only).
   contents: write
-  # Staging: comment Version Preview URL on PRs that contain this commit.
   pull-requests: write
 
 concurrency:
   group: yanai-sh-deploy-${{ github.ref }}
-  # Queue, don't cancel. Every push represents an intentional state that
-  # should land as its own Worker version (rollback granularity, audit
-  # trail, dashboard history). Cancelling mid-deploy wastes the upload
-  # step AND hides commits from the version log.
   cancel-in-progress: false
 
 jobs:
   publish:
     name: yanai-sh / deploy — publish
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
     permissions:
       contents: read
       pull-requests: write
@@ -72,88 +61,38 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
     outputs:
       staging_preview_url: ${{ steps.upload.outputs.preview_url }}
+      version_id: ${{ steps.upload.outputs.version_id }}
       next_tag: ${{ steps.tag.outputs.next }}
       previous_tag: ${{ steps.tag.outputs.previous }}
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
-          # Need full history (or at least all tags) so `git tag -l` can
-          # compute the previous version for the patch/minor bump.
           fetch-depth: 0
           fetch-tags: true
           submodules: recursive
           token: ${{ secrets.RESUME_REPO_TOKEN }}
 
-      - name: Detect changed paths
-        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
-        id: paths
-        with:
-          filters: |
-            workflows:
-              - '.github/workflows/**'
-              - '.github/actions/**'
-            site:
-              - 'apps/site/**'
-            wasm:
-              - 'apps/wasm/**'
-            packages:
-              - 'packages/**'
-            infra:
-              - 'infra/**'
-              - 'apps/site/wrangler.jsonc'
-            root_config:
-              - 'pnpm-lock.yaml'
-              - 'package.json'
-              - 'scripts/**'
-
-      - name: Summarize path filters
-        run: |
-          {
-            echo "## Change detection (informational)"
-            echo ""
-            echo "| Area | Changed |"
-            echo "|------|---------|"
-            echo "| workflows / composite actions | \`${{ steps.paths.outputs.workflows }}\` |"
-            echo "| apps/site | \`${{ steps.paths.outputs.site }}\` |"
-            echo "| apps/wasm | \`${{ steps.paths.outputs.wasm }}\` |"
-            echo "| packages | \`${{ steps.paths.outputs.packages }}\` |"
-            echo "| infra / wrangler | \`${{ steps.paths.outputs.infra }}\` |"
-            echo "| root lockfile / scripts | \`${{ steps.paths.outputs.root_config }}\` |"
-            echo ""
-            echo "Trigger: **${{ github.event_name }}**."
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - uses: ./.github/actions/actionlint
-
-      # Embedded into the SSR'd HTML at build time so the contact form's
-      # Turnstile widget renders. Public value (widget id), not a secret.
-      - uses: ./.github/actions/pnpm-verify
+      - uses: ./.github/actions/pnpm-build
         with:
           public_turnstile_site_key: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
 
-      - name: Sync runtime secrets (Secrets Store)
-        # Keep runtime bindings fresh for the version being tested.
-        # Reads values from GitHub Environment secrets when PUSH_SECRETS_FROM_ENV=1.
-        run: pnpm run push-secrets
-        env:
-          PUSH_SECRETS_FROM_ENV: "1"
-          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          CONTACT_FROM: ${{ secrets.CONTACT_FROM }}
-          CONTACT_TO: ${{ secrets.CONTACT_TO }}
-          RESUME_REPO_TOKEN: ${{ secrets.RESUME_REPO_TOKEN }}
+      - name: Assert run_worker_first in built wrangler.json
+        run: |
+          set -euo pipefail
+          WRANGLER_JSON="apps/site/dist/yanai_sh/wrangler.json"
+          if ! grep -q '"run_worker_first"[[:space:]]*:[[:space:]]*true' "$WRANGLER_JSON"; then
+            echo "::error::Missing assets.run_worker_first in $WRANGLER_JSON — Hono SSR would lose to stale static index.html." >&2
+            exit 1
+          fi
 
       - name: Compute next version tag
         id: tag
-        # SemVer `v0.y.z` on main; legacy `v1+.*` → next `v0.1.0`; dev → `dev-<run_id>`.
         env:
           VERSION_BUMP: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.version_bump || 'patch' }}
         run: |
           set -euo pipefail
-          # Pre-1.0 line only: v0.MINOR.PATCH (three segments, leading 0).
           LAST0="$(git tag -l | grep -E '^v0\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
-          # Legacy bloated line: v1.0.0, v2.7.0, … (never v0.x.y — that is the modern line).
           LEGACY="$(git tag -l | grep -E '^v[1-9][0-9]*\.[0-9]+\.[0-9]+$' | sort -Vr | head -1 || true)"
           if [ -n "$LAST0" ]; then
             LAST="$LAST0"
@@ -166,8 +105,6 @@ jobs:
           if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
             NEXT="dev-${GITHUB_RUN_ID}"
             PREV="${LAST:-<none>}"
-            echo "previous=$PREV"
-            echo "next=$NEXT"
             echo "previous=$PREV" >> "$GITHUB_OUTPUT"
             echo "next=$NEXT" >> "$GITHUB_OUTPUT"
             exit 0
@@ -188,23 +125,11 @@ jobs:
           fi
 
           PREV="${LAST:-<none>}"
-          echo "previous=$PREV"
-          echo "next=$NEXT"
           echo "previous=$PREV" >> "$GITHUB_OUTPUT"
           echo "next=$NEXT" >> "$GITHUB_OUTPUT"
 
       - name: Upload Worker version (wrangler)
         id: upload
-        # Project-pinned wrangler 4.x via the `version-upload` script in
-        # apps/site/package.json. Extra args after `--` are forwarded to
-        # wrangler. `--message` annotates each version with the commit
-        # subject so the Cloudflare dashboard's version history is
-        # human-readable. `--tag` records the new version (e.g. v0.1.3 or dev-…).
-        # On dev pushes, `--name yanai-sh-staging` overrides the Worker
-        # name so the upload lands on a separate script with its own
-        # ~10-version retention. Bindings (KV, Secrets Store, D1, rate
-        # limit) come from the same wrangler.jsonc and are sent verbatim
-        # to whichever Worker name is the target.
         run: |
           set -euo pipefail
           NAME_FLAGS=()
@@ -216,23 +141,17 @@ jobs:
             --message "$(git log --format='%s' -1)" \
             --tag "${{ steps.tag.outputs.next }}")"
           echo "$OUTPUT"
-          # Wrangler prints "Worker Version ID: <uuid>" on success.
           VERSION_ID="$(printf '%s\n' "$OUTPUT" | grep -oE 'Worker Version ID: [a-f0-9-]+' | awk '{print $4}')"
           if [ -z "$VERSION_ID" ]; then
             echo "::error::Failed to parse Worker Version ID from wrangler output" >&2
             exit 1
           fi
           echo "version_id=$VERSION_ID" >> "$GITHUB_OUTPUT"
-          # Immutable version preview (workers.dev). Omitted if previews are disabled for the account/subdomain.
           PREVIEW_URL="$(printf '%s\n' "$OUTPUT" | grep -oP 'Version Preview URL:\s*\Khttps://\S+' | head -1 || true)"
           if [ -z "$PREVIEW_URL" ]; then
             PREVIEW_URL="$(printf '%s\n' "$OUTPUT" | grep -oP 'Version Preview Alias URL:\s*\Khttps://\S+' | head -1 || true)"
           fi
-          if [ -n "$PREVIEW_URL" ]; then
-            echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
-          else
-            echo "preview_url=" >> "$GITHUB_OUTPUT"
-          fi
+          echo "preview_url=${PREVIEW_URL:-}" >> "$GITHUB_OUTPUT"
 
       - name: Promote version to production (100%)
         if: github.ref == 'refs/heads/main'
@@ -242,6 +161,29 @@ jobs:
             "${{ steps.upload.outputs.version_id }}@100%" \
             --message "auto-promote ${GITHUB_SHA:0:7} from $(git log --format='%s' -1 | head -c 60)" \
             --yes
+
+      - name: Assert production serves Hono splash
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            BODY="$(curl -fsSL --http1.1 -4 https://yanai.sh/ || true)"
+            if printf '%s' "$BODY" | grep -q 'id="shell"'; then
+              echo "Production serves Hono splash (#shell found on attempt ${attempt})."
+              if printf '%s' "$BODY" | grep -qE 'Layout\.astro|/_astro/'; then
+                echo "::warning::Legacy Astro markers still present alongside Hono shell." >&2
+              fi
+              exit 0
+            fi
+            if printf '%s' "$BODY" | grep -qE 'Layout\.astro|/_astro/'; then
+              echo "::warning::Production still looks like legacy Astro (attempt ${attempt}/6)" >&2
+            else
+              echo "Attempt ${attempt}/6: #shell not found yet." >&2
+            fi
+            sleep 10
+          done
+          echo "::error::https://yanai.sh does not serve Hono splash after promote (version ${{ steps.upload.outputs.version_id }})." >&2
+          exit 1
 
       - name: Write deploy summary
         run: |
@@ -265,16 +207,10 @@ jobs:
               echo "Uploaded version \`${{ steps.upload.outputs.version_id }}\` to the **yanai-sh-staging** Worker. Production at https://yanai.sh is unchanged."
               echo ""
               if [ -n "${{ steps.upload.outputs.preview_url }}" ]; then
-                echo "**Version preview URL** (automation — same as Wrangler output):"
-                echo ""
-                echo "${{ steps.upload.outputs.preview_url }}"
-                echo ""
-                echo "Use this for manual QA or \`SMOKE_BASE_URL=...\` smoke runs. Preview URLs are **public by default**; lock them with [Cloudflare Access on the Worker](https://developers.cloudflare.com/workers/configuration/previews/#manage-access-to-preview-urls) if you need auth."
+                echo "**Version preview URL**: ${{ steps.upload.outputs.preview_url }}"
               else
-                echo "Wrangler did not print a **Version Preview URL** (preview URLs may be disabled for this Worker). Open **Upload Worker version** logs above, or Cloudflare → **yanai-sh-staging** → **Deployments**."
+                echo "Wrangler did not print a **Version Preview URL**. Open **Upload Worker version** logs or Cloudflare → **yanai-sh-staging** → **Deployments**."
               fi
-              echo ""
-              echo "When ready, open a PR \`dev\` → \`main\` to promote."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -286,7 +222,6 @@ jobs:
           set -euo pipefail
           PREVIEW_URL="${{ steps.upload.outputs.preview_url }}"
           if [ -z "$PREVIEW_URL" ]; then
-            echo "No preview URL parsed; skip PR comments."
             exit 0
           fi
           BODY="$(printf '%s\n' \
@@ -296,21 +231,17 @@ jobs:
             '' \
             'Production **yanai.sh** is unchanged until **dev** → **main** merge.')"
           mapfile -t prs < <(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq '.[].number')
-          if [ "${#prs[@]}" -eq 0 ]; then
-            echo "No PRs reference this commit; skip."
-            exit 0
-          fi
           for pr in "${prs[@]}"; do
             gh pr comment "$pr" --body "$BODY"
           done
 
-  # Git tag + release must not run inside `environment:` jobs: GitHub can
-  # supply a read-only `GITHUB_TOKEN` there, so `git push` for tags fails with
-  # 403 even when workflow `permissions.contents` is write at the file level.
   push_git_tag:
     name: yanai-sh / deploy — version tag
-    if: github.ref == 'refs/heads/main'
-    needs: publish
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      needs.publish.result == 'success' &&
+      (needs.smoke_production.result == 'success' || needs.smoke_production.result == 'skipped')
+    needs: [publish, smoke_production]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -340,15 +271,12 @@ jobs:
     permissions:
       contents: write
     steps:
-      # `gh release create --generate-notes` shells out to git; this job had no
-      # checkout before, which failed with "fatal: not a git repository".
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           fetch-tags: true
-
       - name: Create GitHub release (production)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -359,8 +287,8 @@ jobs:
             --generate-notes \
             --latest
 
-  smoke:
-    name: yanai-sh / deploy — smoke
+  smoke_staging:
+    name: yanai-sh / deploy — smoke (staging)
     needs: publish
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -370,47 +298,22 @@ jobs:
       needs.publish.outputs.staging_preview_url != '' &&
       (github.event_name != 'workflow_dispatch' || github.event.inputs.skip_smoke != 'true')
     steps:
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-      - uses: ./.github/actions/pnpm-install
-      - uses: ./.github/actions/playwright-chromium
-      - name: Preflight (Access + origin)
-        env:
-          SMOKE_BASE_URL: ${{ needs.publish.outputs.staging_preview_url }}
-          CF_ACCESS_CLIENT_ID: ${{ vars.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-        run: |
-          set -euo pipefail
-          node --input-type=module - <<'EOF'
-          const base = process.env.SMOKE_BASE_URL;
-          const id = process.env.CF_ACCESS_CLIENT_ID ?? "";
-          const secret = process.env.CF_ACCESS_CLIENT_SECRET ?? "";
-          if (!base) throw new Error("SMOKE_BASE_URL missing");
-          const headers = (id && secret)
-            ? { "CF-Access-Client-Id": id, "CF-Access-Client-Secret": secret }
-            : {};
-          const res = await fetch(`${base}/`, { redirect: "manual", headers });
-          const ct = res.headers.get("content-type") ?? "";
-          const body = await res.text();
-          const title = (body.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? "").trim();
-          const location = res.headers.get("location") ?? "";
-          const looksLikeAccess =
-            /cloudflare access|access denied|cf-access|cloudflare\-access/i.test(body) ||
-            /\/cdn-cgi\/access\//i.test(body) ||
-            (title && /access/i.test(title)) ||
-            /cloudflareaccess\.com\/cdn-cgi\/access\/login/i.test(location);
-          console.log(`preflight: GET / -> ${res.status} ${ct}`);
-          if (title) console.log(`preflight: title="${title}"`);
-          console.log(`preflight: cf-ray=${res.headers.get("cf-ray") ?? ""}`);
-          console.log(`preflight: body_prefix=${JSON.stringify(body.slice(0, 220))}`);
-          if (res.status >= 300 && res.status < 400) console.log(`preflight: redirect location=${location}`);
-          if (looksLikeAccess) {
-            throw new Error("Preflight looks like a Cloudflare Access login/deny page. Ensure the Access policy allows this Service Token, and CF_ACCESS_CLIENT_ID/SECRET match that token.");
-          }
-          EOF
-      - name: Run Playwright smoke
-        env:
-          SMOKE_BASE_URL: ${{ needs.publish.outputs.staging_preview_url }}
-          CF_ACCESS_CLIENT_ID: ${{ vars.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-        run: pnpm run smoke
+      - uses: ./.github/actions/smoke-playwright
+        with:
+          smoke_base_url: ${{ needs.publish.outputs.staging_preview_url }}
+          cf_access_client_id: ${{ vars.CF_ACCESS_CLIENT_ID }}
+          cf_access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+
+  smoke_production:
+    name: yanai-sh / deploy — smoke (production)
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.skip_smoke != 'true')
+    steps:
+      - uses: ./.github/actions/smoke-playwright
+        with:
+          smoke_base_url: https://yanai.sh
