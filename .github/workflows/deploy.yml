@@ -40,8 +40,7 @@ on:
           - major
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: yanai-sh-deploy-${{ github.ref }}
@@ -71,6 +70,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           submodules: recursive
+          persist-credentials: false
           token: ${{ secrets.RESUME_REPO_TOKEN }}
 
       - uses: ./.github/actions/pnpm-build
