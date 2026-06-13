@@ -76,7 +76,6 @@ jobs:
       - uses: ./.github/actions/pnpm-build
         with:
           public_turnstile_site_key: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
-          resume_repo_token: ${{ secrets.RESUME_REPO_TOKEN }}
 
       - name: Assert run_worker_first in built wrangler.json
         run: |
