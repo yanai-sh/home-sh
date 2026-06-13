@@ -17,7 +17,7 @@ runs:
   steps:
     - uses: ./.github/actions/pnpm-install
     - uses: ./.github/actions/playwright-chromium
-    - name: Preflight (Access + Hono markers)
+    - name: Preflight (Access + splash markers)
       env:
         SMOKE_BASE_URL: ${{ inputs.smoke_base_url }}
         CF_ACCESS_CLIENT_ID: ${{ inputs.cf_access_client_id }}
@@ -42,17 +42,17 @@ runs:
           (title && /access/i.test(title)) ||
           /cloudflareaccess\.com\/cdn-cgi\/access\/login/i.test(location);
         const looksLikeAstro = /Layout\.astro|\/_astro\//i.test(body);
-        const hasHonoShell = /id="shell"/i.test(body);
+        const hasSplashShell = /id="shell"/i.test(body);
         console.log(`preflight: GET / -> ${res.status}`);
         if (title) console.log(`preflight: title="${title}"`);
         if (looksLikeAccess) {
           throw new Error("Preflight looks like Cloudflare Access. Set CF_ACCESS_CLIENT_ID/SECRET for staging previews.");
         }
-        if (looksLikeAstro && !hasHonoShell) {
-          throw new Error("Preflight looks like legacy Astro, not Hono splash (#shell missing).");
+        if (looksLikeAstro && !hasSplashShell) {
+          throw new Error("Preflight looks like legacy Astro, not the splash shell (#shell missing).");
         }
-        if (!hasHonoShell) {
-          throw new Error("Preflight missing Hono splash marker (#shell).");
+        if (!hasSplashShell) {
+          throw new Error("Preflight missing splash shell marker (#shell).");
         }
         EOF
       shell: bash

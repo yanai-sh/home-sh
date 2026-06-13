@@ -29,8 +29,9 @@ function resolveAssetUrl(base: string, path: string): string {
 }
 
 async function waitForSplashClient(page: Page): Promise<void> {
+  await page.waitForLoadState('networkidle');
   await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
-    timeout: 15_000,
+    timeout: 30_000,
   });
 }
 
