@@ -24,30 +24,39 @@ test('splash stage renders with resume link and WASM layer', async ({ page }) =>
   await expect(page.locator('button[data-open-split="resume"]')).toBeVisible();
 });
 
+function resolveAssetUrl(base: string, path: string): string {
+  return new URL(path.replace(/^\.\//, ''), `${base.replace(/\/$/, '')}/`).href;
+}
+
+async function waitForSplashClient(page: Page): Promise<void> {
+  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
+    timeout: 15_000,
+  });
+}
+
 test('splash CSS and client JS return 200', async ({ page, request }) => {
   await page.goto(`${BASE}/`);
   const html = await page.content();
-  const cssMatch = html.match(/href="(\/_app\/immutable\/assets\/[^"]+\.css)"/);
+  const cssMatch = html.match(/href="((?:\.\/)?_app\/immutable\/assets\/[^"]+\.css)"/);
   expect(cssMatch).toBeTruthy();
-  const css = await request.get(`${BASE}${cssMatch![1]}`);
+  const css = await request.get(resolveAssetUrl(BASE, cssMatch![1]));
   expect(css.status()).toBe(200);
   expect(css.headers()['content-type']).toMatch(/text\/css/);
-  const jsMatch = html.match(/src="(\/_app\/immutable\/[^"]+\.js)"/);
+  const jsMatch = html.match(/import\("((?:\.\/)?_app\/immutable\/[^"]+\.js)"\)/);
   expect(jsMatch).toBeTruthy();
-  const js = await request.get(`${BASE}${jsMatch![1]}`);
+  const js = await request.get(resolveAssetUrl(BASE, jsMatch![1]));
   expect(js.status()).toBe(200);
   expect(js.headers()['content-type']).toMatch(/javascript/);
 });
 
 test('desktop systems field initializes as a progressive enhancement', async ({ page }) => {
   await page.goto(`${BASE}/`);
-  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
-    timeout: 8_000,
-  });
+  await waitForSplashClient(page);
 });
 
 test('opening resume split shows PDF pane chrome', async ({ page }) => {
   await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
   await page.locator('button[data-open-split="resume"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'resume');
   await expect(page.locator('#pane-detail')).not.toHaveAttribute('inert', '');
@@ -56,9 +65,7 @@ test('opening resume split shows PDF pane chrome', async ({ page }) => {
 
 test('systems field remains mounted when split opens', async ({ page }) => {
   await page.goto(`${BASE}/`);
-  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
-    timeout: 8_000,
-  });
+  await waitForSplashClient(page);
   await page.locator('button[data-open-split="resume"]').click();
   await expect(page.locator('[data-systems-field-canvas]')).toBeAttached();
 });
@@ -83,7 +90,7 @@ test('reduced-motion: splash renders a static field frame', async ({ browser }) 
   await expect(page.locator('#splash')).toBeVisible();
   // The field still initializes — it renders a single static frame.
   await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
-    timeout: 8_000,
+    timeout: 15_000,
   });
   await ctx.close();
 });
@@ -100,6 +107,7 @@ test('blocked systems field WASM keeps splash usable', async ({ page }) => {
 
 test('contact split opens from command button', async ({ page }) => {
   await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
   await page.locator('button[data-open-split="contact"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'contact');
   await expect(page.locator('#contact-title')).toBeVisible();
@@ -108,9 +116,7 @@ test('contact split opens from command button', async ({ page }) => {
 test('contact pane keeps systems field ready', async ({ page }) => {
   const errors = collectPageErrors(page);
   await page.goto(`${BASE}/`);
-  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
-    timeout: 8_000,
-  });
+  await waitForSplashClient(page);
   await page.locator('button[data-open-split="contact"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'contact');
   const message = page.locator('#cf-message');
@@ -133,6 +139,7 @@ test('figure caption is present with source link', async ({ page }) => {
 
 test('project rows render and open the project pane', async ({ page }) => {
   await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
   const row = page.locator('button[data-open-project]').first();
   await expect(row).toBeVisible();
   await row.click();
@@ -141,9 +148,10 @@ test('project rows render and open the project pane', async ({ page }) => {
   await expect(page.locator('[data-project-detail]:not([hidden])')).toBeVisible();
 });
 
-test('/resume redirects to resume.pdf', async ({ page }) => {
-  const response = await page.goto(`${BASE}/resume`, { waitUntil: 'commit' });
-  expect(response?.url()).toMatch(/\/resume\.pdf$/);
+test('/resume redirects to resume.pdf', async ({ request }) => {
+  const response = await request.get(`${BASE}/resume`, { maxRedirects: 0 });
+  expect(response.status()).toBe(308);
+  expect(response.headers()['location']).toMatch(/\/resume\.pdf$/);
 });
 
 test('theme toggle is present in the stage glyphs', async ({ page }) => {

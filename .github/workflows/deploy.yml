@@ -182,7 +182,7 @@ jobs:
           echo "::error::Promote did not move 100% traffic to ${VERSION_ID}." >&2
           exit 1
 
-      - name: Assert promoted version serves Hono splash
+      - name: Assert promoted version serves SvelteKit splash
         if: github.ref == 'refs/heads/main'
         env:
           PREVIEW_URL: ${{ steps.upload.outputs.preview_url }}
