@@ -66,6 +66,7 @@
   // SSR pages (/, /resume, 404) are rendered by Hono — run the Worker before
   // static assets so a legacy index.html from prior Astro deploys cannot win /.
   "assets": {
+    "binding": "ASSETS",
     "run_worker_first": true,
   },
 }
