@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Resume delivery** — Drop **`sync:resume`** and **`content/resume.generated.json`**. Splash copy is site-owned (`apps/site/src/data/portfolio/`). **`/resume`** redirects to **`/resume.pdf`** (GitHub Releases proxy). CI/deploy checkout no longer requires the private **`resume/`** submodule.
+
 ### Fixed
 
 - **Deploy promote** — Use `wrangler versions deploy --version-id … --percentage 100` with `WRANGLER_CI=1` so CI never falls through to the interactive picker (which left legacy Astro at 100%). Production assert/smoke pass Cloudflare Access service-token headers when set.

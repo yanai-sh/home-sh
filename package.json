@@ -12,16 +12,15 @@
   "scripts": {
     "setup:wsl": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/wsl-run.ps1 bash scripts/wsl-setup.sh",
     "dev": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site dev",
-    "build": "node scripts/wsl-proxy.mjs sh -c \"pnpm exec vp run sync:resume && pnpm --filter @yanai-sh/site build\"",
+    "build": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site build",
     "check": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site check",
     "fix": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site fix",
     "typecheck": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site typecheck",
     "test": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site test",
-    "verify": "node scripts/wsl-proxy.mjs sh -c \"pnpm sync:resume && pnpm --filter @yanai-sh/site verify\"",
+    "verify": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site verify",
     "preview": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site preview",
     "smoke": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site smoke",
     "draft:static": "node scripts/wsl-proxy.mjs pnpm dlx serve docs/splash-drafts",
-    "sync:resume": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/sync-resume.ts",
     "env:copy-prod": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/copy-gh-environment.ts --from staging --to production",
     "cf:list-access-apps": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/cf-list-access-apps.ts",
     "push-secrets": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/push-secrets.ts",
@@ -33,11 +32,9 @@
     "@iconify-json/simple-icons": "^1.2.84",
     "lefthook": "^2.1.9",
     "playwright": "^1.60.0",
-    "smol-toml": "^1.5.2",
     "tsx": "^4.21.0",
     "vite-plus": "^0.1.23",
-    "vitest": "^4.1.0",
-    "zod": "^4.3.6"
+    "vitest": "^4.1.0"
   },
   "engines": {
     "node": ">=22"

@@ -16,7 +16,6 @@ export default defineConfig({
       '@lib': path.resolve(__dirname, './src/lib'),
       '@config': path.resolve(__dirname, './src/config'),
       '#content': path.resolve(__dirname, './.velite/index.js'),
-      '@resume/generated': path.resolve(__dirname, '../../content/resume.generated.json'),
     },
   },
   build: {
@@ -56,13 +55,5 @@ export default defineConfig({
     semi: true,
     singleQuote: true,
     printWidth: 100,
-  },
-  run: {
-    tasks: {
-      'sync:resume': {
-        command: 'pnpm --dir ../.. sync:resume',
-        cache: true,
-      },
-    },
   },
 });

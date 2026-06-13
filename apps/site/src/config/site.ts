@@ -8,7 +8,7 @@ export const SITE_OG_IMAGE_PATH = '/brand/og-cover.svg' as const;
 
 /**
  * Optional one line under the hero. Leave empty to omit the lede entirely.
- * Homepage narrative comes from the resume snapshot in `PortfolioHero`.
+ * Splash copy lives in `apps/site/src/data/portfolio/`.
  */
 export const SITE_LEDE = '';
 

@@ -5,7 +5,7 @@
 ### Monorepo layout
 
 ```
-resume/      # git submodule → yanai-sh/resume (canonical resume.toml; bump pointer to ship CV changes)
+resume/      # optional git submodule → yanai-sh/resume (PDF source repo; not required for site build)
 apps/
   site/        # Hono + Vite+ app (@cloudflare/vite-plugin) — the deployed site
   wasm/
@@ -22,7 +22,7 @@ infra/
 ```
 index.tsx           # Hono Worker entry (routes + middleware)
 routes/             # /api/contact, /resume.pdf
-views/              # hono/jsx pages (SplashLayout, DocumentLayout, SplashPage, ResumePage, NotFound)
+views/              # hono/jsx pages (SplashLayout, DocumentLayout, SplashPage, NotFound)
 components/         # hono/jsx UI; icons/ SVG assets
 lib/                # edge helpers + unit tests (*.test.ts colocated)
 middleware/         # security headers (CSP, HSTS, etc.)
@@ -31,7 +31,7 @@ scripts/            # *-client.ts browser modules
 config/             # site.ts — canonical title, URL, email, brand constants
 ```
 
-Path aliases (`apps/site/tsconfig.json`; `vite.config.ts`): `@/` → `src/`, `@components/*`, `@views/*`, `@lib/*`, `@config/*`, `#content` → `.velite`, `@resume/generated` → monorepo `content/resume.generated.json` (from `sync:resume`).
+Path aliases (`apps/site/tsconfig.json`; `vite.config.ts`): `@/` → `src/`, `@components/*`, `@views/*`, `@lib/*`, `@config/*`, `#content` → `.velite`.
 
 Client-only scripts follow `*-client.ts` naming and are loaded via Vite `?url` script tags.
 
@@ -45,7 +45,7 @@ CSS custom properties live in **`src/styles/global.css`** (`:root` / `[data-them
 - **`pnpm run check`** / **`pnpm run fix`** — Vite+ check (Oxlint + Oxfmt + tsgo; `--fix` writes)
 - **`pnpm run typecheck`** — tsgo typecheck via `vp check`
 - **`pnpm run test`** — Vitest (`vp test`)
-- **`pnpm run verify`** — `vp run verify` = sync:resume → check → test → build (same as PR CI and Deploy)
+- **`pnpm run verify`** — `vp run verify` = check → test → build (same as PR CI; Deploy runs build-only)
 - **`pnpm run preview`** — `vp preview` (workerd; run **`build`** first)
 - **`pnpm run smoke`** — Playwright smoke tests (`apps/site/tests/smoke`; starts local preview unless **`SMOKE_BASE_URL`** is set)
 
@@ -68,13 +68,13 @@ Two long-lived branches, two Workers: **`yanai-sh-staging`** on **`dev`**, **`ya
 
 **Solo loop (three beats):** (1) **`pnpm run verify`** locally before every push. (2) Open PRs to **`main`** (CI) and merge work into **`dev`**; each **`push`** to **`dev`** runs **Deploy** → staging Worker + optional smoke on the version preview URL. (3) When staging looks right, PR **`dev` → `main`** → production upload + promote + release. Secrets and Environment names: **`infra/README.md`**.
 
-Day-to-day: **`git checkout dev && git pull`** → **`git submodule update --init --recursive`** if **`resume/`** is empty → topic branch → **`pnpm run verify`** → PR → **`dev`** → QA staging preview (smoke supports Cloudflare Access via **`CF_ACCESS_CLIENT_ID`** / **`CF_ACCESS_CLIENT_SECRET`** on the **`staging`** Environment) → PR **`dev` → `main`**. **`CHANGELOG`**: keep **`[Unreleased]`** on **`dev`**; before **`dev` → `main`**, cut a dated **`[v0.y.z]`** section aligned with the tag Deploy will create (or fix up after merge). **`./scripts/gh-protect-main.sh`** (see **`README.md`**) documents **`main`** ruleset expectations.
+Day-to-day: **`git checkout dev && git pull`** → topic branch → **`pnpm run verify`** → PR → **`dev`** → QA staging preview (smoke supports Cloudflare Access via **`CF_ACCESS_CLIENT_ID`** / **`CF_ACCESS_CLIENT_SECRET`** on the **`staging`** Environment) → PR **`dev` → `main`**. **`CHANGELOG`**: keep **`[Unreleased]`** on **`dev`**; before **`dev` → `main`**, cut a dated **`[v0.y.z]`** section aligned with the tag Deploy will create (or fix up after merge). **`./scripts/gh-protect-main.sh`** (see **`README.md`**) documents **`main`** ruleset expectations.
 
-### Resume submodule and `RESUME_REPO_TOKEN`
+### Resume PDF and `RESUME_REPO_TOKEN`
 
-HTML **`/resume`** and the splash summary band use **`content/resume.generated.json`**, produced by **`pnpm run sync:resume`** from the pinned **`resume/`** submodule (**`yanai-sh/resume`**, **`resume.toml`**). Bump the submodule pointer to ship upstream CV changes, then **`pnpm run verify`**.
+The canonical resume is **`GET /resume.pdf`** — streams the latest **`YanaiKlugman_CV_*.pdf`** from **`yanai-sh/resume`** GitHub Releases. **`GET /resume`** redirects to **`/resume.pdf`**. Splash copy (name, tagline, location, current role) lives in **`apps/site/src/data/portfolio/`**.
 
-**`/resume.pdf`** (GitHub Releases proxy) and local **`vp dev`** / **`preview`** when you need PDFs require **`RESUME_REPO_TOKEN`** — same PAT string as the **`staging`/`production`** GitHub Environment (Deploy syncs it to Cloudflare Secrets Store). Put it in **`apps/site/.dev.vars`** or as **`resume_repo_token`** in gitignored **`infra/secrets/worker-secrets.local.json`** (direnv); full secret shape: **`infra/secrets/README.md`**. **`/resume.pdf`** smoke only makes sense with **`SMOKE_BASE_URL`** on a deployed origin; local **`vp preview`** does not emulate Secrets Store bindings reliably.
+**`/resume.pdf`** and local **`vp dev`** / **`preview`** when you need PDFs require **`RESUME_REPO_TOKEN`** — same PAT string as the **`staging`/`production`** GitHub Environment (Deploy syncs it to Cloudflare Secrets Store). Put it in **`apps/site/.dev.vars`** or as **`resume_repo_token`** in gitignored **`infra/secrets/worker-secrets.local.json`** (direnv); full secret shape: **`infra/secrets/README.md`**. **`/resume.pdf`** smoke only makes sense with **`SMOKE_BASE_URL`** on a deployed origin; local **`vp preview`** does not emulate Secrets Store bindings reliably.
 
 **direnv (`.envrc`)** — After **`direnv allow`**, entering this repo exports ephemeral **`GIT_CONFIG_*`** so **Git** uses the **`yanai-sh`** login for **`https://github.com`** (credential helper hint + URL rewrite). If **`gh`** is installed and **`yanai-sh`** is in **`gh auth status`**, **`GH_TOKEN`** is set for that user only under this tree; leaving the directory clears it. Other projects are unchanged. Requires **Git 2.31+** for **`GIT_CONFIG_*`**. To make another GitHub account the default **`gh`** user again outside this tree, run **`gh auth switch -u <account>`** (or switch per session).
 

@@ -1,5 +1,4 @@
 import type { FC } from 'hono/jsx';
-import resumeSnapshot from '@resume/generated';
 import { projects } from '#content';
 import { SITE_EMAIL, SITE_SOURCE_URL } from '@config/site';
 import { portfolio } from '@/data/portfolio';
@@ -18,13 +17,10 @@ const splashProjects = [...projects]
   .sort((a, b) => a.order - b.order);
 
 export const SplashPage: FC<SplashPageProps> = ({ hostname, turnstileSiteKey, repoMeta = {} }) => {
-  const { name, socials, contact } = portfolio;
+  const { name, socials, contact, tagline, location, currentRole } = portfolio;
   const isLocalOrigin = ['127.0.0.1', 'localhost'].includes(hostname);
   const canUseContactForm = Boolean(turnstileSiteKey) && !isLocalOrigin;
-  const headline = resumeSnapshot.data.header.headline || portfolio.hero.byline;
-  const summary = resumeSnapshot.data.summary;
-  const location = resumeSnapshot.data.header.location;
-  const currentRole = resumeSnapshot.data.experience[0];
+  const summary = portfolio.hero.lede;
   const github = socials.find((social) => social.url.includes('github'));
   const linkedin = socials.find((social) => social.url.includes('linkedin'));
 
@@ -32,7 +28,7 @@ export const SplashPage: FC<SplashPageProps> = ({ hostname, turnstileSiteKey, re
     <SplashLayout title={portfolio.pageTitle} pathname="/">
       <noscript>
         <div class="panel document-panel" style="margin: 2rem auto; max-width: 28rem;">
-          <p>{headline}</p>
+          <p>{tagline}</p>
           <p>
             <a href="/resume.pdf">Download resume PDF</a>
             {' · '}
@@ -46,7 +42,7 @@ export const SplashPage: FC<SplashPageProps> = ({ hostname, turnstileSiteKey, re
           <main class="stage" id="splash" tabindex="-1">
             <div class="stage-inner">
               <h1 class="stage-name">{name}</h1>
-              <p class="stage-role">{headline}</p>
+              <p class="stage-role">{tagline}</p>
               {currentRole ? (
                 <p class="stage-now">
                   <span class="stage-now__company">{currentRole.company}</span>

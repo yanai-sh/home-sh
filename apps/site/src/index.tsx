@@ -8,8 +8,6 @@ import { resumeRoutes } from '@/routes/resume-pdf';
 import { telemetryRoutes } from '@/routes/telemetry';
 import { SplashPage } from '@/views/splash-page';
 import { NotFoundPage } from '@/views/not-found';
-import { ResumePage } from '@/views/resume-page';
-
 const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', securityMiddleware);
@@ -39,7 +37,7 @@ app.get('/', async (c) => {
   );
 });
 
-app.get('/resume', (c) => c.render(<ResumePage />));
+app.get('/resume', (c) => c.redirect('/resume.pdf', 308));
 
 app.notFound(async (c) => {
   const assets = c.env?.ASSETS;

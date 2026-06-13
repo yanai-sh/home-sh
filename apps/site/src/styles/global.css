@@ -6,7 +6,6 @@
 @import './layout.css';
 @import './splash.css';
 @import './document-page.css';
-@import './resume-document.css';
 
 @theme {
   --font-heading: 'Space Grotesk Variable', sans-serif;

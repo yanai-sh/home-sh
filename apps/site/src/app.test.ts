@@ -65,13 +65,11 @@ describe('splash home', () => {
   });
 });
 
-describe('resume page', () => {
-  it('renders semantic resume HTML', async () => {
+describe('resume route', () => {
+  it('redirects /resume to the PDF', async () => {
     const response = await app.request('https://yanai.sh/resume');
-    expect(response.status).toBe(200);
-    const html = await response.text();
-    expect(html).toContain('class="resume-document"');
-    expect(html).toContain('href="/resume.pdf"');
+    expect(response.status).toBe(308);
+    expect(response.headers.get('Location')).toBe('/resume.pdf');
   });
 });
 

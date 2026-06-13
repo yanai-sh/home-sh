@@ -15,7 +15,6 @@
     "types": ["vite/client", "@cloudflare/workers-types", "node"],
     "baseUrl": ".",
     "paths": {
-      "@resume/generated": ["../../content/resume.generated.json"],
       "@components/*": ["src/components/*"],
       "@views/*": ["src/views/*"],
       "@lib/*": ["src/lib/*"],

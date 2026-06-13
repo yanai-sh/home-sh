@@ -17,9 +17,6 @@ importers:
       playwright:
         specifier: ^1.60.0
         version: 1.60.0
-      smol-toml:
-        specifier: ^1.5.2
-        version: 1.6.1
       tsx:
         specifier: ^4.21.0
         version: 4.22.4
@@ -29,9 +26,6 @@ importers:
       vitest:
         specifier: ^4.1.0
         version: 4.1.8(@types/node@25.9.3)(vite@8.0.16(@types/node@25.9.3)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4))
-      zod:
-        specifier: ^4.3.6
-        version: 4.4.3
 
   apps/site:
     dependencies:
@@ -2088,10 +2082,6 @@ packages:
   sirv@3.0.2:
     resolution: {integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g==}
     engines: {node: '>=18'}
-
-  smol-toml@1.6.1:
-    resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
-    engines: {node: '>= 18'}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -4212,8 +4202,6 @@ snapshots:
       '@polka/url': 1.0.0-next.29
       mrmime: 2.0.1
       totalist: 3.0.1
-
-  smol-toml@1.6.1: {}
 
   source-map-js@1.2.1: {}
 

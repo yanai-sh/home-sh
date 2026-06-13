@@ -69,9 +69,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-          submodules: recursive
           persist-credentials: false
-          token: ${{ secrets.RESUME_REPO_TOKEN }}
 
       - uses: ./.github/actions/pnpm-build
         with:

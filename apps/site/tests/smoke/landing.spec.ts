@@ -139,10 +139,9 @@ test('project rows render and open the project pane', async ({ page }) => {
   await expect(page.locator('[data-project-detail]:not([hidden])')).toBeVisible();
 });
 
-test('/resume renders semantic HTML resume', async ({ page }) => {
-  await page.goto(`${BASE}/resume`);
-  await expect(page.locator('.resume-document')).toBeVisible();
-  await expect(page.locator('a[href="/resume.pdf"]')).toBeVisible();
+test('/resume redirects to resume.pdf', async ({ page }) => {
+  const response = await page.goto(`${BASE}/resume`, { waitUntil: 'commit' });
+  expect(response?.url()).toMatch(/\/resume\.pdf$/);
 });
 
 test('theme toggle is present in the stage glyphs', async ({ page }) => {
