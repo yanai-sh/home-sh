@@ -265,6 +265,7 @@ jobs:
   push_git_tag:
     name: yanai-sh / deploy — version tag
     if: >-
+      always() &&
       github.ref == 'refs/heads/main' &&
       needs.publish.result == 'success' &&
       (needs.smoke_production.result == 'success' || needs.smoke_production.result == 'skipped')
@@ -292,7 +293,11 @@ jobs:
   github_release:
     name: yanai-sh / deploy — GitHub release
     needs: [publish, push_git_tag]
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      needs.publish.result == 'success' &&
+      needs.push_git_tag.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
