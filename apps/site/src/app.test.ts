@@ -14,6 +14,30 @@ describe('security middleware', () => {
     expect(response.status).toBe(404);
     expect(await response.text()).toContain('404');
   });
+
+  it('serves static assets via ASSETS when run_worker_first is enabled', async () => {
+    const assets = {
+      fetch: async (request: Request) => {
+        const pathname = new URL(request.url).pathname;
+        if (pathname === '/assets/splash-client.js') {
+          return new Response('export {}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/javascript' },
+          });
+        }
+        return new Response(null, { status: 404 });
+      },
+    };
+
+    const response = await app.request(
+      'https://yanai.sh/assets/splash-client.js',
+      {},
+      { ASSETS: assets } as Env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toContain('javascript');
+  });
 });
 
 describe('splash home', () => {

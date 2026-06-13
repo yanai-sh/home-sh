@@ -41,7 +41,15 @@ app.get('/', async (c) => {
 
 app.get('/resume', (c) => c.render(<ResumePage />));
 
-app.notFound((c) => {
+app.notFound(async (c) => {
+  const assets = c.env?.ASSETS;
+  if (assets) {
+    const assetResponse = await assets.fetch(c.req.raw);
+    if (assetResponse.status !== 404) {
+      return assetResponse;
+    }
+  }
+
   c.status(404);
   return c.render(<NotFoundPage />);
 });

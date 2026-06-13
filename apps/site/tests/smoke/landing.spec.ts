@@ -24,6 +24,19 @@ test('splash stage renders with resume link and WASM layer', async ({ page }) =>
   await expect(page.locator('button[data-open-split="resume"]')).toBeVisible();
 });
 
+test('splash CSS and client JS return 200', async ({ page, request }) => {
+  await page.goto(`${BASE}/`);
+  const html = await page.content();
+  const cssMatch = html.match(/href="(\/assets\/global-[^"]+\.css)"/);
+  expect(cssMatch).toBeTruthy();
+  const css = await request.get(`${BASE}${cssMatch![1]}`);
+  expect(css.status()).toBe(200);
+  expect(css.headers()['content-type']).toMatch(/text\/css/);
+  const js = await request.get(`${BASE}/assets/splash-client.js`);
+  expect(js.status()).toBe(200);
+  expect(js.headers()['content-type']).toMatch(/javascript/);
+});
+
 test('desktop systems field initializes as a progressive enhancement', async ({ page }) => {
   await page.goto(`${BASE}/`);
   await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
