@@ -41,6 +41,7 @@ jobs:
       - name: Promote rollback version to production (100%)
         env:
           VERSION_ID: ${{ inputs.version_id }}
+          ROLLBACK_REASON: ${{ inputs.reason }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -49,7 +50,7 @@ jobs:
             --config wrangler.jsonc \
             --version-id "${VERSION_ID}" \
             --percentage 100 \
-            --message "rollback by ${{ github.actor }}: ${{ inputs.reason }}" \
+            --message "rollback by ${GITHUB_ACTOR}: ${ROLLBACK_REASON}" \
             --yes)"
           echo "$DEPLOY_OUTPUT"
           if printf '%s\n' "$DEPLOY_OUTPUT" | grep -qF "Deployed yanai-sh version ${VERSION_ID} at 100%"; then
