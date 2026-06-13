@@ -155,30 +155,56 @@ jobs:
 
       - name: Promote version to production (100%)
         if: github.ref == 'refs/heads/main'
+        env:
+          VERSION_ID: ${{ steps.upload.outputs.version_id }}
         run: |
           set -euo pipefail
-          pnpm --dir apps/site version-deploy -- \
-            "${{ steps.upload.outputs.version_id }}@100%" \
+          WRANGLER_JSON="apps/site/dist/yanai_sh/wrangler.json"
+          DEPLOY_OUTPUT="$(WRANGLER_CI=1 pnpm --dir apps/site exec wrangler versions deploy \
+            --config "$WRANGLER_JSON" \
+            --version-id "${VERSION_ID}" \
+            --percentage 100 \
             --message "auto-promote ${GITHUB_SHA:0:7} from $(git log --format='%s' -1 | head -c 60)" \
-            --yes
+            --yes)"
+          echo "$DEPLOY_OUTPUT"
+          if printf '%s\n' "$DEPLOY_OUTPUT" | grep -qE "\(100%\)[[:space:]]${VERSION_ID}"; then
+            echo "Promoted ${VERSION_ID} to 100%."
+            exit 0
+          fi
+          LIST="$(WRANGLER_CI=1 pnpm --dir apps/site exec wrangler versions list --config "$WRANGLER_JSON" 2>&1 || true)"
+          echo "$LIST"
+          if printf '%s\n' "$LIST" | grep -qE "\(100%\)[[:space:]]${VERSION_ID}"; then
+            echo "Promoted ${VERSION_ID} to 100% (confirmed via versions list)."
+            exit 0
+          fi
+          echo "::error::Promote did not move 100% traffic to ${VERSION_ID}." >&2
+          exit 1
 
       - name: Assert production serves Hono splash
         if: github.ref == 'refs/heads/main'
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ vars.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
+          CURL=(curl -sS --http1.1 -4)
+          if [ -n "${CF_ACCESS_CLIENT_ID:-}" ] && [ -n "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
+            CURL+=(-H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}")
+          fi
           for attempt in 1 2 3 4 5 6; do
-            BODY="$(curl -fsSL --http1.1 -4 https://yanai.sh/ || true)"
+            HTTP_CODE="$("${CURL[@]}" -o /tmp/prod-body.html -w "%{http_code}" https://yanai.sh/ || echo "000")"
+            BODY="$(cat /tmp/prod-body.html 2>/dev/null || true)"
+            if [ "$HTTP_CODE" = "403" ] && [ -z "${CF_ACCESS_CLIENT_ID:-}" ]; then
+              echo "::warning::GET / returned 403 without CF Access headers (attempt ${attempt}/6)." >&2
+            fi
             if printf '%s' "$BODY" | grep -q 'id="shell"'; then
-              echo "Production serves Hono splash (#shell found on attempt ${attempt})."
-              if printf '%s' "$BODY" | grep -qE 'Layout\.astro|/_astro/'; then
-                echo "::warning::Legacy Astro markers still present alongside Hono shell." >&2
-              fi
+              echo "Production serves Hono splash (#shell found on attempt ${attempt}, HTTP ${HTTP_CODE})."
               exit 0
             fi
             if printf '%s' "$BODY" | grep -qE 'Layout\.astro|/_astro/'; then
               echo "::warning::Production still looks like legacy Astro (attempt ${attempt}/6)" >&2
             else
-              echo "Attempt ${attempt}/6: #shell not found yet." >&2
+              echo "Attempt ${attempt}/6: HTTP ${HTTP_CODE}, #shell not found yet." >&2
             fi
             sleep 10
           done
@@ -317,3 +343,5 @@ jobs:
       - uses: ./.github/actions/smoke-playwright
         with:
           smoke_base_url: https://yanai.sh
+          cf_access_client_id: ${{ vars.CF_ACCESS_CLIENT_ID }}
+          cf_access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
