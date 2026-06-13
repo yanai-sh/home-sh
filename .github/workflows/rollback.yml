@@ -1,17 +1,8 @@
 # Manual rollback to a previous Worker version.
 #
-# When to use:
-#   - Latest deploy broke production and a fix would take too long to roll
-#     forward (CI rebuild is ~1 min; this rollback is ~10 sec).
-#   - A regression slipped past CI (e.g. visible only at runtime against real
-#     bindings) and needs to be reverted while you investigate.
-#
-# Find the target version_id:
-#   - Cloudflare Dashboard → Workers & Pages → yanai-sh → Deployments
-#   - OR locally: `pnpm --dir apps/site exec wrangler versions list --config apps/site/dist/wrangler.json`
-#
-# Note: Cloudflare retains the last ~10 versions per Worker. Older deploys age
-# out of the rollback-eligible set.
+# Promotes an existing immutable version to 100% — no rebuild required.
+# Find version_id: Cloudflare Dashboard → yanai-sh → Deployments, or
+# `pnpm --dir apps/site exec wrangler versions list --config wrangler.jsonc`.
 
 name: yanai-sh / Rollback
 
@@ -19,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       version_id:
-        description: "Worker version id (UUID) to promote to 100% — see Cloudflare dashboard or `wrangler versions list`"
+        description: "Worker version id (UUID) to promote to 100%"
         required: true
         type: string
       reason:
@@ -39,26 +30,18 @@ jobs:
   rollback:
     name: yanai-sh / rollback — promote
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          submodules: recursive
-          token: ${{ secrets.RESUME_REPO_TOKEN }}
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - uses: ./.github/actions/pnpm-install
-
-      - name: Build site (emit wrangler.json)
-        run: pnpm run build
-        env:
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
 
       - name: Promote rollback version to production (100%)
         run: |
           set -euo pipefail
-          pnpm --dir apps/site version-deploy -- \
+          pnpm --dir apps/site exec wrangler versions deploy --config wrangler.jsonc \
             "${{ inputs.version_id }}@100%" \
             --message "rollback by ${{ github.actor }}: ${{ inputs.reason }}" \
             --yes
@@ -66,9 +49,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Curl smoke (origin)
+      - name: Assert production serves Hono splash
         run: |
           set -euo pipefail
           sleep 10
-          curl -fsSL --http1.1 -4 -o /dev/null -w "HTTP %{http_code}\n" https://yanai.sh/
+          BODY="$(curl -fsSL --http1.1 -4 https://yanai.sh/)"
+          if ! printf '%s' "$BODY" | grep -q 'id="shell"'; then
+            echo "::error::Rollback promote succeeded but https://yanai.sh still lacks Hono #shell." >&2
+            exit 1
+          fi
           curl -fsSL --http1.1 -4 -o /dev/null -w "HTTP %{http_code} /resume\n" https://yanai.sh/resume

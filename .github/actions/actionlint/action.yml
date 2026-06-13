@@ -1,14 +1,23 @@
 name: yanai-sh / setup — actionlint
-description: Install rhysd/actionlint (latest) and lint .github/workflows
+description: Install rhysd/actionlint (cached) and lint .github/workflows
 runs:
   using: composite
   steps:
+    - name: Cache actionlint binary
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      id: actionlint-cache
+      with:
+        path: .bin
+        key: actionlint-${{ runner.os }}-1.7.7
     - name: Download actionlint
+      if: steps.actionlint-cache.outputs.cache-hit != 'true'
       run: |
         set -euo pipefail
         mkdir -p .bin
-        bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) latest .bin
-        echo "${GITHUB_WORKSPACE}/.bin" >> "$GITHUB_PATH"
+        bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) 1.7.7 .bin
+      shell: bash
+    - name: Expose actionlint on PATH
+      run: echo "${GITHUB_WORKSPACE}/.bin" >> "$GITHUB_PATH"
       shell: bash
     - name: Lint workflow YAML
       run: actionlint -color

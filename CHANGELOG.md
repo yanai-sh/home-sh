@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **CI/CD** — Single PR workflow (`yanai-sh / PR — verify`) for **`main`** and **`dev`**, **ubuntu-only** (drops macOS matrix). Deploy runs **build-only** (no duplicate verify) and skips per-deploy secret sync. Post-promote **production smoke** on **`main`** asserts Hono **`#shell`** at https://yanai.sh. Rollback promotes without rebuild. Actionlint binary cached. Dependabot auto-merge enabled at repo level.
+
+### Fixed
+
+- **Deploy gate** — Assert **`assets.run_worker_first`** in built **`wrangler.json`** before upload; curl retry loop fails deploy if production still serves legacy Astro after promote.
+
+## [v0.1.14] - 2026-06-12
+
+### Fixed
+
+- **Production routing** — Set **`assets.run_worker_first`** so Hono SSR serves `/`, `/resume`, and API routes instead of a stale Astro **`index.html`** left in the static asset namespace.
+
 ## [v0.1.13] - 2026-06-12
 
 ### Changed
