@@ -1,0 +1,10 @@
+<button class="theme-toggle" type="button" aria-label="Toggle color theme" aria-pressed="false">
+  <svg class="theme-toggle__sun" aria-hidden="true" viewBox="0 0 24 24">
+    <path
+      d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-16h-1v3h2V2h-1Zm0 17h-1v3h2v-3h-1ZM4.22 5.64l2.12 2.12 1.42-1.42-2.12-2.12-1.42 1.42Zm12.02 12.02 2.12 2.12 1.42-1.42-2.12-2.12-1.42 1.42ZM2 13h3v-2H2v2Zm17 0h3v-2h-3v2ZM5.64 19.78l2.12-2.12-1.42-1.42-2.12 2.12 1.42 1.42ZM17.66 7.76l2.12-2.12-1.42-1.42-2.12 2.12 1.42 1.42Z"
+    />
+  </svg>
+  <svg class="theme-toggle__moon" aria-hidden="true" viewBox="0 0 24 24">
+    <path d="M20.6 14.5A8.7 8.7 0 0 1 9.5 3.4 8.7 8.7 0 1 0 20.6 14.5Z" />
+  </svg>
+</button>

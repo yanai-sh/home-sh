@@ -6,8 +6,8 @@ Short rationale for choices a reviewer or interviewer might ask about. (Drafting
 
 | Decision                                                                        | Rationale                                                                                                                                                                                                                                                            |
 | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Hono + Vite 8 + `@cloudflare/vite-plugin`**                                   | Edge SSR Worker serving static assets via the `ASSETS` binding. HTML via `hono/jsx`; one Worker entry (`src/index.tsx`). **`vp preview`** (workerd) exercises the built artifact; deploy uses **`wrangler versions upload`** against `apps/site/dist/wrangler.json`. |
-| **VoidZero Vite+ (`vp`)**                                                       | Unified toolchain: Oxlint, Oxfmt, Vitest, Rolldown, Vite Task. Replaces Bun + Biome + astro check.                                                                                                                                                                   |
+| **SvelteKit 5 + `@sveltejs/adapter-cloudflare`**                              | Edge SSR Worker serving static assets via the `ASSETS` binding. File-based routes (`+page`, `+layout`, `+server`); **`hooks.server.ts`** for security headers. Deploy uses **`wrangler versions upload --config apps/site/wrangler.jsonc`** (Worker + client in **`.svelte-kit/cloudflare/`**). |
+| **Vite 8 + svelte-check**                                                       | Site build and typecheck; Velite for content collections at build time.                                                                                                                                                                                                   |
 | **pnpm + Node 22**                                                              | Package manager and runtime; CI uses **`pnpm-install`** composite.                                                                                                                                                                                                   |
 | **Monaspace** ([githubnext/monaspace](https://github.com/githubnext/monaspace)) | UI font; served from `@fontsource/*` in `global.css`.                                                                                                                                                                                                                |
 
@@ -46,8 +46,8 @@ Short rationale for choices a reviewer or interviewer might ask about. (Drafting
 | **Vite+ (`vp`)**                           | dev, check, build                               | Replaces Bun + Biome + astro check                                               |
 | **Vitest**                                 | Unit/handler tests                              | `vitest.config.ts` avoids loading workerd in tests                               |
 | **tsgo (via `vp check`)**                  | TypeScript diagnostics                          | Replaces `@astrojs/check`                                                        |
-| **Hono + Velite**                          | SSR + content                                   | Replaces Astro adapter + content collections                                     |
-| **Wrangler 4.x (project-pinned)**          | `wrangler versions upload/deploy`               | Deploy artifact: **`apps/site/dist/wrangler.json`**                              |
+| **SvelteKit + Velite**                     | SSR + content                                   | File-based routes; Velite MDX/JSON at build time                                 |
+| **Wrangler 4.x (project-pinned)**          | `wrangler versions upload/deploy`               | Config: **`apps/site/wrangler.jsonc`**; build output: **`.svelte-kit/cloudflare/`** |
 | **Dependabot**                             | Monthly PRs for **npm** + **GitHub Actions**    | No third-party app                                                               |
 | **Lefthook**                               | **`pre-push`** → **`verify`** only              | **`pnpm exec lefthook install`** on **`prepare`**                                |
 | **No Commitizen / commitlint / git-cliff** | Plain **`git commit`**; **`CHANGELOG`** by hand | Solo repo: generated changelogs and message lint were more ceremony than signal. |
@@ -71,7 +71,7 @@ Each `wrangler deploy` creates an immutable Worker version. The current producti
 ### Find a known-good version id
 
 ```sh
-pnpm --dir apps/site exec wrangler versions list --config dist/wrangler.json
+pnpm --dir apps/site exec wrangler versions list --config wrangler.jsonc
 ```
 
 Or via Cloudflare Dashboard → Workers & Pages → `yanai-sh` → Deployments tab. Each row shows the version id, message (commit subject from CI), and tag (short SHA).
@@ -86,7 +86,7 @@ GitHub → Actions → **`yanai-sh / Rollback`** → Run workflow → enter the 
 # Ensure CLOUDFLARE_* and any needed bindings are in the environment (direnv + worker-secrets.local.json, or copy from terraform.tfvars / dashboard).
 pnpm run build
 pnpm --dir apps/site exec wrangler versions deploy "<version-id>@100%" \
-  --config dist/wrangler.json --message "manual rollback" --yes
+  --config wrangler.jsonc --message "manual rollback" --yes
 ```
 
 ### Failure modes that rollback does not solve

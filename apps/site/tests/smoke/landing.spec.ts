@@ -27,12 +27,14 @@ test('splash stage renders with resume link and WASM layer', async ({ page }) =>
 test('splash CSS and client JS return 200', async ({ page, request }) => {
   await page.goto(`${BASE}/`);
   const html = await page.content();
-  const cssMatch = html.match(/href="(\/assets\/global-[^"]+\.css)"/);
+  const cssMatch = html.match(/href="(\/_app\/immutable\/assets\/[^"]+\.css)"/);
   expect(cssMatch).toBeTruthy();
   const css = await request.get(`${BASE}${cssMatch![1]}`);
   expect(css.status()).toBe(200);
   expect(css.headers()['content-type']).toMatch(/text\/css/);
-  const js = await request.get(`${BASE}/assets/splash-client.js`);
+  const jsMatch = html.match(/src="(\/_app\/immutable\/[^"]+\.js)"/);
+  expect(jsMatch).toBeTruthy();
+  const js = await request.get(`${BASE}${jsMatch![1]}`);
   expect(js.status()).toBe(200);
   expect(js.headers()['content-type']).toMatch(/javascript/);
 });
@@ -147,6 +149,12 @@ test('/resume redirects to resume.pdf', async ({ page }) => {
 test('theme toggle is present in the stage glyphs', async ({ page }) => {
   await page.goto(`${BASE}/`);
   await expect(page.locator('.stage-glyphs .theme-toggle')).toBeVisible();
+});
+
+test('blog index lists a published post', async ({ page }) => {
+  await page.goto(`${BASE}/blog`);
+  await expect(page.locator('h1')).toContainText('Blog');
+  await expect(page.getByRole('link', { name: 'Edge-native personal sites' })).toBeVisible();
 });
 
 test('mobile viewport (375px wide) shows splash without overflow', async ({ browser }) => {

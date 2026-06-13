@@ -4,8 +4,8 @@
 
 ## Cold-start essentials
 
-- **pnpm monorepo** — Hono + Vite 8 SSR as a Cloudflare Worker with Static Assets + Rust/WASM (`apps/wasm/*`); `/api/contact`, **`/resume.pdf`** (Release proxy; **`RESUME_REPO_TOKEN`**), on the site Worker. Toolchain: **VoidZero Vite+** (`vp`).
-- **pnpm + Vite+** — `pnpm install`, `pnpm run`, `vp check/test/build`. Node **22+** (`.node-version`).
+- **pnpm monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker with Static Assets + Rust/WASM (`apps/wasm/*`); `/api/contact`, **`/resume.pdf`** (Release proxy; **`RESUME_REPO_TOKEN`**), on the site Worker. Toolchain: **Vite 8**, **svelte-check**, **Vitest**, **Velite**.
+- **pnpm + Vite** — `pnpm install`, `pnpm run`, `vite dev/build`. Node **22+** (`.node-version`).
 - **Verify before claiming done:** `pnpm run verify` (= check → test → build; mirrors PR CI). **`pnpm run smoke`** — Playwright smoke (`apps/site`). **Windows ARM64:** run **`pnpm run setup:wsl`** once, then all scripts use **WSL2** automatically.
 - **Polyglot tasks:** `just --list` (WASM, Workers, OpenTofu). Infra: **[infra/README.md](infra/README.md)**.
 - **CSS:** Tailwind v4 + CSS custom properties in **`src/styles/global.css`**.

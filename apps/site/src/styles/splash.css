@@ -301,6 +301,28 @@ html.is-split-animating .systems-field-layer.splash-field {
   gap: 1.5rem;
   margin-top: 2.4rem;
 }
+.stage-links--primary {
+  margin-top: 1.75rem;
+}
+.stage-links--primary .text-link--primary {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.stage-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-top: 1.25rem;
+}
+.stage-index__link {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+.stage-index__link:hover {
+  color: var(--accent);
+}
 .text-link {
   border: 0;
   background: 0;

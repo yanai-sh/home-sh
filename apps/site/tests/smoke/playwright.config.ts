@@ -26,11 +26,7 @@ export default defineConfig({
   webServer: process.env.SMOKE_BASE_URL
     ? undefined
     : {
-        // Local preview hits D1-backed telemetry; apply migrations first so
-        // `/api/telemetry/*` does not log `no such table: sessions`.
-        // `PUBLIC_TURNSTILE_SITE_KEY` at build time: shell / `apps/site/.env`, or
-        // `public_turnstile_site_key` in `infra/secrets/worker-secrets.local.json`
-        // (same file optional Bitwarden import writes); see `smoke-worker-secrets.ts`.
+        // Local preview: build SvelteKit + `wrangler dev` (port 4321).
         command: 'pnpm build && pnpm preview',
         cwd: '../..',
         url: 'http://localhost:4321/',
@@ -39,6 +35,6 @@ export default defineConfig({
           ...(publicTurnstileSiteKey ? { PUBLIC_TURNSTILE_SITE_KEY: publicTurnstileSiteKey } : {}),
         },
         reuseExistingServer: false,
-        timeout: 120_000,
+        timeout: 360_000,
       },
 });

@@ -7,10 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@components': path.resolve(__dirname, './src/components'),
-      '@views': path.resolve(__dirname, './src/views'),
-      '@lib': path.resolve(__dirname, './src/lib'),
+      '$lib': path.resolve(__dirname, './src/lib'),
       '@config': path.resolve(__dirname, './src/config'),
       '#content': path.resolve(__dirname, './.velite/index.js'),
     },
@@ -18,7 +15,6 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
-    // forks hang on WSL drvfs (/mnt/c); threads is fine on CI too
     pool: 'threads',
   },
 });

@@ -1,39 +1,41 @@
 ## This repository
 
-**pnpm monorepo** — Hono + Vite 8 (`@cloudflare/vite-plugin`) SSR site as a Cloudflare Worker (Workers with Static Assets) + Rust/WASM modules (`/api/contact` ships in that same Worker). Toolchain: **VoidZero Vite+** (`vp` — Oxlint, Oxfmt, Vitest, Rolldown). Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+**pnpm monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker (Workers with Static Assets) + Rust/WASM modules (`/api/contact` ships in that same Worker). Toolchain: **Vite 8**, **svelte-check**, **Vitest**, **Velite**. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ### Monorepo layout
 
 ```
 resume/      # optional git submodule → yanai-sh/resume (PDF source repo; not required for site build)
 apps/
-  site/        # Hono + Vite+ app (@cloudflare/vite-plugin) — the deployed site
+  site/        # SvelteKit app (@sveltejs/adapter-cloudflare) — the deployed site
   wasm/
     canvas/    # FlowFieldRenderer — ambient canvas reacts to site mode, split, contact form, resume PDF
 infra/
   README.md   # Infra ops: secrets layout, workflows, OpenTofu pointers
   secrets/    # Worker secret *shape* (example JSON); real values gitignored + GitHub Actions
-  migrations/ # D1 SQL migrations (telemetry schema; bind + apply via `apps/site/wrangler.jsonc`)
+  migrations/ # D1 SQL migrations (legacy telemetry schema; no longer bound on site Worker)
   tofu/       # OpenTofu — `ACCESS_WORKERS.md` for optional Zero Trust on workers.dev
 ```
 
 ### Site app (`apps/site/src/`)
 
 ```
-index.tsx           # Hono Worker entry (routes + middleware)
-routes/             # /api/contact, /resume.pdf
-views/              # hono/jsx pages (SplashLayout, DocumentLayout, SplashPage, NotFound)
-components/         # hono/jsx UI; icons/ SVG assets
-lib/                # edge helpers + unit tests (*.test.ts colocated)
-middleware/         # security headers (CSP, HSTS, etc.)
-content/            # Velite source (JSON experience, MDX projects)
-scripts/            # *-client.ts browser modules
+routes/             # SvelteKit pages (+page, +layout, +server)
+  api/contact/      # POST /api/contact
+  resume.pdf/       # GET /resume.pdf
+  resume/           # GET /resume → 308 PDF
+  (doc)/            # DocumentLayout — blog, projects, uses, now
+lib/
+  components/       # Svelte UI (SiteMeta, ThemeToggle, IconSprite)
+  server/           # contact, resume-pdf, security helpers
+  splash/client.ts  # split pane, contact FSM, WASM bridge (onMount)
+hooks.server.ts     # security headers, /workspace redirect
+content/            # Velite source (JSON experience, MDX projects/blog)
+data/portfolio/     # splash copy (hero, nav, contact)
 config/             # site.ts — canonical title, URL, email, brand constants
 ```
 
-Path aliases (`apps/site/tsconfig.json`; `vite.config.ts`): `@/` → `src/`, `@components/*`, `@views/*`, `@lib/*`, `@config/*`, `#content` → `.velite`.
-
-Client-only scripts follow `*-client.ts` naming and are loaded via Vite `?url` script tags.
+Path aliases (`apps/site/tsconfig.json`; `svelte.config.js`): `$lib/*`, `@config/*`, `#content` → `.velite`.
 
 ### Design tokens
 
@@ -41,12 +43,12 @@ CSS custom properties live in **`src/styles/global.css`** (`:root` / `[data-them
 
 ### Scripts (copy-paste, run from repo root)
 
-- **`pnpm run dev`** — Vite+ dev server (`vp dev`, workerd via Cloudflare plugin)
-- **`pnpm run check`** / **`pnpm run fix`** — Vite+ check (Oxlint + Oxfmt + tsgo; `--fix` writes)
-- **`pnpm run typecheck`** — tsgo typecheck via `vp check`
-- **`pnpm run test`** — Vitest (`vp test`)
-- **`pnpm run verify`** — `vp run verify` = check → test → build (same as PR CI; Deploy runs build-only)
-- **`pnpm run preview`** — `vp preview` (workerd; run **`build`** first)
+- **`pnpm run dev`** — SvelteKit dev server (`vite dev`, port 4321)
+- **`pnpm run check`** / **`pnpm run fix`** — `svelte-check` + Velite sync
+- **`pnpm run typecheck`** — same as **`check`**
+- **`pnpm run test`** — Vitest
+- **`pnpm run verify`** — Velite → check → test → build (same as PR CI; Deploy runs build-only)
+- **`pnpm run preview`** — `wrangler dev .svelte-kit/cloudflare` (run **`build`** first)
 - **`pnpm run smoke`** — Playwright smoke tests (`apps/site/tests/smoke`; starts local preview unless **`SMOKE_BASE_URL`** is set)
 
 ### GitHub Actions
@@ -54,7 +56,7 @@ CSS custom properties live in **`src/styles/global.css`** (`:root` / `[data-them
 Workflow and job names use a **`yanai-sh / …`** prefix so the Actions tab and branch checks read consistently.
 
 - **PR — verify** (`ci.yml`, workflow **`yanai-sh / PR — verify`**): **`pull_request`** to **`main`** or **`dev`** — **`ubuntu-latest`** only, calling **`reusable-verify.yml`**. Required check on **`main`**: **`yanai-sh / verify / yanai-sh / verify — run`** — see **`scripts/ruleset-protect-main.json`**; **`./scripts/gh-protect-main.sh`** defaults to **`yanai-sh/home-sh`**. For long-lived **`dev`**, configure the same kind of thing in **GitHub → Settings → Rules → Rulesets** (target **`dev`**, enable **block branch deletion** and **block force pushes**, and do **not** require pull requests if you still want direct **`git push origin dev`** for Deploy).
-- **Deploy** (`deploy.yml`, **`yanai-sh / Deploy`**): **`push`** to **`dev`** / **`main`** and **`workflow_dispatch`** (**`skip_smoke: 'true'`** skips staging smoke; **`version_bump`** on **`main`** dispatch: **patch** / **minor** on **`v0.y.z`**, or **major** → **`v1.0.0`**). Jobs: **`yanai-sh / deploy — publish`**, **`yanai-sh / deploy — version tag`** (**`main`** only), **`yanai-sh / deploy — GitHub release`** (**`main`** only), **`yanai-sh / deploy — smoke`**. No **`pull_request`** on deploy. Project-pinned wrangler 4.x; config from **`apps/site/dist/wrangler.json`** after build.
+- **Deploy** (`deploy.yml`, **`yanai-sh / Deploy`**): **`push`** to **`dev`** / **`main`** and **`workflow_dispatch`** (**`skip_smoke: 'true'`** skips staging smoke; **`version_bump`** on **`main`** dispatch: **patch** / **minor** on **`v0.y.z`**, or **major** → **`v1.0.0`**). Jobs: **`yanai-sh / deploy — publish`**, **`yanai-sh / deploy — version tag`** (**`main`** only), **`yanai-sh / deploy — GitHub release`** (**`main`** only), **`yanai-sh / deploy — smoke`**. No **`pull_request`** on deploy. Project-pinned wrangler 4.x; config from **`apps/site/wrangler.jsonc`** (build output in **`.svelte-kit/cloudflare/`**).
   - Uses GitHub **Environments** (`staging`/`production`); staging smoke uses Cloudflare Access service token headers when set.
 - **Deps — auto-merge** (`dependabot-auto-merge.yml`, **`yanai-sh / Deps — auto-merge`**) — for **`dependabot[bot]`** PRs: **`gh pr merge --auto --squash --delete-branch`** (merges when required checks are green, then removes Dependabot’s head branch). Enable **Settings → General → Allow auto-merge** and keep branch rules compatible.
 - **Caches** — composite **`pnpm-install`** restores **`~/.local/share/pnpm/store`**; **`playwright-chromium`** restores **`~/.cache/ms-playwright`** (keyed off **`pnpm-lock.yaml`**). Key third-party actions use **commit SHAs** (comments note the tag).
