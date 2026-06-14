@@ -15,6 +15,16 @@ const EDGE_MASK_START = 0.2;
 const EDGE_MASK_END = 0.5;
 const POINTER_PULL = 0.35;
 const POINTER_GLOW = 0.22;
+/** Pointer-stir interactivity: mouse motion swirls the field; clicks drop ink. */
+const POINTER_SWIRL_STRENGTH = 0.6;
+const STIR_DECAY = 0.9;
+const STIR_MAX = 1.2;
+const POINTER_VELOCITY_SCALE = 0.18;
+const DROP_COUNT = 8;
+const DROP_LIFE_MS = 2200;
+const DROP_BLOOM_SPEED = 0.5;
+const DROP_DECAY = 1.8;
+const DROP_STRENGTH = 0.5;
 
 const VERT = `#version 300 es
 in vec2 a_pos;
@@ -39,6 +49,9 @@ uniform float u_grain;
 uniform vec3 u_bg;
 uniform vec3 u_accent;
 uniform vec3 u_mint;
+uniform float u_stir;
+uniform vec2 u_pointerVel;
+uniform vec3 u_drops[${DROP_COUNT}];
 
 float hash21(vec2 p) {
   p = fract(p * vec2(234.34, 435.985));
@@ -87,8 +100,15 @@ void main() {
   float ptrDist = length(p - ptr);
   float ptrPull = exp(-ptrDist * ptrDist * 9.0) * ${POINTER_PULL};
 
+  // Pointer stir: drag the ink along the cursor's motion (advection) and add a
+  // tangential swirl, both localised near the pointer and scaled by speed.
+  float stirFalloff = exp(-ptrDist * ptrDist * 6.0);
+  vec2 perp = vec2(-(p - ptr).y, (p - ptr).x);
+
   vec2 flow = curl(p * 1.15 + u_time * 0.018);
   flow += normalize(p - ptr + 0.001) * ptrPull;
+  flow += u_pointerVel * stirFalloff * ${POINTER_SWIRL_STRENGTH};
+  flow += perp * u_stir * stirFalloff * ${POINTER_SWIRL_STRENGTH};
   vec2 q = p + flow * 0.55;
   q += curl(q * 0.9 + u_time * 0.012) * 0.4;
 
@@ -101,9 +121,27 @@ void main() {
   float intensity = (${FIELD_BASE_INTENSITY} + u_split * ${SPLIT_INTENSITY_BOOST}) * edge * vignette;
 
   vec3 tint = mix(u_accent, u_mint, u_contact * ${CONTACT_TINT_MIX});
-  vec3 col = u_bg;
-  col += tint * field * intensity;
-  col += tint * ptrPull * ${POINTER_GLOW} * edge;
+
+  // Accumulate a single coverage amount, then mix the background TOWARD the tint.
+  // This darkens light backgrounds (ink on paper) and lightens dark ones, so the
+  // field reads correctly in both themes — unlike a purely additive blend.
+  float amount = field * intensity;
+  amount += ptrPull * ${POINTER_GLOW} * edge;
+  amount += u_stir * stirFalloff * 0.06 * edge;
+
+  // Click ripples: expanding rings that bloom and fade (age in seconds; 0 = inactive).
+  for (int i = 0; i < ${DROP_COUNT}; i++) {
+    vec3 drop = u_drops[i];
+    if (drop.z <= 0.0) continue;
+    vec2 dp = (drop.xy - vec2(0.5)) * vec2(aspect, 1.0);
+    float dDist = length(p - dp);
+    float radius = drop.z * ${DROP_BLOOM_SPEED};
+    float ring = exp(-(dDist - radius) * (dDist - radius) * 60.0);
+    amount += ring * exp(-drop.z * ${DROP_DECAY}) * ${DROP_STRENGTH} * edge;
+  }
+
+  amount = clamp(amount, 0.0, 1.0);
+  vec3 col = mix(u_bg, tint, amount);
 
   float grain = hash21(gl_FragCoord.xy + u_time) * u_grain;
   col += (grain - u_grain * 0.5) * edge * 0.5;
@@ -213,6 +251,9 @@ export function initSplashField(
   const uBg = gl.getUniformLocation(program, 'u_bg');
   const uAccent = gl.getUniformLocation(program, 'u_accent');
   const uMint = gl.getUniformLocation(program, 'u_mint');
+  const uStir = gl.getUniformLocation(program, 'u_stir');
+  const uPointerVel = gl.getUniformLocation(program, 'u_pointerVel');
+  const uDrops = gl.getUniformLocation(program, 'u_drops');
 
   let pointer = { x: POINTER_REST_X, y: POINTER_REST_Y };
   let pointerTarget = { ...pointer };
@@ -220,6 +261,18 @@ export function initSplashField(
   let raf = 0;
   let visible = true;
   let disposed = false;
+
+  // Pointer velocity (shader space, y up) — set on move, decayed each frame.
+  const pointerVel = { x: 0, y: 0 };
+  const lastMove = { x: POINTER_REST_X, y: POINTER_REST_Y, t: 0 };
+  const clampStir = (v: number): number => Math.max(-STIR_MAX, Math.min(STIR_MAX, v));
+
+  // Click ink-drops, stored as a small ring buffer; flattened to (x, y, age) per frame.
+  const dropX = new Float32Array(DROP_COUNT);
+  const dropY = new Float32Array(DROP_COUNT);
+  const dropT0 = new Float64Array(DROP_COUNT); // performance.now() ms; 0 = inactive
+  const dropData = new Float32Array(DROP_COUNT * 3);
+  let dropCursor = 0;
 
   const syncTheme = (): void => {
     const bg = readCssRgb('--color-background', [0.082, 0.106, 0.133]);
@@ -267,14 +320,58 @@ export function initSplashField(
     gl.uniform1f(uContact, contactValue);
     gl.uniform1f(uGrain, readGrainStrength());
 
+    pointerVel.x *= STIR_DECAY;
+    pointerVel.y *= STIR_DECAY;
+    for (let i = 0; i < DROP_COUNT; i++) {
+      const t0 = dropT0[i];
+      let age = 0;
+      if (t0 !== 0) {
+        if (timeMs - t0 > DROP_LIFE_MS) dropT0[i] = 0;
+        else age = (timeMs - t0) / 1000;
+      }
+      dropData[i * 3] = dropX[i];
+      dropData[i * 3 + 1] = dropY[i];
+      dropData[i * 3 + 2] = age;
+    }
+    gl.uniform1f(uStir, Math.hypot(pointerVel.x, pointerVel.y));
+    gl.uniform2f(uPointerVel, pointerVel.x, pointerVel.y);
+    gl.uniform3fv(uDrops, dropData);
+
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   };
 
   const onPointerMove = (event: PointerEvent): void => {
-    pointerTarget.x = event.clientX / Math.max(window.innerWidth, 1);
-    pointerTarget.y = event.clientY / Math.max(window.innerHeight, 1);
-    document.documentElement.style.setProperty('--pointer-x', String(pointerTarget.x));
-    document.documentElement.style.setProperty('--pointer-y', String(pointerTarget.y));
+    const nx = event.clientX / Math.max(window.innerWidth, 1);
+    const ny = event.clientY / Math.max(window.innerHeight, 1);
+    pointerTarget.x = nx;
+    pointerTarget.y = ny;
+    document.documentElement.style.setProperty('--pointer-x', String(nx));
+    document.documentElement.style.setProperty('--pointer-y', String(ny));
+
+    const now = performance.now();
+    if (lastMove.t !== 0) {
+      const dt = Math.max(now - lastMove.t, 8) / 1000;
+      // Shader space has y up, so negate the screen-space dy.
+      pointerVel.x = clampStir(((nx - lastMove.x) / dt) * POINTER_VELOCITY_SCALE);
+      pointerVel.y = clampStir((-(ny - lastMove.y) / dt) * POINTER_VELOCITY_SCALE);
+    }
+    lastMove.x = nx;
+    lastMove.y = ny;
+    lastMove.t = now;
+  };
+
+  const onPointerDown = (event: PointerEvent): void => {
+    // Skip drops on real UI controls so their clicks stay purposeful.
+    if (
+      event.target instanceof Element &&
+      event.target.closest('button, a, input, textarea, select, label')
+    ) {
+      return;
+    }
+    dropX[dropCursor] = event.clientX / Math.max(window.innerWidth, 1);
+    dropY[dropCursor] = 1 - event.clientY / Math.max(window.innerHeight, 1);
+    dropT0[dropCursor] = performance.now();
+    dropCursor = (dropCursor + 1) % DROP_COUNT;
   };
 
   const onResize = (): void => {
@@ -314,6 +411,7 @@ export function initSplashField(
   }
 
   window.addEventListener('pointermove', onPointerMove, { passive: true });
+  window.addEventListener('pointerdown', onPointerDown, { passive: true });
   window.addEventListener('resize', onResize, { passive: true });
   observer.observe(layer);
   raf = requestAnimationFrame(render);
@@ -324,6 +422,7 @@ export function initSplashField(
       cancelAnimationFrame(raf);
       observer.disconnect();
       window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('resize', onResize);
       gl.deleteProgram(program);
       gl.deleteBuffer(quad);
