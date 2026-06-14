@@ -82,3 +82,8 @@ home-*.png
 !.vscode/settings.json
 !.vscode/extensions.json
 .claude/
+# `skills` CLI: installed skills + lockfile — kept local, not vendored into the repo.
+.agents/
+skills-lock.json
+# Generated codebase docs (acquire-codebase-knowledge skill) — kept local for reference.
+docs/codebase/
