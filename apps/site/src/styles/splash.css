@@ -194,12 +194,12 @@ html.is-split-animating .systems-field-layer.splash-field {
   margin: 0.85rem 0 0;
   max-width: 26rem;
   color: var(--subtext);
-  font-size: 1.02rem;
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.55;
   animation: stage-rise 0.72s var(--ease) 0.08s both;
 }
 .stage-now {
-  margin: 0.65rem 0 0;
+  margin: 0.55rem 0 0;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -220,38 +220,130 @@ html.is-split-animating .systems-field-layer.splash-field {
   color: color-mix(in srgb, var(--accent) 75%, var(--subtext));
 }
 .stage-deck {
-  margin: 1.15rem 0 0;
-  max-width: 32rem;
-  padding-left: 0.9rem;
-  border-left: 2px solid color-mix(in srgb, var(--accent-strong) 42%, transparent);
-  color: var(--subtext);
-  font-size: 0.94rem;
-  line-height: 1.68;
+  margin: 1rem 0 0;
+  max-width: 30rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
   text-wrap: pretty;
-  animation: stage-rise 0.72s var(--ease) 0.26s both;
+  animation: stage-rise 0.72s var(--ease) 0.22s both;
 }
-.stage-location {
-  margin: 0.45rem 0 0;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-family: var(--font-mono);
-  letter-spacing: 0.02em;
-  animation: stage-rise 0.72s var(--ease) 0.2s both;
+.stage-now__place {
+  color: color-mix(in srgb, var(--muted) 90%, var(--subtext));
 }
 
-/* ── Project rows ────────────────────────────────────────────────────────── */
+/* ── Primary CTAs ────────────────────────────────────────────────────────── */
 
-.project-section {
-  margin-top: 1.85rem;
-  animation: stage-rise 0.78s var(--ease) 0.34s both;
+.cta-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+  margin-top: 1.35rem;
+  max-width: 12rem;
+  animation: stage-rise 0.72s var(--ease) 0.16s both;
 }
-.project-section__label {
-  margin: 0 0 0.35rem;
-  font: 600 0.68rem var(--body);
-  letter-spacing: 0.07em;
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.35rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  color: var(--text);
+  font: 600 0.92rem var(--body);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s var(--ease),
+    box-shadow 0.18s ease;
+}
+.cta-btn:hover,
+.cta-btn:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--rule-strong));
+  background: color-mix(in srgb, var(--accent-strong) 10%, var(--surface));
+  transform: translateY(-1px);
+}
+.cta-btn--primary {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: var(--color-accent-ink, #fff);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--accent-strong) 28%, transparent);
+}
+.cta-btn--primary:hover,
+.cta-btn--primary:focus-visible {
+  background: color-mix(in srgb, var(--accent-strong) 92%, var(--text));
+  border-color: color-mix(in srgb, var(--accent-strong) 92%, var(--text));
+  color: var(--color-accent-ink, #fff);
+}
+
+/* ── Aside links (quiet) ─────────────────────────────────────────────────── */
+
+.stage-aside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.75rem;
+  margin-top: 1.65rem;
+  animation: stage-rise 0.72s var(--ease) 0.28s both;
+}
+.stage-aside__label {
+  font: 500 0.72rem var(--font-mono);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 85%, transparent);
 }
+.stage-aside__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.stage-aside__item + .stage-aside__item::before {
+  content: '·';
+  margin-right: 0.85rem;
+  color: color-mix(in srgb, var(--muted) 55%, transparent);
+}
+.stage-aside__link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: 0;
+  color: var(--muted);
+  font: 500 0.82rem var(--body);
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color 0.18s ease;
+}
+.stage-aside__link:hover,
+.stage-aside__link:focus-visible {
+  color: var(--accent);
+}
+.stage-aside__hint {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
+}
+.stage-aside__link:hover .stage-aside__hint,
+.stage-aside__link:focus-visible .stage-aside__hint {
+  color: color-mix(in srgb, var(--accent) 70%, var(--muted));
+}
+
+/* ── Project rows (split-pane detail only; splash uses stage-aside) ──────── */
 .project-rows {
   margin: 0;
   padding: 0;
@@ -420,10 +512,10 @@ html.is-split-animating .systems-field-layer.splash-field {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem 1.5rem;
-  margin-top: 2rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid color-mix(in srgb, var(--rule) 85%, transparent);
-  animation: stage-rise 0.78s var(--ease) 0.4s both;
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
+  animation: stage-rise 0.78s var(--ease) 0.34s both;
 }
 .stage-site-nav {
   display: flex;
@@ -896,10 +988,9 @@ html.is-split-animating .pane-view {
   .stage-name,
   .stage-role,
   .stage-now,
-  .stage-location,
   .stage-deck,
-  .stage-links--primary,
-  .project-section,
+  .cta-bar,
+  .stage-aside,
   .stage-footer,
   .systems-field-layer.splash-field {
     transition: none;

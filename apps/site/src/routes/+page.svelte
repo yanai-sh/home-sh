@@ -5,15 +5,14 @@
   import SiteMeta from '$lib/components/SiteMeta.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { initSplash } from '$lib/splash/client';
-  import { relativeAge } from '$lib/github-repo-meta';
-  import { SITE_EMAIL, SITE_SOURCE_URL } from '@config/site';
+  import { splashProjectLabel, splashProjectOpensExternally } from '$lib/splash-project-label';
+  import { SITE_EMAIL, SITE_SOURCE_URL, SITE_TITLE } from '@config/site';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
 
   const portfolio = $derived(data.portfolio);
   const featuredProjects = $derived(data.featuredProjects);
-  const repoMeta = $derived(data.repoMeta);
   const canUseContactForm = $derived(data.canUseContactForm);
   const turnstileSiteKey = $derived(data.turnstileSiteKey);
   const name = $derived(portfolio.name);
@@ -66,69 +65,59 @@
               <span class="stage-now__company">{currentRole.company}</span>
               <span class="stage-now__sep" aria-hidden="true">·</span>
               <span class="stage-now__context">{currentRole.context}</span>
+              {#if location}
+                <span class="stage-now__sep" aria-hidden="true">·</span>
+                <span class="stage-now__place">{location}</span>
+              {/if}
             </p>
           {/if}
-          {#if location}
-            <p class="stage-location">{location}</p>
-          {/if}
-          <p class="stage-deck">{hero.lede}</p>
         </header>
 
-        <nav class="stage-links stage-links--primary" aria-label="Primary">
-          <button type="button" class="text-link text-link--primary" data-open-split="resume">
+        <nav class="cta-bar" aria-label="Primary">
+          <button type="button" class="cta-btn cta-btn--primary" data-open-split="resume">
             Resume
           </button>
-          <button type="button" class="text-link text-link--primary" data-open-split="contact">
-            Contact
-          </button>
+          <button type="button" class="cta-btn" data-open-split="contact">Contact</button>
         </nav>
 
+        <p class="stage-deck">{hero.lede}</p>
+
         {#if featuredProjects.length > 0}
-          <section class="project-section" aria-labelledby="project-section-label">
-            <h2 class="project-section__label" id="project-section-label">Selected projects</h2>
-            <ul class="project-rows">
+          <nav class="stage-aside" aria-label="Also">
+            <span class="stage-aside__label">Also</span>
+            <ul class="stage-aside__list">
               {#each featuredProjects as project (project.slug)}
-                {@const meta = project.repo ? repoMeta[project.repo] : null}
-                {@const age = meta ? relativeAge(meta.pushedAt) : null}
+                {@const label = splashProjectLabel(project)}
+                {@const external = splashProjectOpensExternally(project.slug)}
                 {@const repoUrl = project.repo
                   ? `https://github.com/${project.repo}`
                   : 'externalUrl' in project && typeof project.externalUrl === 'string'
                     ? project.externalUrl
                     : undefined}
-                <li class="project-row">
-                  <button
-                    type="button"
-                    class="project-open"
-                    data-open-project={project.slug}
-                    aria-label="Open {project.title} detail"
-                  >
-                    <span class="project-copy">
-                      <span class="project-name">{project.title}</span>
-                      <span class="project-desc">{project.description}</span>
-                    </span>
-                    <span class="project-meta">
-                      {#if project.tech?.[0]}<span>{project.tech[0]}</span>{/if}
-                      {#if age}<span class="num">updated {age}</span>{/if}
-                    </span>
-                    <span class="project-open__chevron" aria-hidden="true"></span>
-                  </button>
-                  {#if repoUrl}
+                <li class="stage-aside__item">
+                  {#if external && repoUrl}
                     <a
-                      class="project-ext"
+                      class="stage-aside__link"
                       href={repoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="{project.title} on GitHub"
                     >
-                      <svg width="13" height="13" aria-hidden="true">
-                        <use href="#icon-arrow-out" />
-                      </svg>
+                      {label}
+                      <span class="stage-aside__hint">{SITE_TITLE}</span>
                     </a>
+                  {:else}
+                    <button
+                      type="button"
+                      class="stage-aside__link stage-aside__link--button"
+                      data-open-project={project.slug}
+                    >
+                      {label}
+                    </button>
                   {/if}
                 </li>
               {/each}
             </ul>
-          </section>
+          </nav>
         {/if}
 
         <footer class="stage-footer">

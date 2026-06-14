@@ -15,13 +15,13 @@ function collectPageErrors(page: Page): string[] {
   return errors;
 }
 
-test('splash stage renders with resume link and WASM layer', async ({ page }) => {
+test('splash stage renders with resume CTA and WASM layer', async ({ page }) => {
   await page.goto(`${BASE}/`);
   await expect(page.locator('#shell')).toBeVisible();
   await expect(page.locator('#splash')).toBeVisible();
   await expect(page.locator('.stage-name')).toBeVisible();
   await expect(page.locator('[data-systems-field-canvas]')).toBeAttached();
-  await expect(page.locator('button[data-open-split="resume"]')).toBeVisible();
+  await expect(page.locator('.cta-btn[data-open-split="resume"]')).toBeVisible();
 });
 
 function resolveAssetUrl(base: string, path: string): string {
@@ -138,15 +138,21 @@ test('figure caption is present with source link', async ({ page }) => {
   await expect(page.locator('.field-caption a[href*="github.com"]')).toBeAttached();
 });
 
-test('project rows render and open the project pane', async ({ page }) => {
+test('aside project opens the project pane', async ({ page }) => {
   await page.goto(`${BASE}/`);
   await waitForSplashClient(page);
-  const row = page.locator('button[data-open-project]').first();
-  await expect(row).toBeVisible();
-  await row.click();
+  const winmint = page.locator('button[data-open-project="winmint"]');
+  await expect(winmint).toBeVisible();
+  await winmint.click();
   await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'project');
   await expect(page.locator('#view-project')).toBeVisible();
-  await expect(page.locator('[data-project-detail]:not([hidden])')).toBeVisible();
+  await expect(page.locator('[data-project-detail="winmint"]:not([hidden])')).toBeVisible();
+});
+
+test('source code link targets the site repository', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  const link = page.getByRole('link', { name: /Source code/i });
+  await expect(link).toHaveAttribute('href', /github\.com\/yanai-sh\/home-sh/);
 });
 
 test('/resume redirects to resume.pdf', async ({ request }) => {

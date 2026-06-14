@@ -31,6 +31,7 @@ export default defineConfig({
       schema: s.object({
         slug: s.slug('projects'),
         title: s.string(),
+        splashTitle: s.string().optional(),
         description: s.string(),
         category: s.string(),
         order: s.number(),
