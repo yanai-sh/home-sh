@@ -7,22 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- **Stack** — Migrate **`apps/site`** from Hono + `@cloudflare/vite-plugin` to **SvelteKit 5 + `@sveltejs/adapter-cloudflare`**. Splash (`/`), document routes (`/blog`, `/projects`, `/uses`, `/now`), **`/resume.pdf`**, and **`/api/contact`** live in file-based routes; security headers in **`hooks.server.ts`**. Deploy uses **`apps/site/wrangler.jsonc`** (build output **`.svelte-kit/cloudflare/`**). Removed D1 telemetry and KV **`SESSION`** bindings from the site Worker.
-- **Resume delivery** — Drop **`sync:resume`** and **`content/resume.generated.json`**. Splash copy is site-owned (`apps/site/src/data/portfolio/`). **`/resume`** redirects to **`/resume.pdf`** (GitHub Releases proxy). CI/deploy checkout no longer requires the private **`resume/`** submodule.
-
-### Fixed
-
-- **Deploy promote** — Use `wrangler versions deploy --version-id … --percentage 100` with `WRANGLER_CI=1` so CI never falls through to the interactive picker (which left legacy Astro at 100%). Production assert/smoke pass Cloudflare Access service-token headers when set.
+## [v0.1.22] - 2026-06-14
 
 ### Changed
 
-- **CI/CD** — Single PR workflow (`yanai-sh / PR — verify`) for **`main`** and **`dev`**, **ubuntu-only** (drops macOS matrix). Deploy runs **build-only** (no duplicate verify) and skips per-deploy secret sync. Post-promote **production smoke** on **`main`** asserts Hono **`#shell`** at https://yanai.sh. Rollback promotes without rebuild. Actionlint binary cached. Dependabot auto-merge enabled at repo level.
+- **Splash** — Hero thesis (lede), location, and deduplicated current-role line; single project list with section label; doc nav (Blog, Uses, Now) in footer; staggered entry motion and stronger field legibility.
 
 ### Fixed
 
-- **Deploy gate** — Assert **`assets.run_worker_first`** in built **`wrangler.json`** before upload; curl retry loop fails deploy if production still serves legacy Astro after promote.
+- **Typecheck** — Patch `wrangler types` `mainModule` import so `svelte-check` no longer type-checks the bundled worker graph (0 errors).
+- **Content** — home-sh project copy reflects SvelteKit stack.
 
 ## [v0.1.14] - 2026-06-12
 

@@ -12,7 +12,7 @@ export const profile = {
   location: 'Raanana, Israel',
   currentRole: {
     company: 'Kardome',
-    role: 'Software & Systems Engineer',
+    context: 'Spatial audio, vehicle demos, and release tooling',
   },
   resumeUrl: '/resume.pdf',
   resumeLabel: 'Resume PDF',

@@ -15,7 +15,7 @@
 }
 
 .systems-field-layer.is-systems-field-ready canvas {
-  opacity: 0.42;
+  opacity: 0.54;
 }
 
 [data-theme='light'] .systems-field-layer.is-systems-field-ready canvas {

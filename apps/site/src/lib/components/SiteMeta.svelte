@@ -14,8 +14,8 @@
     pathname?: string;
   } = $props();
 
-  const canonicalUrl = new URL(pathname, SITE_URL).href;
-  const ogImageUrl = new URL(SITE_OG_IMAGE_PATH, SITE_URL).href;
+  const canonicalUrl = $derived(new URL(pathname, SITE_URL).href);
+  const ogImageUrl = $derived(new URL(SITE_OG_IMAGE_PATH, SITE_URL).href);
 </script>
 
 <svelte:head>
