@@ -8,6 +8,12 @@ export const profile = {
     homeLabel: 'yanai.sh home',
   },
   name: 'Yanai Klugman',
+  tagline: 'Software & Systems Engineer',
+  location: 'Raanana, Israel',
+  currentRole: {
+    company: 'Kardome',
+    role: 'Software & Systems Engineer',
+  },
   resumeUrl: '/resume.pdf',
   resumeLabel: 'Resume PDF',
   socials: [

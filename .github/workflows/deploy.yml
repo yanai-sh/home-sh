@@ -69,9 +69,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-          submodules: recursive
           persist-credentials: false
-          token: ${{ secrets.RESUME_REPO_TOKEN }}
 
       - uses: ./.github/actions/pnpm-build
         with:
@@ -80,9 +78,9 @@ jobs:
       - name: Assert run_worker_first in built wrangler.json
         run: |
           set -euo pipefail
-          WRANGLER_JSON="apps/site/dist/yanai_sh/wrangler.json"
+          WRANGLER_JSON="apps/site/wrangler.jsonc"
           if ! grep -q '"run_worker_first"[[:space:]]*:[[:space:]]*true' "$WRANGLER_JSON"; then
-            echo "::error::Missing assets.run_worker_first in $WRANGLER_JSON — Hono SSR would lose to stale static index.html." >&2
+            echo "::error::Missing assets.run_worker_first in $WRANGLER_JSON — SvelteKit SSR would lose to stale static index.html." >&2
             exit 1
           fi
 
@@ -159,7 +157,7 @@ jobs:
           VERSION_ID: ${{ steps.upload.outputs.version_id }}
         run: |
           set -euo pipefail
-          WRANGLER_JSON="dist/yanai_sh/wrangler.json"
+          WRANGLER_JSON="wrangler.jsonc"
           DEPLOY_OUTPUT="$(WRANGLER_CI=1 pnpm --dir apps/site exec wrangler versions deploy \
             --config "$WRANGLER_JSON" \
             --version-id "${VERSION_ID}" \
@@ -184,7 +182,7 @@ jobs:
           echo "::error::Promote did not move 100% traffic to ${VERSION_ID}." >&2
           exit 1
 
-      - name: Assert promoted version serves Hono splash
+      - name: Assert promoted version serves SvelteKit splash
         if: github.ref == 'refs/heads/main'
         env:
           PREVIEW_URL: ${{ steps.upload.outputs.preview_url }}

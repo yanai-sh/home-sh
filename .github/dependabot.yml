@@ -27,7 +27,6 @@ updates:
           - "lefthook"
           - "playwright"
           - "tsx"
-          - "smol-toml"
     labels:
       - dependencies
   - package-ecosystem: github-actions

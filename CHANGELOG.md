@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Stack** — Migrate **`apps/site`** from Hono + `@cloudflare/vite-plugin` to **SvelteKit 5 + `@sveltejs/adapter-cloudflare`**. Splash (`/`), document routes (`/blog`, `/projects`, `/uses`, `/now`), **`/resume.pdf`**, and **`/api/contact`** live in file-based routes; security headers in **`hooks.server.ts`**. Deploy uses **`apps/site/wrangler.jsonc`** (build output **`.svelte-kit/cloudflare/`**). Removed D1 telemetry and KV **`SESSION`** bindings from the site Worker.
+- **Resume delivery** — Drop **`sync:resume`** and **`content/resume.generated.json`**. Splash copy is site-owned (`apps/site/src/data/portfolio/`). **`/resume`** redirects to **`/resume.pdf`** (GitHub Releases proxy). CI/deploy checkout no longer requires the private **`resume/`** submodule.
+
 ### Fixed
 
 - **Deploy promote** — Use `wrangler versions deploy --version-id … --percentage 100` with `WRANGLER_CI=1` so CI never falls through to the interactive picker (which left legacy Astro at 100%). Production assert/smoke pass Cloudflare Access service-token headers when set.

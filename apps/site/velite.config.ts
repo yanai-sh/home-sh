@@ -48,18 +48,21 @@ export default defineConfig({
         images: s.array(s.string()).optional(),
         tech: s.array(s.string()).optional(),
         platforms: s.array(s.string()).optional(),
+        content: s.markdown(),
       }),
     },
     blog: {
       name: 'BlogPost',
       pattern: 'blog/**/*.mdx',
       schema: s.object({
+        slug: s.slug('blog'),
         title: s.string(),
         description: s.string(),
-        pubDate: s.date(),
-        updatedDate: s.date().optional(),
+        pubDate: s.isodate(),
+        updatedDate: s.isodate().optional(),
         draft: s.boolean().optional(),
         tags: s.array(s.string()).optional(),
+        content: s.markdown(),
       }),
     },
     experiments: {
@@ -68,7 +71,7 @@ export default defineConfig({
       schema: s.object({
         title: s.string(),
         description: s.string(),
-        pubDate: s.date(),
+        pubDate: s.isodate(),
         status: s.enum(['active', 'prototype', 'paused', 'archived']),
         demoUrl: s.string().url().optional(),
         repoUrl: s.string().url().optional(),

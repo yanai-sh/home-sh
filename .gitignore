@@ -6,6 +6,7 @@ artifacts/resume/
 
 # --- BUILD & CACHE ---
 dist/
+.svelte-kit/
 .velite/
 .astro/
 .cache/

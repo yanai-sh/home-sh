@@ -1,0 +1,8 @@
+# Cloudflare static asset headers (adapter-cloudflare reads this from the project root).
+# HSTS and CSP are set by hooks.server.ts on SSR responses.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Cross-Origin-Resource-Policy: same-origin

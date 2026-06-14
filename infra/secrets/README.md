@@ -17,7 +17,7 @@ Preferred: **GitHub Environments** to scope deploy credentials.
 
 Fallback (not recommended): repo-level Actions secrets (**Settings → Secrets and variables → Actions**) if you don't use environments.
 
-**Dependabot PRs** (version bumps to `main`) only receive **Dependabot** secrets, not Actions or environment secrets ([docs](https://docs.github.com/en/code-security/dependabot/troubleshooting-dependabot/troubleshooting-dependabot-on-github-actions#accessing-secrets)). Add **`RESUME_REPO_TOKEN`** again under **Settings → Secrets and variables → Dependabot** (same PAT as `staging` / `production`) so **`yanai-sh / Verify (reusable)** can clone the private **`resume/`** submodule. Optional: add **`PUBLIC_TURNSTILE_SITE_KEY`** as a Dependabot **repository variable** if verify needs it and it is only defined on an environment today.
+**Dependabot PRs** (version bumps to `main`) only receive **Dependabot** secrets, not Actions or environment secrets ([docs](https://docs.github.com/en/code-security/dependabot/troubleshooting-dependabot/troubleshooting-dependabot-on-github-actions#accessing-secrets)). Optional: add **`PUBLIC_TURNSTILE_SITE_KEY`** as a Dependabot **repository variable** if verify needs it and it is only defined on an environment today.
 
 | Secret                      | Used by                                                                                                                                                                                                                  |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -28,7 +28,7 @@ Fallback (not recommended): repo-level Actions secrets (**Settings → Secrets a
 | `RESEND_API_KEY`            | **yanai-sh / Secrets — push** → Secrets Store                                                                                                                                                                            |
 | `CONTACT_FROM`              | **yanai-sh / Secrets — push** → Secrets Store                                                                                                                                                                            |
 | `CONTACT_TO`                | **yanai-sh / Secrets — push** → Secrets Store                                                                                                                                                                            |
-| `RESUME_REPO_TOKEN`         | **yanai-sh / Secrets — push** → Secrets Store (PAT: private resume repo + Releases); **GitHub Actions** checkout uses the same secret to **`git clone`** the **`resume/`** submodule in PR / Deploy / Rollback workflows |
+| `RESUME_REPO_TOKEN`         | **yanai-sh / Secrets — push** → Secrets Store (PAT: **`yanai-sh/resume`** GitHub Releases for **`GET /resume.pdf`**) |
 | `CF_ACCESS_CLIENT_ID`       | Smoke against Access-protected preview URLs (Service Token; environment variable)                                                                                                                                        |
 | `CF_ACCESS_CLIENT_SECRET`   | Smoke against Access-protected preview URLs (Service Token secret)                                                                                                                                                       |
 

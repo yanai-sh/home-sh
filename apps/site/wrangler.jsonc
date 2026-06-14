@@ -1,27 +1,10 @@
 {
-  // Cloudflare Worker config for the Vite + Hono SSR site (@cloudflare/vite-plugin
-  // emits a Workers-with-Static-Assets bundle to dist/{entry,wrangler.json,client/}).
+  // SvelteKit (@sveltejs/adapter-cloudflare) — Worker + static assets bundle in .svelte-kit/cloudflare/
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "yanai-sh",
-  "main": "./src/index.tsx",
+  "main": ".svelte-kit/cloudflare/_worker.js",
   "compatibility_date": "2026-05-07",
   "compatibility_flags": ["nodejs_compat"],
-  "kv_namespaces": [
-    {
-      "binding": "SESSION",
-      "id": "24a11b0f6e8d48c5b0ac070019588200",
-    },
-  ],
-  // D1 binding for telemetry — `sessions` + `frame_samples` in infra/migrations/0001_init.sql
-  // (cloudflare_d1_database.telemetry). Endpoints: /api/telemetry/beacon, /api/telemetry/stats.
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "home-sh-telemetry",
-      "database_id": "b37f9fce-9ee6-458d-9fa8-27356464788c",
-      "migrations_dir": "../../infra/migrations",
-    },
-  ],
   // Secrets bound from the account-level Workers Secrets Store
   // (yanai-sh-prod, id 02000d0490be49b09eed0e6d95c08e99). Values are
   // pushed by `pnpm run push-secrets` (local JSON or GitHub Actions — see infra/secrets/README.md).
@@ -63,9 +46,9 @@
       "simple": { "limit": 5, "period": 60 },
     },
   ],
-  // SSR pages (/, /resume, 404) are rendered by Hono — run the Worker before
-  // static assets so a legacy index.html from prior Astro deploys cannot win /.
+  // SSR routes are rendered by SvelteKit — run the Worker before static assets.
   "assets": {
+    "directory": ".svelte-kit/cloudflare/client",
     "binding": "ASSETS",
     "run_worker_first": true,
   },
