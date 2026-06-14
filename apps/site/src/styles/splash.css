@@ -765,6 +765,12 @@ html.is-split-animating .pane-view {
     box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.35);
     transition: transform 0.85s var(--ease);
   }
+  /* Light mode: the desktop [data-theme='light'] .pane--detail rule would
+     otherwise bleed a faint horizontal shadow onto the bottom sheet — restore a
+     soft upward shadow here (higher specificity + in-media wins on mobile). */
+  [data-theme='light'] .pane--detail {
+    box-shadow: 0 -18px 48px rgba(26, 42, 56, 0.16);
+  }
   /* Grab-handle affordance on the chrome bar. */
   .pane-chrome::before {
     content: '';
