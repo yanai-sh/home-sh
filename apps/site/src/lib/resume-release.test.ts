@@ -57,7 +57,7 @@ test('fetchResumePdfAsset requests the asset API URL as an octet stream', async 
 test('fetchLatestResumeRelease fails closed when GitHub rejects the request', async () => {
   const fetcher = async () => new Response('nope', { status: 404 });
 
-  expect(fetchLatestResumeRelease(fetcher, 'token-value')).rejects.toBeInstanceOf(
+  await expect(fetchLatestResumeRelease(fetcher, 'token-value')).rejects.toBeInstanceOf(
     ResumeReleaseError,
   );
 });

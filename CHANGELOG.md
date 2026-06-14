@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Canvas flow-field WASM** — scrapped `/wasm/canvas` ambient renderer; splash uses a WebGL shader field instead.
+
+### Added
+
+- **Resume section nav** — filterable TOC in the resume split pane; jumps the PDF viewer via `#search=` fragments.
+- **Splash WebGL polish** — tuned field intensity, mask alignment, contact tint lerp, and reduced-motion static frame.
+
+### Changed
+
+- **Contact validation stays in TypeScript** — `POST /api/contact` validation lives in `lib/server/contact.ts` (alongside honeypot, rate limits, Turnstile, Resend) rather than a Rust/Wasm validator; the Wasm round-trip earned nothing for a three-field form.
+
 ## [v0.1.22] - 2026-06-14
 
 ### Changed

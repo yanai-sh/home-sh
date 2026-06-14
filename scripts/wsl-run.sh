@@ -43,4 +43,5 @@ ensure_linux_deps() {
 }
 
 ensure_linux_deps
+export PATH="${HOME}/.cargo/bin:${HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin:${PATH:-}"
 exec "$@"

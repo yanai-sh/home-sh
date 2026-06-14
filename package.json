@@ -20,12 +20,10 @@
     "verify": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site verify",
     "preview": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site preview",
     "smoke": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site smoke",
-    "draft:static": "node scripts/wsl-proxy.mjs pnpm dlx serve docs/splash-drafts",
     "env:copy-prod": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/copy-gh-environment.ts --from staging --to production",
     "cf:list-access-apps": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/cf-list-access-apps.ts",
     "push-secrets": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/push-secrets.ts",
     "optional:bitwarden-to-secrets": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/optional/bitwarden-to-secrets.ts",
-    "wasm-build": "just wasm-build",
     "prepare": "node scripts/wsl-proxy.mjs sh -c \"command -v git >/dev/null 2>&1 && pnpm exec lefthook install || exit 0\""
   },
   "devDependencies": {

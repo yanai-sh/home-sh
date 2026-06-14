@@ -10,10 +10,6 @@ export const profile = {
   name: 'Yanai Klugman',
   tagline: 'Software & Systems Engineer',
   location: 'Raanana, Israel',
-  currentRole: {
-    company: 'Kardome',
-    context: 'Spatial audio, vehicle demos, and release tooling',
-  },
   resumeUrl: '/resume.pdf',
   resumeLabel: 'Resume PDF',
   socials: [

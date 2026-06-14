@@ -1,5 +1,6 @@
 import { CONTACT_ERROR } from '$lib/contact-error-codes';
 import { secretValue } from '$lib/bindings';
+import { validateContact } from '$lib/server/contact-validate';
 
 const ALLOWED_ORIGIN = 'https://yanai.sh';
 
@@ -60,22 +61,13 @@ export async function handleContactPost(request: Request, env: Env): Promise<Res
     return json({ error: CONTACT_ERROR.RATE_LIMITED }, 429);
   }
 
-  const { name, email, message, token } = body;
-  if (
-    typeof name !== 'string' ||
-    name.trim().length < 1 ||
-    name.length > 100 ||
-    typeof email !== 'string' ||
-    email.length > 254 ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-    typeof message !== 'string' ||
-    message.trim().length < 1 ||
-    message.length > 2000 ||
-    typeof token !== 'string' ||
-    token.length === 0
-  ) {
-    return json({ error: CONTACT_ERROR.INVALID_INPUT }, 400);
+  const validated = validateContact(body);
+  if (!validated.ok) {
+    return json({ error: validated.code }, 400);
   }
+
+  const { name, email, message } = validated;
+  const token = typeof body.token === 'string' ? body.token : '';
 
   const [turnstileSecret, resendKey, contactFrom, contactTo] = await Promise.all([
     secretValue(env.TURNSTILE_SECRET),
@@ -99,8 +91,8 @@ export async function handleContactPost(request: Request, env: Env): Promise<Res
       from: contactFrom,
       to: [contactTo],
       reply_to: email,
-      subject: `Contact from ${name.trim()}`,
-      text: `From: ${name.trim()} <${email}>\n\n${message.trim()}`,
+      subject: `Contact from ${name}`,
+      text: `From: ${name} <${email}>\n\n${message}`,
     }),
   });
 

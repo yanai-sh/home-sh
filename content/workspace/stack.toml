@@ -1,10 +1,10 @@
 # /workspace#stack pane content
 [[tools]]
-name = "Rust"
-role = "WASM canvas (flow field background)"
-rationale = ""
+name = "SvelteKit"
+role = "SSR + splash split shell"
+rationale = "Edge HTML on Cloudflare Workers with Static Assets"
 
 [[tools]]
-name = "Hono"
-role = "SSR Worker + JSX pages"
-rationale = "Edge HTML via hono/jsx on Cloudflare Workers with Static Assets"
+name = "Rust"
+role = "Resume PDF builder (resume/ submodule)"
+rationale = "Structured TOML → LaTeX PDF — typed, reproducible document builds"

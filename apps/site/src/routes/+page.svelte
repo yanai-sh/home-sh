@@ -6,7 +6,7 @@
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { initSplash } from '$lib/splash/client';
   import { splashProjectLabel, splashProjectOpensExternally } from '$lib/splash-project-label';
-  import { SITE_EMAIL, SITE_SOURCE_URL, SITE_TITLE } from '@config/site';
+  import { SITE_EMAIL, SITE_SOURCE_URL } from '@config/site';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -20,9 +20,8 @@
   const contact = $derived(portfolio.contact);
   const tagline = $derived(portfolio.tagline);
   const location = $derived(portfolio.location);
-  const currentRole = $derived(portfolio.currentRole);
   const hero = $derived(portfolio.hero);
-  const splashSiteLinks = $derived(portfolio.splashSiteLinks);
+  const resumeSections = $derived(data.resumeIndex);
   const github = $derived(socials.find((social) => social.url.includes('github')));
   const linkedin = $derived(socials.find((social) => social.url.includes('linkedin')));
 
@@ -37,8 +36,8 @@
 
 <IconSprite />
 <a class="skip-link" href="#splash">Skip to splash</a>
-<div class="systems-field-layer splash-field" aria-hidden="true" data-systems-field-layer>
-  <canvas data-systems-field-canvas></canvas>
+<div class="splash-field-layer splash-field" aria-hidden="true" data-splash-field>
+  <canvas data-splash-field-canvas></canvas>
 </div>
 
 <noscript>
@@ -60,73 +59,42 @@
         <header class="stage-head">
           <h1 class="stage-name">{name}</h1>
           <p class="stage-role">{tagline}</p>
-          {#if currentRole}
-            <p class="stage-now">
-              <span class="stage-now__company">{currentRole.company}</span>
-              <span class="stage-now__sep" aria-hidden="true">·</span>
-              <span class="stage-now__context">{currentRole.context}</span>
-              {#if location}
-                <span class="stage-now__sep" aria-hidden="true">·</span>
-                <span class="stage-now__place">{location}</span>
-              {/if}
-            </p>
+          {#if location}
+            <p class="stage-location">{location}</p>
           {/if}
         </header>
 
-        <nav class="cta-bar" aria-label="Primary">
-          <button type="button" class="cta-btn cta-btn--primary" data-open-split="resume">
-            Resume
-          </button>
-          <button type="button" class="cta-btn" data-open-split="contact">Contact</button>
-        </nav>
-
         <p class="stage-deck">{hero.lede}</p>
 
-        {#if featuredProjects.length > 0}
-          <nav class="stage-aside" aria-label="Also">
-            <span class="stage-aside__label">Also</span>
-            <ul class="stage-aside__list">
-              {#each featuredProjects as project (project.slug)}
-                {@const label = splashProjectLabel(project)}
-                {@const external = splashProjectOpensExternally(project.slug)}
-                {@const repoUrl = project.repo
-                  ? `https://github.com/${project.repo}`
-                  : 'externalUrl' in project && typeof project.externalUrl === 'string'
-                    ? project.externalUrl
-                    : undefined}
-                <li class="stage-aside__item">
-                  {#if external && repoUrl}
-                    <a
-                      class="stage-aside__link"
-                      href={repoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {label}
-                      <span class="stage-aside__hint">{SITE_TITLE}</span>
-                    </a>
-                  {:else}
-                    <button
-                      type="button"
-                      class="stage-aside__link stage-aside__link--button"
-                      data-open-project={project.slug}
-                    >
-                      {label}
-                    </button>
-                  {/if}
-                </li>
-              {/each}
-            </ul>
-          </nav>
-        {/if}
+        <nav class="stage-links" aria-label="Links">
+          <button type="button" class="text-link" data-open-split="resume">Resume</button>
+          <button type="button" class="text-link" data-open-split="contact">Contact</button>
+          {#each featuredProjects as project (project.slug)}
+            {@const label = splashProjectLabel(project)}
+            {@const external = splashProjectOpensExternally(project.slug)}
+            {@const repoUrl = project.repo
+              ? `https://github.com/${project.repo}`
+              : 'externalUrl' in project && typeof project.externalUrl === 'string'
+                ? project.externalUrl
+                : undefined}
+            {#if external && repoUrl}
+              <a
+                class="text-link"
+                href={repoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {label}
+              </a>
+            {:else}
+              <button type="button" class="text-link" data-open-project={project.slug}>
+                {label}
+              </button>
+            {/if}
+          {/each}
+        </nav>
 
         <footer class="stage-footer">
-          <nav class="stage-site-nav" aria-label="Site">
-            {#each splashSiteLinks as link (link.href)}
-              <a class="stage-site-nav__link" href={link.href}>{link.label}</a>
-            {/each}
-          </nav>
-
           <nav class="stage-glyphs" aria-label="Social" data-magnetic-group>
             {#if github}
               <a
@@ -162,6 +130,7 @@
     class="split-divider"
     id="split-divider"
     aria-label="Resize panes"
+    tabindex="-1"
   ></button>
 
   <div class="pane pane--detail" id="pane-detail" inert>
@@ -202,10 +171,35 @@
 
     <div class="pane-body">
       <section class="pane-view" id="view-resume" aria-label="Resume PDF">
-        <iframe class="pdf-frame" id="resume-pdf" title="Resume PDF" hidden></iframe>
-        <div class="pdf-fallback" id="pdf-fallback">
-          PDF preview needs network or a deployed origin.
-          <a id="pdf-fallback-link" href="/resume.pdf">Open resume.pdf</a>
+        <div class="resume-layout">
+          <aside class="resume-nav" aria-label="Resume sections">
+            <label class="resume-nav__label" for="resume-filter">Jump to section</label>
+            <input
+              class="resume-nav__filter"
+              id="resume-filter"
+              type="search"
+              placeholder="Filter sections…"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <ul class="resume-nav__list" id="resume-toc">
+              {#each resumeSections as section (section.id)}
+                <li>
+                  <button type="button" class="resume-nav__item" data-resume-section={section.id}>
+                    {section.label}
+                  </button>
+                </li>
+              {/each}
+            </ul>
+            <p class="resume-nav__empty" hidden> No sections match. </p>
+          </aside>
+          <div class="resume-viewer">
+            <iframe class="pdf-frame" id="resume-pdf" title="Resume PDF" hidden></iframe>
+            <div class="pdf-fallback" id="pdf-fallback">
+              PDF preview needs network or a deployed origin.
+              <a id="pdf-fallback-link" href="/resume.pdf">Open resume.pdf</a>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -338,9 +332,3 @@
   </div>
 </div>
 
-<p class="field-caption" id="field-caption">
-  <span>flow field</span>
-  <span data-caption-fps hidden></span>
-  <span data-caption-wasm hidden></span>
-  <a href={SITE_SOURCE_URL} target="_blank" rel="noopener noreferrer">src</a>
-</p>

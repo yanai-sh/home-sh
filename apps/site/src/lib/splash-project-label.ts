@@ -1,4 +1,4 @@
-/** Label shown on the splash “Also” row (defaults to project title). */
+/** Label shown in the splash link column (defaults to project title). */
 export function splashProjectLabel(project: {
   slug: string;
   title: string;
