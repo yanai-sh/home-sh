@@ -29,6 +29,11 @@ export function buildContentSecurityPolicy(
   return `${directives.join('; ')};`;
 }
 
+function withUpgradeInsecureRequests(csp: string, isHttps: boolean): string {
+  if (!isHttps || csp.includes('upgrade-insecure-requests')) return csp;
+  return `${csp.replace(/;\s*$/, '')}; upgrade-insecure-requests;`;
+}
+
 export function applySecurityHeaders(
   response: Response,
   url: URL,
@@ -50,7 +55,15 @@ export function applySecurityHeaders(
     headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
 
-  headers.set('Content-Security-Policy', buildContentSecurityPolicy(isHttps, isDev, pathname));
+  const kitCsp = headers.get('Content-Security-Policy');
+  if (kitCsp) {
+    headers.set('Content-Security-Policy', withUpgradeInsecureRequests(kitCsp, isHttps));
+  } else {
+    headers.set(
+      'Content-Security-Policy',
+      buildContentSecurityPolicy(isHttps, isDev, pathname),
+    );
+  }
 
   return new Response(response.body, {
     status: response.status,
