@@ -6,11 +6,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 SKIP_VERIFY=0
-SKIP_WASM=0
 for arg in "$@"; do
   case "$arg" in
     --skip-verify) SKIP_VERIFY=1 ;;
-    --skip-wasm) SKIP_WASM=1 ;;
   esac
 done
 
@@ -127,24 +125,13 @@ ensure_node_pnpm() {
 
 ensure_rustup() {
   if ! command -v rustup >/dev/null 2>&1; then
-    log "installing rustup (stable + wasm32-unknown-unknown)"
+    log "installing rustup (stable, for resume/ submodule)"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
     # shellcheck disable=SC1091
     source "$HOME/.cargo/env"
   fi
   log "rustup $(rustup --version)"
   rustup show active-toolchain
-  rustup target add wasm32-unknown-unknown
-}
-
-ensure_wasm_pack() {
-  if command -v wasm-pack >/dev/null 2>&1; then
-    log "wasm-pack $(wasm-pack --version)"
-    return 0
-  fi
-  log "installing wasm-pack (cargo install — may take a few minutes)"
-  cargo install wasm-pack --locked
-  log "wasm-pack $(wasm-pack --version)"
 }
 
 install_js_deps() {
@@ -193,11 +180,6 @@ install_playwright() {
   pnpm exec playwright install-deps chromium 2>/dev/null || warn "playwright install-deps skipped (may need sudo)"
 }
 
-build_wasm() {
-  log "just wasm-build"
-  just wasm-build
-}
-
 run_verify() {
   log "pnpm run fix (normalize formatting after Windows edits)"
   pnpm run fix || true
@@ -210,17 +192,10 @@ ensure_shell_profile
 configure_git_auth
 ensure_node_pnpm
 ensure_rustup
-ensure_wasm_pack
 install_js_deps
 install_hooks
 init_submodules
 install_playwright
-
-if [[ "$SKIP_WASM" -eq 0 ]]; then
-  build_wasm
-else
-  warn "skipped wasm-build (--skip-wasm)"
-fi
 
 if [[ "$SKIP_VERIFY" -eq 0 ]]; then
   run_verify

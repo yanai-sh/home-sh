@@ -3,17 +3,12 @@
 pre-commit:
   commands:
     no-work-identity:
-      run: |
-        email="$(git config user.email)"
-        case "$email" in
-          *@kardome.com|*kardome*|*klugman.yanai*)
-            echo "lefthook: refusing to commit — configured user.email is '$email'." >&2
-            echo "lefthook: this repo is personal; expected me@yanai.sh." >&2
-            exit 1
-            ;;
-        esac
+      run: sh scripts/no-work-identity.sh
 
 pre-push:
   commands:
     verify:
-      run: pnpm run verify
+      # Call the WSL proxy directly rather than `pnpm run verify`: Windows pnpm's
+      # script-runner exits non-zero with no output when run non-interactively
+      # (as lefthook does). The proxy runs locally on non-Windows.
+      run: node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site verify

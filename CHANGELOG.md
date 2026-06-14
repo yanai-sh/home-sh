@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.23] - 2026-06-14
+
+### Added
+
+- **Splash pointer interactivity** — moving the mouse swirls/morphs the WebGL flow field by velocity; clicking empty space drops an expanding ink ripple. Reduced-motion still renders a static frame.
+- **Resume section nav** — filterable TOC in the resume split pane; jumps the PDF viewer via `#search=` fragments.
+- **Splash WebGL polish** — tuned field intensity, mask alignment, contact tint lerp, and reduced-motion static frame.
+
+### Fixed
+
+- **Light-mode WebGL field** — the field combined colors additively (only legible on a dark background); it now mixes the background toward the tint, so it reads correctly as ink-on-paper in light mode and a glow in dark mode.
+- **Light-mode mobile bottom sheet** — restored a soft upward shadow (the desktop light rule was bleeding a faint horizontal one onto the mobile sheet).
+- **Windows pre-push hook** — `lefthook` now runs `verify` via the WSL proxy directly; the `pnpm run` wrapper exited non-zero with no output when run non-interactively.
+
+### Changed
+
+- **Contact validation stays in TypeScript** — `POST /api/contact` validation lives in `lib/server/contact.ts` (alongside honeypot, rate limits, Turnstile, Resend) rather than a Rust/Wasm validator; the Wasm round-trip earned nothing for a three-field form.
+
+### Removed
+
+- **Contact validator Wasm** — removed the `apps/wasm/` crate and its build/CI steps in favor of the TypeScript validator.
+- **Canvas flow-field WASM** — scrapped the `/wasm/canvas` ambient renderer; the splash uses a WebGL shader field instead.
+
 ## [v0.1.22] - 2026-06-14
 
 ### Changed

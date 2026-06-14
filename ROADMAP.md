@@ -101,7 +101,7 @@ Boundary decisions:
 Shipped foundation:
 
 - Hono + Vite SSR site under `apps/site`, deployed as a Cloudflare Worker (Workers with Static Assets) via `wrangler deploy`.
-- pnpm monorepo with `apps/site` and `apps/wasm/*`.
+- pnpm monorepo with `apps/site`.
 - Design tokens in `apps/site/src/styles/global.css` (`:root` / `[data-theme]`).
 - Rust/WASM packages for shared bridge state, canvas rendering, and fuzzy search.
 - Contact Worker scaffold with Turnstile verification and Resend delivery.

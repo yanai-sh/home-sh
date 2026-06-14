@@ -32,6 +32,10 @@ if (!useWsl) {
   runLocal();
 }
 
+console.error(
+  "wsl-proxy: routing to WSL (first output may take 30–60s on /mnt/c)…",
+);
+
 const ps1 = join(root, "scripts", "wsl-run.ps1");
 const quoted = command.map((part) => `'${part.replace(/'/g, "''")}'`).join(" ");
 const result = spawnSync(

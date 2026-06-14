@@ -6,7 +6,6 @@ export function buildContentSecurityPolicy(
   const isPdf = pathname === '/resume.pdf';
   const scriptSrc = [
     "'self'",
-    "'wasm-unsafe-eval'",
     'https://challenges.cloudflare.com',
     ...(isDev ? ["'unsafe-inline'"] : []),
   ];

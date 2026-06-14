@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { projects } from '#content';
-import { portfolio } from '$lib/data/portfolio';
+import { portfolio, resumeIndex } from '$lib/data/portfolio';
 import { fetchRepoMetaMap } from '$lib/github-repo-meta';
 import { env } from '$env/dynamic/public';
 
@@ -30,6 +30,7 @@ export const load: PageServerLoad = async ({ url, platform }) => {
     portfolio,
     featuredProjects,
     repoMeta,
+    resumeIndex,
     canUseContactForm,
     turnstileSiteKey: turnstileSiteKey ?? '',
   };

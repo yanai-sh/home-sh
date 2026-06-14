@@ -22,7 +22,7 @@ export const contact = {
     directEmailPrefix: 'Email',
     statusMessages: {
       captcha: 'complete the captcha first',
-      sending: 'sending...',
+      sending: 'Sending…',
       sent: 'sent - thanks',
       networkError: 'network error - try again',
       invalidEmail: 'enter a valid email address',

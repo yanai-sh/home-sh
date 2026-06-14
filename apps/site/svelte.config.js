@@ -27,7 +27,7 @@ const config = {
         'style-src': ['self', 'unsafe-inline'],
         'font-src': ['self'],
         'img-src': ['self', 'data:'],
-        'script-src': ['self', 'wasm-unsafe-eval', 'https://challenges.cloudflare.com'],
+        'script-src': ['self', 'https://challenges.cloudflare.com'],
         'frame-src': ['self', 'https://challenges.cloudflare.com'],
         'frame-ancestors': ['none'],
         'connect-src': ['self', 'https://challenges.cloudflare.com'],

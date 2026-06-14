@@ -24,25 +24,6 @@ fix:
 preview:
     pnpm run preview
 
-# ── Rust / WASM ─────────────────────────────────────────────────────────────
-
-# Build all WASM modules (requires wasm-pack + rust wasm32 target).
-# wasm-opt is disabled in crate metadata — no Binaryen prebuilt needed on Windows ARM64.
-wasm-build:
-    wasm-pack build apps/wasm/canvas --target web --out-dir ../../site/public/wasm/canvas
-    @just wasm-clean-gitignore
-
-wasm-clean-gitignore:
-    node -e "const fs=require('fs');const p='apps/site/public/wasm';for(const d of fs.readdirSync(p)){try{fs.unlinkSync(p+'/'+d+'/.gitignore')}catch{}}"
-
-# Check all Rust crates compile for wasm32
-wasm-check:
-    cargo check --target wasm32-unknown-unknown --workspace
-
-# Run clippy on all Rust crates
-wasm-lint:
-    cargo clippy --target wasm32-unknown-unknown --workspace -- -D warnings
-
 # ── Cloudflare Workers ───────────────────────────────────────────────────────
 
 # Generate TypeScript types from wrangler bindings (run after changing wrangler.jsonc)
@@ -111,8 +92,5 @@ sync-resume-pdf:
 
 # ── Full pipeline ────────────────────────────────────────────────────────────
 
-# Build everything: WASM + site
-build-all: wasm-build build
-
-# Full CI gate: verify site + check WASM
-ci: verify wasm-check
+# Full CI gate: verify site
+ci: verify

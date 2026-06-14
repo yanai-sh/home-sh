@@ -1,6 +1,6 @@
 ## This repository
 
-**pnpm monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker (Workers with Static Assets) + Rust/WASM modules (`/api/contact` ships in that same Worker). Toolchain: **Vite 8**, **svelte-check**, **Vitest**, **Velite**. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+**pnpm monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker (Workers with Static Assets); **`/api/contact`** and **`/resume.pdf`** on that Worker. Optional **`resume/`** git submodule (Rust PDF builder). Toolchain: **Vite 8**, **svelte-check**, **Vitest**, **Velite**. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ### Monorepo layout
 
@@ -8,8 +8,6 @@
 resume/      # optional git submodule → yanai-sh/resume (PDF source repo; not required for site build)
 apps/
   site/        # SvelteKit app (@sveltejs/adapter-cloudflare) — the deployed site
-  wasm/
-    canvas/    # FlowFieldRenderer — ambient canvas reacts to site mode, split, contact form, resume PDF
 infra/
   README.md   # Infra ops: secrets layout, workflows, OpenTofu pointers
   secrets/    # Worker secret *shape* (example JSON); real values gitignored + GitHub Actions
@@ -28,7 +26,7 @@ routes/             # SvelteKit pages (+page, +layout, +server)
 lib/
   components/       # Svelte UI (SiteMeta, ThemeToggle, IconSprite)
   server/           # contact, resume-pdf, security helpers
-  splash/client.ts  # split pane, contact FSM, WASM bridge (onMount)
+  splash/client.ts  # split pane, contact form, resume TOC (onMount)
 hooks.server.ts     # security headers, /workspace redirect
 content/            # Velite source (JSON experience, MDX projects/blog)
 data/portfolio/     # splash copy (hero, nav, contact)
@@ -106,7 +104,7 @@ Use **pnpm** + **Vite+** (`vp dev`, `vp check`, `vp test`, `vp build`, `vp run v
 pnpm run setup:wsl
 ```
 
-That installs Fedora packages (git, **gh**, just, node, Playwright libs), **rustup** + **wasm32**, **wasm-pack**, Linux **node_modules**, **resume** submodule, **lefthook**, **Playwright chromium**, **`just wasm-build`**, and runs **`pnpm run verify`**. Repo can stay on **`/mnt/c/...`** (Vitest uses **`pool: 'threads'`** because fork workers hang on drvfs). **Do not** run **`pnpm install`** from Windows arm64 Node.
+That installs Fedora packages (git, **gh**, just, node, Playwright libs), **rustup** (for the **resume/** submodule), Linux **node_modules**, **resume** submodule, **lefthook**, **Playwright chromium**, and runs **`pnpm run verify`**. Repo can stay on **`/mnt/c/...`** (Vitest uses **`pool: 'threads'`** because fork workers hang on drvfs). **Do not** run **`pnpm install`** from Windows arm64 Node.
 
 Before first setup, on Windows run **`gh auth switch -u yanai-sh`** so the private **`resume/`** submodule can clone (or **`gh auth login`** inside WSL).
 

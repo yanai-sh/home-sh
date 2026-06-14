@@ -15,24 +15,25 @@ function collectPageErrors(page: Page): string[] {
   return errors;
 }
 
-test('splash stage renders with resume link and WASM layer', async ({ page }) => {
+async function waitForSplashClient(page: Page): Promise<void> {
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('[data-splash-field-canvas]')).toBeAttached();
+  await expect(page.locator('[data-splash-field]')).toHaveClass(/is-splash-field-ready/, {
+    timeout: 30_000,
+  });
+}
+
+test('splash stage renders with resume CTA and shader field layer', async ({ page }) => {
   await page.goto(`${BASE}/`);
   await expect(page.locator('#shell')).toBeVisible();
   await expect(page.locator('#splash')).toBeVisible();
   await expect(page.locator('.stage-name')).toBeVisible();
-  await expect(page.locator('[data-systems-field-canvas]')).toBeAttached();
-  await expect(page.locator('button[data-open-split="resume"]')).toBeVisible();
+  await expect(page.locator('[data-splash-field-canvas]')).toBeAttached();
+  await expect(page.locator('.stage-links button[data-open-split="resume"]')).toBeVisible();
 });
 
 function resolveAssetUrl(base: string, path: string): string {
   return new URL(path.replace(/^\.\//, ''), `${base.replace(/\/$/, '')}/`).href;
-}
-
-async function waitForSplashClient(page: Page): Promise<void> {
-  await page.waitForLoadState('networkidle');
-  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
-    timeout: 30_000,
-  });
 }
 
 test('splash CSS and client JS return 200', async ({ page, request }) => {
@@ -50,25 +51,49 @@ test('splash CSS and client JS return 200', async ({ page, request }) => {
   expect(js.headers()['content-type']).toMatch(/javascript/);
 });
 
-test('desktop systems field initializes as a progressive enhancement', async ({ page }) => {
-  await page.goto(`${BASE}/`);
-  await waitForSplashClient(page);
-});
-
-test('opening resume split shows PDF pane chrome', async ({ page }) => {
+test('opening resume split shows PDF pane chrome and section nav', async ({ page }) => {
   await page.goto(`${BASE}/`);
   await waitForSplashClient(page);
   await page.locator('button[data-open-split="resume"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'resume');
   await expect(page.locator('#pane-detail')).not.toHaveAttribute('inert', '');
   await expect(page.locator('#chrome-label')).toHaveText('resume.pdf');
+  await expect(page.locator('#resume-filter')).toBeVisible();
+  await expect(page.locator('#resume-toc button[data-resume-section="experience"]')).toBeVisible();
 });
 
-test('systems field remains mounted when split opens', async ({ page }) => {
+test('resume section filter hides non-matching entries', async ({ page }) => {
   await page.goto(`${BASE}/`);
   await waitForSplashClient(page);
   await page.locator('button[data-open-split="resume"]').click();
-  await expect(page.locator('[data-systems-field-canvas]')).toBeAttached();
+  await page.locator('#resume-filter').fill('kardome');
+  await expect(page.locator('[data-resume-section="kardome"]')).toBeVisible();
+  await expect(page.locator('[data-resume-section="education"]')).toBeHidden();
+});
+
+test('closing resume split hides divider and returns to splash mode', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
+  await page.locator('button[data-open-split="resume"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'resume');
+  await page.locator('[data-close-split]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'splash');
+  await expect(page.locator('#pane-detail')).toHaveAttribute('inert', '');
+  const dividerBox = await page.locator('#split-divider').boundingBox();
+  expect(dividerBox?.width ?? 0).toBeLessThanOrEqual(1);
+  await expect(page.locator('#pane-detail')).toHaveCSS('border-left-width', '0px');
+  await expect(page.locator('html')).toHaveCSS('--split-progress', '0');
+});
+
+test('closing contact split leaves no divider hairline', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
+  await page.locator('button[data-open-split="contact"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'contact');
+  await page.locator('[data-close-split]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'splash');
+  await expect(page.locator('#pane-detail')).toHaveCSS('border-left-width', '0px');
+  await expect(page.locator('html')).toHaveCSS('--split-progress', '0');
 });
 
 test('/workspace redirect lands on /', async ({ page }) => {
@@ -84,26 +109,18 @@ test('404 returns not-found page', async ({ page }) => {
   expect(res?.status()).toBe(404);
 });
 
-test('reduced-motion: splash renders a static field frame', async ({ browser }) => {
+test('reduced-motion: splash renders static shader field frame', async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: 'reduce' });
   const page = await ctx.newPage();
+  const errors = collectPageErrors(page);
   await page.goto(`${BASE}/`);
   await expect(page.locator('#splash')).toBeVisible();
-  // The field still initializes — it renders a single static frame.
-  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/, {
+  await expect(page.locator('[data-splash-field]')).toHaveClass(/is-splash-field-ready/, {
     timeout: 15_000,
   });
-  await ctx.close();
-});
-
-test('blocked systems field WASM keeps splash usable', async ({ page }) => {
-  const errors = collectPageErrors(page);
-  await page.route('**/wasm/canvas/**', (route) => route.abort());
-  await page.goto(`${BASE}/`);
-  await expect(page.locator('#splash')).toBeVisible();
-  await expect(page.locator('button[data-open-split="resume"]')).toBeVisible();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(300);
   expect(errors).toEqual([]);
+  await ctx.close();
 });
 
 test('contact split opens from command button', async ({ page }) => {
@@ -114,39 +131,21 @@ test('contact split opens from command button', async ({ page }) => {
   await expect(page.locator('#contact-title')).toBeVisible();
 });
 
-test('contact pane keeps systems field ready', async ({ page }) => {
-  const errors = collectPageErrors(page);
+test('project link in stage column opens the project pane', async ({ page }) => {
   await page.goto(`${BASE}/`);
   await waitForSplashClient(page);
-  await page.locator('button[data-open-split="contact"]').click();
-  await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'contact');
-  const message = page.locator('#cf-message');
-  if ((await message.count()) > 0) {
-    await message.focus();
-    await message.fill('hello');
-  } else {
-    await page.locator('#contact-title').click();
-  }
-  await expect(page.locator('[data-systems-field-layer]')).toHaveClass(/is-systems-field-ready/);
-  await page.waitForTimeout(300);
-  expect(errors).toEqual([]);
-});
-
-test('figure caption is present with source link', async ({ page }) => {
-  await page.goto(`${BASE}/`);
-  await expect(page.locator('.field-caption')).toBeAttached();
-  await expect(page.locator('.field-caption a[href*="github.com"]')).toBeAttached();
-});
-
-test('project rows render and open the project pane', async ({ page }) => {
-  await page.goto(`${BASE}/`);
-  await waitForSplashClient(page);
-  const row = page.locator('button[data-open-project]').first();
-  await expect(row).toBeVisible();
-  await row.click();
+  const winmint = page.locator('button[data-open-project="winmint"]');
+  await expect(winmint).toBeVisible();
+  await winmint.click();
   await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'project');
   await expect(page.locator('#view-project')).toBeVisible();
-  await expect(page.locator('[data-project-detail]:not([hidden])')).toBeVisible();
+  await expect(page.locator('[data-project-detail="winmint"]:not([hidden])')).toBeVisible();
+});
+
+test('source code link targets the site repository', async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  const link = page.getByRole('link', { name: /Source code/i });
+  await expect(link).toHaveAttribute('href', /github\.com\/yanai-sh\/home-sh/);
 });
 
 test('/resume redirects to resume.pdf', async ({ request }) => {
