@@ -11,11 +11,21 @@
 
   let { data }: { data: PageData } = $props();
 
-  const { portfolio, featuredProjects, repoMeta, canUseContactForm, turnstileSiteKey } = data;
-  const { name, socials, contact, tagline, location, currentRole } = portfolio;
-  const summary = portfolio.hero.lede;
-  const github = socials.find((social) => social.url.includes('github'));
-  const linkedin = socials.find((social) => social.url.includes('linkedin'));
+  const portfolio = $derived(data.portfolio);
+  const featuredProjects = $derived(data.featuredProjects);
+  const repoMeta = $derived(data.repoMeta);
+  const canUseContactForm = $derived(data.canUseContactForm);
+  const turnstileSiteKey = $derived(data.turnstileSiteKey);
+  const name = $derived(portfolio.name);
+  const socials = $derived(portfolio.socials);
+  const contact = $derived(portfolio.contact);
+  const tagline = $derived(portfolio.tagline);
+  const location = $derived(portfolio.location);
+  const currentRole = $derived(portfolio.currentRole);
+  const hero = $derived(portfolio.hero);
+  const splashSiteLinks = $derived(portfolio.splashSiteLinks);
+  const github = $derived(socials.find((social) => social.url.includes('github')));
+  const linkedin = $derived(socials.find((social) => social.url.includes('linkedin')));
 
   onMount(() => {
     initSplash();
@@ -35,6 +45,7 @@
 <noscript>
   <div class="panel document-panel" style="margin: 2rem auto; max-width: 28rem;">
     <p>{tagline}</p>
+    <p>{hero.lede}</p>
     <p>
       <a href="/resume.pdf">Download resume PDF</a>
       {' · '}
@@ -47,15 +58,21 @@
   <div class="pane pane--splash" id="pane-splash">
     <main class="stage" id="splash" tabindex="-1">
       <div class="stage-inner">
-        <h1 class="stage-name">{name}</h1>
-        <p class="stage-role">{tagline}</p>
-        {#if currentRole}
-          <p class="stage-now">
-            <span class="stage-now__company">{currentRole.company}</span>
-            <span class="stage-now__sep" aria-hidden="true">·</span>
-            <span class="stage-now__role">{currentRole.role}</span>
-          </p>
-        {/if}
+        <header class="stage-head">
+          <h1 class="stage-name">{name}</h1>
+          <p class="stage-role">{tagline}</p>
+          {#if currentRole}
+            <p class="stage-now">
+              <span class="stage-now__company">{currentRole.company}</span>
+              <span class="stage-now__sep" aria-hidden="true">·</span>
+              <span class="stage-now__context">{currentRole.context}</span>
+            </p>
+          {/if}
+          {#if location}
+            <p class="stage-location">{location}</p>
+          {/if}
+          <p class="stage-deck">{hero.lede}</p>
+        </header>
 
         <nav class="stage-links stage-links--primary" aria-label="Primary">
           <button type="button" class="text-link text-link--primary" data-open-split="resume">
@@ -66,54 +83,62 @@
           </button>
         </nav>
 
-        <nav class="stage-index" aria-label="Site index">
-          {#each featuredProjects as project (project.slug)}
-            <a class="stage-index__link" href="/projects/{project.slug}">{project.title}</a>
-          {/each}
-          <a class="stage-index__link" href="/blog">Blog</a>
-        </nav>
-
         {#if featuredProjects.length > 0}
-          <ul class="project-rows" aria-label="Projects">
-            {#each featuredProjects as project (project.slug)}
-              {@const meta = project.repo ? repoMeta[project.repo] : null}
-              {@const age = meta ? relativeAge(meta.pushedAt) : null}
-              {@const repoUrl = project.repo
-                ? `https://github.com/${project.repo}`
-                : 'externalUrl' in project && typeof project.externalUrl === 'string'
-                  ? project.externalUrl
-                  : undefined}
-              <li class="project-row">
-                <button type="button" class="project-open" data-open-project={project.slug}>
-                  <span class="project-copy">
-                    <span class="project-name">{project.title}</span>
-                    <span class="project-desc">{project.description}</span>
-                  </span>
-                  <span class="project-meta">
-                    {#if project.tech?.[0]}<span>{project.tech[0]}</span>{/if}
-                    {#if age}<span class="num">updated {age}</span>{/if}
-                  </span>
-                </button>
-                {#if repoUrl}
-                  <a
-                    class="project-ext"
-                    href={repoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="{project.title} on GitHub"
+          <section class="project-section" aria-labelledby="project-section-label">
+            <h2 class="project-section__label" id="project-section-label">Selected projects</h2>
+            <ul class="project-rows">
+              {#each featuredProjects as project (project.slug)}
+                {@const meta = project.repo ? repoMeta[project.repo] : null}
+                {@const age = meta ? relativeAge(meta.pushedAt) : null}
+                {@const repoUrl = project.repo
+                  ? `https://github.com/${project.repo}`
+                  : 'externalUrl' in project && typeof project.externalUrl === 'string'
+                    ? project.externalUrl
+                    : undefined}
+                <li class="project-row">
+                  <button
+                    type="button"
+                    class="project-open"
+                    data-open-project={project.slug}
+                    aria-label="Open {project.title} detail"
                   >
-                    <svg width="13" height="13" aria-hidden="true">
-                      <use href="#icon-arrow-out" />
-                    </svg>
-                  </a>
-                {/if}
-              </li>
-            {/each}
-          </ul>
+                    <span class="project-copy">
+                      <span class="project-name">{project.title}</span>
+                      <span class="project-desc">{project.description}</span>
+                    </span>
+                    <span class="project-meta">
+                      {#if project.tech?.[0]}<span>{project.tech[0]}</span>{/if}
+                      {#if age}<span class="num">updated {age}</span>{/if}
+                    </span>
+                    <span class="project-open__chevron" aria-hidden="true"></span>
+                  </button>
+                  {#if repoUrl}
+                    <a
+                      class="project-ext"
+                      href={repoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="{project.title} on GitHub"
+                    >
+                      <svg width="13" height="13" aria-hidden="true">
+                        <use href="#icon-arrow-out" />
+                      </svg>
+                    </a>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          </section>
         {/if}
 
-        <nav class="stage-links" aria-label="Social">
-          <span class="stage-glyphs" data-magnetic-group>
+        <footer class="stage-footer">
+          <nav class="stage-site-nav" aria-label="Site">
+            {#each splashSiteLinks as link (link.href)}
+              <a class="stage-site-nav__link" href={link.href}>{link.label}</a>
+            {/each}
+          </nav>
+
+          <nav class="stage-glyphs" aria-label="Social" data-magnetic-group>
             {#if github}
               <a
                 class="glyph"
@@ -137,20 +162,18 @@
               </a>
             {/if}
             <ThemeToggle />
-          </span>
-        </nav>
+          </nav>
+        </footer>
       </div>
     </main>
   </div>
 
-  <div
+  <button
+    type="button"
     class="split-divider"
     id="split-divider"
-    role="separator"
-    aria-orientation="vertical"
     aria-label="Resize panes"
-    tabindex="0"
-  ></div>
+  ></button>
 
   <div class="pane pane--detail" id="pane-detail" inert>
     <header class="pane-chrome" id="pane-chrome">

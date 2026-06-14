@@ -1,7 +1,7 @@
 ---
 slug: home-sh
 title: home-sh
-description: This site — Hono SSR on Cloudflare Workers with Rust/WASM field, search, and telemetry.
+description: This site — SvelteKit on Cloudflare Workers with Rust/WASM field, contact API, and resume proxy.
 category: Personal Project
 order: 20
 featured: true
@@ -10,16 +10,16 @@ problem: >-
   A portfolio should prove engineering ability by existing, not by claiming it —
   but template sites and heavy frameworks demonstrate nothing and load slowly.
 approach: >-
-  An edge-rendered Hono app on Cloudflare Workers with Rust/WASM modules — a
-  canvas-rendered systems field and Nucleo fuzzy search over the resume — plus
-  a D1-backed telemetry pipeline. No client framework; CSS and a single module
-  script carry the interaction.
+  A SvelteKit app on Cloudflare Workers with Rust/WASM modules — a
+  canvas-rendered systems field, split-pane resume and contact on the same
+  Worker, and Velite-backed content. CSS and a single client module carry
+  the splash interaction.
 outcome: >-
   Sub-second loads from the edge, a background that is computed rather than
   decorated, and a deploy pipeline (staging/production Workers, SemVer tags,
   smoke tests) that mirrors how I ship real services.
 tech:
-  - Hono
+  - SvelteKit
   - Cloudflare Workers
   - Rust
   - WebAssembly
