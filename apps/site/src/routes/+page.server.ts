@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { projects } from '#content';
 import { portfolio, resumeIndex } from '$lib/data/portfolio';
-import { fetchRepoMetaMap } from '$lib/github-repo-meta';
+import { fetchRepoMetaMap, type RepoMeta } from '$lib/github-repo-meta';
 import { env } from '$env/dynamic/public';
 
 export const load: PageServerLoad = async ({ url, platform }) => {
@@ -13,13 +13,13 @@ export const load: PageServerLoad = async ({ url, platform }) => {
     .map((project) => project.repo)
     .filter((repo): repo is string => Boolean(repo));
 
-  let repoMeta: Awaited<ReturnType<typeof fetchRepoMetaMap>> = {};
-  try {
-    const waitUntil = platform?.ctx?.waitUntil?.bind(platform.ctx);
-    repoMeta = await fetchRepoMetaMap(repos, waitUntil);
-  } catch {
-    repoMeta = {};
-  }
+  const waitUntil = platform?.ctx?.waitUntil?.bind(platform.ctx);
+  // Streamed (deferred): don't await — SvelteKit serialises this promise and
+  // streams the repo stats in after the shell HTML, so first paint isn't
+  // blocked on the GitHub round-trip.
+  const repoMeta = fetchRepoMetaMap(repos, waitUntil).catch(
+    (): Record<string, RepoMeta | null> => ({}),
+  );
 
   const hostname = url.hostname;
   const isLocalOrigin = ['127.0.0.1', 'localhost'].includes(hostname);

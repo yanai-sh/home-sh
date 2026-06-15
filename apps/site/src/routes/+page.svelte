@@ -6,6 +6,7 @@
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { initSplash } from '$lib/splash/client';
   import { splashProjectLabel, splashProjectOpensExternally } from '$lib/splash-project-label';
+  import { relativeAge } from '$lib/github-repo-meta';
   import { SITE_EMAIL, SITE_SOURCE_URL } from '@config/site';
   import type { PageData } from './$types';
 
@@ -218,6 +219,19 @@
               <header class="project-detail__head">
                 <h2>{project.title}</h2>
                 <p>{project.description}</p>
+                {#if project.repo}
+                  {#await data.repoMeta then repoMeta}
+                    {@const meta = repoMeta[project.repo]}
+                    {#if meta}
+                      <p class="project-detail__repo">
+                        <span>★ {meta.stars}</span>
+                        {#if relativeAge(meta.pushedAt)}
+                          <span>updated {relativeAge(meta.pushedAt)} ago</span>
+                        {/if}
+                      </p>
+                    {/if}
+                  {/await}
+                {/if}
               </header>
               {#if project.problem}
                 <section>
