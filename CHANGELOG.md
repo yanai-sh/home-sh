@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.24] - 2026-06-15
+
+### Fixed
+
+- **Splash field visibility** — the WebGL flow field and its pointer interactivity (swirl + click ink-drops) were rendered too faintly to perceive, and the near-invisible field read as blank in light mode. Boosted field/glow/swirl/drop intensity, widened the edge mask, and made the stir track the cursor closely so motion visibly swirls the field.
+- **Field theme on direct load** — re-sync the field's colors once it initializes (it inits after the theme is applied), so loading straight into light mode renders the light field.
+
 ## [v0.1.23] - 2026-06-14
 
 ### Added
