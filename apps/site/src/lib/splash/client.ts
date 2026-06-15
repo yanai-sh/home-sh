@@ -1,9 +1,7 @@
-import { errorMessage } from '$lib/contact-error-codes';
 import { resumeIndex, type ResumeIndexSection } from '$lib/data/portfolio';
 import { initSplashField, type SplashFieldHandle } from './field';
 import { createSplitController, PDF_URL } from './split-controller';
 
-const CONTACT_ENDPOINT = '/api/contact';
 const THEME_STORAGE_KEY = 'yanai-sh:theme';
 const THEME_COLORS = {
   dark: '#151B22',
@@ -127,58 +125,8 @@ function initContactForm(): void {
     });
   }
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    if (!nameInput.value.trim() || !emailInput.value.trim() || !messageInput.value.trim()) {
-      setStatus(form.dataset.statusMissingFields as string, 'error');
-      return;
-    }
-    if (!emailValid()) {
-      emailInput.setAttribute('aria-invalid', 'true');
-      setStatus(form.dataset.statusInvalidEmail as string, 'error');
-      return;
-    }
-
-    const token = turnstileWindow.turnstile?.getResponse();
-    if (!token) {
-      setStatus(form.dataset.statusCaptcha as string, 'error');
-      return;
-    }
-
-    const payload = {
-      name: nameInput.value.trim(),
-      email: emailInput.value.trim(),
-      message: messageInput.value.trim(),
-      website: (form.elements.namedItem('website') as HTMLInputElement | null)?.value ?? '',
-      token,
-    };
-
-    setStatus(form.dataset.statusSending as string, 'loading');
-
-    try {
-      const response = await fetch(CONTACT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        setStatus(form.dataset.statusSent as string, 'success');
-        form.reset();
-        turnstileWindow.turnstile?.reset();
-        submit.disabled = true;
-        return;
-      }
-
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
-      setStatus(errorMessage(body.error ?? 'send_failed'), 'error');
-      turnstileWindow.turnstile?.reset();
-      submit.disabled = true;
-    } catch {
-      setStatus(form.dataset.statusNetworkError as string, 'error');
-    }
-  });
+  // Submission is handled by the SvelteKit form action + `use:enhance` in
+  // +page.svelte; this only wires Turnstile and inline field validation.
 }
 
 function initSplashFieldLayer(

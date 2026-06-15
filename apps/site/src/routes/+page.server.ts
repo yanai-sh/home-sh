@@ -1,7 +1,9 @@
-import type { PageServerLoad } from './$types';
+import { fail } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
 import { projects } from '#content';
 import { portfolio, resumeIndex } from '$lib/data/portfolio';
 import { fetchRepoMetaMap, type RepoMeta } from '$lib/github-repo-meta';
+import { contactErrorStatus, processContact } from '$lib/server/contact';
 import { env } from '$env/dynamic/public';
 
 export const load: PageServerLoad = async ({ url, platform }) => {
@@ -34,4 +36,28 @@ export const load: PageServerLoad = async ({ url, platform }) => {
     canUseContactForm,
     turnstileSiteKey: turnstileSiteKey ?? '',
   };
+};
+
+export const actions: Actions = {
+  // Progressive-enhancement contact endpoint: the form posts here with no JS
+  // (full page round-trip) and `use:enhance` upgrades it to no-reload AJAX —
+  // same server code path either way. Shares processContact() with /api/contact.
+  contact: async ({ request, platform }) => {
+    if (!platform?.env) return fail(503, { error: 'missing_env' });
+    const form = await request.formData();
+    const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+    const result = await processContact(
+      {
+        name: form.get('name'),
+        email: form.get('email'),
+        message: form.get('message'),
+        website: form.get('website'),
+        token: form.get('cf-turnstile-response'),
+      },
+      ip,
+      platform.env,
+    );
+    if (!result.ok) return fail(contactErrorStatus(result.code), { error: result.code });
+    return { success: true };
+  },
 };

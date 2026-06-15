@@ -7,6 +7,9 @@
   import { initSplash } from '$lib/splash/client';
   import { splashProjectLabel, splashProjectOpensExternally } from '$lib/splash-project-label';
   import { relativeAge } from '$lib/github-repo-meta';
+  import { errorMessage } from '$lib/contact-error-codes';
+  import { enhance } from '$app/forms';
+  import type { SubmitFunction } from '@sveltejs/kit';
   import { SITE_EMAIL, SITE_SOURCE_URL } from '@config/site';
   import type { PageData } from './$types';
 
@@ -25,6 +28,36 @@
   const resumeSections = $derived(data.resumeIndex);
   const github = $derived(socials.find((social) => social.url.includes('github')));
   const linkedin = $derived(socials.find((social) => social.url.includes('linkedin')));
+
+  // Progressive enhancement: the contact form posts to the `?/contact` action
+  // (works with no JS); this upgrades it to no-reload AJAX with status feedback.
+  const contactEnhance: SubmitFunction = ({ formElement }) => {
+    const status = formElement.querySelector<HTMLElement>('#cf-status');
+    const submit = formElement.querySelector<HTMLButtonElement>('#cf-submit');
+    const setStatus = (message: string, state: string): void => {
+      if (status) {
+        status.textContent = message;
+        status.dataset.state = state;
+      }
+      if (submit) submit.disabled = state === 'loading';
+    };
+    const turnstile = (window as Window & { turnstile?: { reset: () => void } }).turnstile;
+    setStatus(contact.form.statusMessages.sending, 'loading');
+
+    return async ({ result }) => {
+      if (result.type === 'success') {
+        setStatus(contact.form.statusMessages.sent, 'success');
+        formElement.reset();
+      } else if (result.type === 'failure') {
+        const code = (result.data as { error?: string } | undefined)?.error ?? 'send_failed';
+        setStatus(errorMessage(code), 'error');
+      } else if (result.type === 'error') {
+        setStatus(contact.form.statusMessages.networkError, 'error');
+      }
+      turnstile?.reset();
+      if (submit) submit.disabled = true;
+    };
+  };
 
   onMount(() => {
     initSplash();
@@ -271,6 +304,9 @@
             <form
               class="contact-form"
               id="contact-form"
+              method="POST"
+              action="/?/contact"
+              use:enhance={contactEnhance}
               novalidate
               aria-label={contact.form.label}
               aria-describedby="cf-status"
