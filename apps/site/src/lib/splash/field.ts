@@ -306,15 +306,21 @@ export function initSplashField(
   layer.classList.add('is-splash-field-ready');
 
   if (options.reducedMotion) {
-    // Static frame: a few flow steps stamped once, no animation loop.
-    for (let i = 0; i < 24; i++) step(0.016, i * 16);
+    // Reduced motion: no animation loop, but render a rich STATIC frame —
+    // trace the flow into full streak lines so the field still has aesthetics
+    // (accessible: it never moves).
+    const paint = (): void => {
+      clearAll();
+      for (let i = 0; i < 200; i++) step(0.016, i * 16);
+    };
+    paint();
     return {
       dispose: () => {
         disposed = true;
       },
       syncTheme: () => {
         syncTheme();
-        clearAll();
+        paint();
       },
     };
   }
