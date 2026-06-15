@@ -6,25 +6,27 @@ export const POINTER_LERP = 0.08;
 /** ~300ms contact tint ramp at 60fps. */
 export const CONTACT_LERP = 0.12;
 
-const FIELD_BASE_INTENSITY = 0.065;
-const SPLIT_INTENSITY_BOOST = 0.1;
-const GRAIN_STRENGTH = 0.024;
-const GRAIN_STRENGTH_LIGHT = 0.018;
+const FIELD_BASE_INTENSITY = 0.22;
+const SPLIT_INTENSITY_BOOST = 0.12;
+const GRAIN_STRENGTH = 0.03;
+const GRAIN_STRENGTH_LIGHT = 0.022;
 const CONTACT_TINT_MIX = 0.65;
-const EDGE_MASK_START = 0.2;
-const EDGE_MASK_END = 0.5;
-const POINTER_PULL = 0.35;
-const POINTER_GLOW = 0.22;
+const EDGE_MASK_START = 0.12;
+const EDGE_MASK_END = 0.42;
+const POINTER_PULL = 0.5;
+const POINTER_GLOW = 0.5;
 /** Pointer-stir interactivity: mouse motion swirls the field; clicks drop ink. */
-const POINTER_SWIRL_STRENGTH = 0.6;
-const STIR_DECAY = 0.9;
-const STIR_MAX = 1.2;
-const POINTER_VELOCITY_SCALE = 0.18;
+const POINTER_LERP_FAST = 0.22; // how quickly the stir center tracks the cursor
+const POINTER_SWIRL_STRENGTH = 1.4;
+const STIR_GLOW = 0.22;
+const STIR_DECAY = 0.92;
+const STIR_MAX = 1.6;
+const POINTER_VELOCITY_SCALE = 0.22;
 const DROP_COUNT = 8;
-const DROP_LIFE_MS = 2200;
-const DROP_BLOOM_SPEED = 0.5;
-const DROP_DECAY = 1.8;
-const DROP_STRENGTH = 0.5;
+const DROP_LIFE_MS = 2400;
+const DROP_BLOOM_SPEED = 0.42;
+const DROP_DECAY = 1.3;
+const DROP_STRENGTH = 0.7;
 
 const VERT = `#version 300 es
 in vec2 a_pos;
@@ -127,7 +129,7 @@ void main() {
   // field reads correctly in both themes — unlike a purely additive blend.
   float amount = field * intensity;
   amount += ptrPull * ${POINTER_GLOW} * edge;
-  amount += u_stir * stirFalloff * 0.06 * edge;
+  amount += u_stir * stirFalloff * ${STIR_GLOW} * edge;
 
   // Click ripples: expanding rings that bloom and fade (age in seconds; 0 = inactive).
   for (int i = 0; i < ${DROP_COUNT}; i++) {
@@ -307,8 +309,8 @@ export function initSplashField(
     raf = requestAnimationFrame(render);
     if (!visible || document.visibilityState !== 'visible') return;
 
-    pointer.x += (pointerTarget.x - pointer.x) * POINTER_LERP;
-    pointer.y += (pointerTarget.y - pointer.y) * POINTER_LERP;
+    pointer.x += (pointerTarget.x - pointer.x) * POINTER_LERP_FAST;
+    pointer.y += (pointerTarget.y - pointer.y) * POINTER_LERP_FAST;
     contactValue += (readContactTarget() - contactValue) * CONTACT_LERP;
 
     resize();
