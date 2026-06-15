@@ -1,6 +1,6 @@
 import { errorMessage } from '$lib/contact-error-codes';
 import { resumeIndex, type ResumeIndexSection } from '$lib/data/portfolio';
-import { initSplashField, type SplashFieldHandle } from './field-gl';
+import { initSplashField, type SplashFieldHandle } from './field';
 import { createSplitController, PDF_URL } from './split-controller';
 
 const CONTACT_ENDPOINT = '/api/contact';

@@ -11,21 +11,15 @@
   pointer-events: none;
   opacity: calc(1 - var(--split-progress, 0) * 0.18);
   transition: opacity 0.8s var(--ease);
-  background: var(--bg);
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    rgb(0 0 0 / 0.12) 28%,
-    rgb(0 0 0 / 0.5) 42%,
-    black 58%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    rgb(0 0 0 / 0.12) 28%,
-    rgb(0 0 0 / 0.5) 42%,
-    black 58%
-  );
+  /* Static gradient backdrop — shows as the graceful fallback when WebGL is
+     unavailable (the opaque canvas covers it once the field renders). */
+  background:
+    radial-gradient(
+      130% 100% at 78% 22%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 58%
+    ),
+    var(--bg);
 }
 
 .splash-field-layer canvas {
