@@ -1,12 +1,12 @@
 /**
- * Canvas 2D "ink in water" flow field — ambient splash chrome.
- * Pure 2D canvas (no WebGL/GPU) so it renders identically on every browser.
- * Particles drift along a curl-noise flow, leaving fading ink trails; the
- * pointer stirs them and clicks drop expanding ripples.
+ * Canvas 2D soft "ink in water" — large, blurred gradient blooms that drift
+ * slowly and are stirred by the pointer. Pure 2D canvas (no WebGL/GPU) so it
+ * renders identically on every browser. Smooth by construction (radial
+ * gradients), so it stays calm and premium rather than busy.
  */
 
-export const POINTER_REST_X = 0.72;
-export const POINTER_REST_Y = 0.42;
+const POINTER_REST_X = 0.72;
+const POINTER_REST_Y = 0.42;
 
 export type SplashFieldHandle = {
   dispose: () => void;
@@ -15,26 +15,17 @@ export type SplashFieldHandle = {
 
 type Rgb = [number, number, number];
 
-const PARTICLE_COUNT = 800;
-const TRAIL_FADE = 0.035; // per-frame backdrop alpha — lower = longer ink trails
-const FLOW_SCALE = 0.0016; // noise sampling scale (per px)
-const FLOW_SPEED = 58; // px/sec — ambient flow speed (must be visible at rest)
-const FLOW_INERTIA = 0.12; // how quickly velocity turns to follow the flow
-const TIME_SPEED = 0.05; // flow evolution speed
-const POINTER_RADIUS = 250; // px influence radius
-const POINTER_SWIRL = 160; // px/sec tangential stir near the pointer
-const POINTER_PUSH = 0.5; // fraction of pointer velocity imparted
-const POINTER_LERP = 0.2;
-const STIR_DECAY = 0.9;
-const LINE_WIDTH = 1.3;
-const LINE_ALPHA = 0.55;
-// Left-edge ink fade so the hero text stays legible (field is full-bleed,
-// calm on the left, full on the open right).
-const EDGE_FADE_START = 0.08;
-const EDGE_FADE_END = 0.42;
-const DROP_COUNT = 6;
-const DROP_LIFE_MS = 1500;
-const DROP_PUSH = 240; // px/sec outward impulse near a fresh drop
+const BLOOM_COUNT = 5;
+const POINTER_LERP = 0.12;
+const DRIFT_SPEED = 0.00007; // slow organic drift
+const DRIFT_AMP = 0.07; // fraction of viewport the blooms wander
+const POINTER_REPEL = 0.06; // how much ambient blooms shy from the cursor
+const CURSOR_BLOOM_R = 0.3; // cursor glow radius (fraction of min viewport dim)
+const CLICK_LIFE_MS = 2000;
+const DROP_COUNT = 4;
+// Keep the left calm behind the hero text; ink concentrates on the open right.
+const EDGE_FADE_START = 0.04;
+const EDGE_FADE_END = 0.5;
 
 function parseHex(raw: string, fallback: Rgb): Rgb {
   const hex = raw.trim().replace('#', '');
@@ -49,49 +40,6 @@ function readRgb(varName: string, fallback: Rgb): Rgb {
   return raw.startsWith('#') ? parseHex(raw, fallback) : fallback;
 }
 
-function hash(x: number, y: number): number {
-  const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
-  return h - Math.floor(h);
-}
-
-function valueNoise(x: number, y: number): number {
-  const ix = Math.floor(x);
-  const iy = Math.floor(y);
-  const fx = x - ix;
-  const fy = y - iy;
-  const ux = fx * fx * (3 - 2 * fx);
-  const uy = fy * fy * (3 - 2 * fy);
-  const a = hash(ix, iy);
-  const b = hash(ix + 1, iy);
-  const c = hash(ix, iy + 1);
-  const d = hash(ix + 1, iy + 1);
-  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
-}
-
-function fbm(x: number, y: number): number {
-  let v = 0;
-  let amp = 0.5;
-  let px = x;
-  let py = y;
-  for (let i = 0; i < 3; i++) {
-    v += amp * valueNoise(px, py);
-    px *= 2.03;
-    py *= 2.03;
-    amp *= 0.5;
-  }
-  return v;
-}
-
-/** Divergence-free flow direction from the curl of fbm (finite differences). */
-function curl(x: number, y: number): [number, number] {
-  const e = 0.4;
-  const n1 = fbm(x, y + e);
-  const n2 = fbm(x, y - e);
-  const n3 = fbm(x + e, y);
-  const n4 = fbm(x - e, y);
-  return [(n1 - n2) / (2 * e), (n4 - n3) / (2 * e)];
-}
-
 export function initSplashField(
   canvas: HTMLCanvasElement,
   layer: HTMLElement,
@@ -101,43 +49,52 @@ export function initSplashField(
   if (!ctx) return null;
 
   let bg: Rgb = [21, 27, 34];
-  let accent: Rgb = [120, 164, 255];
-  let mint: Rgb = [118, 255, 213];
+  let palette: Rgb[] = [
+    [120, 164, 255],
+    [118, 255, 213],
+    [255, 205, 118],
+  ];
   let isLight = false;
 
   const syncTheme = (): void => {
     bg = readRgb('--color-background', bg);
-    accent = readRgb('--color-accent-text', accent);
-    mint = readRgb('--color-ok', mint);
+    palette = [
+      readRgb('--color-accent-text', palette[0]),
+      readRgb('--color-ok', palette[1]),
+      readRgb('--color-accent-warm', palette[2]),
+    ];
     isLight = document.documentElement.dataset.theme === 'light';
   };
 
   let width = 1;
   let height = 1;
-  let dpr = 1;
+  let minDim = 1;
   const resize = (): void => {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     width = Math.max(1, canvas.clientWidth);
     height = Math.max(1, canvas.clientHeight);
+    minDim = Math.min(width, height);
     canvas.width = Math.floor(width * dpr);
     canvas.height = Math.floor(height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
   resize();
 
-  type Particle = { x: number; y: number; px: number; py: number; vx: number; vy: number };
-  const particles: Particle[] = [];
-  const spawn = (): Particle => {
-    const x = Math.random() * width;
-    const y = Math.random() * height;
-    return { x, y, px: x, py: y, vx: 0, vy: 0 };
-  };
-  for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(spawn());
+  type Bloom = { bx: number; by: number; r: number; ci: number; phase: number; speed: number };
+  const blooms: Bloom[] = [];
+  for (let i = 0; i < BLOOM_COUNT; i++) {
+    blooms.push({
+      bx: 0.5 + Math.random() * 0.46, // right-leaning, away from the hero text
+      by: 0.18 + Math.random() * 0.62,
+      r: 0.34 + Math.random() * 0.22,
+      ci: i % 3,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.6 + Math.random() * 0.8,
+    });
+  }
 
   const pointer = { x: POINTER_REST_X, y: POINTER_REST_Y };
-  const pointerTarget = { ...pointer };
-  const pointerVel = { x: 0, y: 0 };
-  const lastMove = { x: 0, y: 0, t: 0 };
+  const target = { ...pointer };
   const dropX = new Float64Array(DROP_COUNT);
   const dropY = new Float64Array(DROP_COUNT);
   const dropT0 = new Float64Array(DROP_COUNT);
@@ -146,137 +103,81 @@ export function initSplashField(
   let raf = 0;
   let visible = true;
   let disposed = false;
-  let lastFrame = 0;
 
-  const fade = (): void => {
-    ctx.fillStyle = `rgba(${bg[0]}, ${bg[1]}, ${bg[2]}, ${TRAIL_FADE})`;
-    ctx.fillRect(0, 0, width, height);
+  const edgeAlpha = (xFrac: number): number =>
+    Math.max(0.14, Math.min(1, (xFrac - EDGE_FADE_START) / (EDGE_FADE_END - EDGE_FADE_START)));
+
+  const bloom = (x: number, y: number, r: number, c: Rgb, a: number): void => {
+    if (a <= 0.002 || r <= 0) return;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`);
+    g.addColorStop(0.45, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a * 0.32})`);
+    g.addColorStop(1, `rgba(${c[0]}, ${c[1]}, ${c[2]}, 0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
   };
 
-  const clearAll = (): void => {
+  const draw = (nowMs: number): void => {
+    ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = `rgb(${bg[0]}, ${bg[1]}, ${bg[2]})`;
     ctx.fillRect(0, 0, width, height);
-  };
 
-  const step = (dt: number, nowMs: number): void => {
-    const t = nowMs * 0.001 * TIME_SPEED;
+    // Additive glow on dark; soft watercolor wash on light.
+    ctx.globalCompositeOperation = isLight ? 'source-over' : 'lighter';
+    const baseAlpha = isLight ? 0.17 : 0.13;
     const px = pointer.x * width;
     const py = pointer.y * height;
-    const fadeSpan = (EDGE_FADE_END - EDGE_FADE_START) * width;
-    ctx.lineWidth = LINE_WIDTH;
-    ctx.lineCap = 'round';
 
-    for (const p of particles) {
-      // Velocity follows the curl flow at a constant visible speed (so the
-      // field flows on its own, not just under the cursor), with light inertia.
-      const [fx, fy] = curl(p.x * FLOW_SCALE + t, p.y * FLOW_SCALE);
-      const fmag = Math.hypot(fx, fy) || 1;
-      let tvx = (fx / fmag) * FLOW_SPEED;
-      let tvy = (fy / fmag) * FLOW_SPEED;
-
-      // Pointer stir: swirl + velocity-driven shove within the influence radius.
-      const dx = p.x - px;
-      const dy = p.y - py;
-      const dist = Math.hypot(dx, dy);
-      let near = 0;
-      if (dist < POINTER_RADIUS) {
-        near = 1 - dist / POINTER_RADIUS;
-        const inv = 1 / (dist || 1);
-        tvx += -dy * inv * near * POINTER_SWIRL;
-        tvy += dx * inv * near * POINTER_SWIRL;
-        tvx += pointerVel.x * near * POINTER_PUSH;
-        tvy += pointerVel.y * near * POINTER_PUSH;
+    for (const b of blooms) {
+      const t = nowMs * DRIFT_SPEED * b.speed + b.phase;
+      let x = (b.bx + Math.cos(t) * DRIFT_AMP) * width;
+      let y = (b.by + Math.sin(t * 0.82) * DRIFT_AMP) * height;
+      const rad = b.r * minDim;
+      const dx = x - px;
+      const dy = y - py;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d < rad) {
+        const f = (1 - d / rad) * POINTER_REPEL * minDim;
+        x += (dx / d) * f;
+        y += (dy / d) * f;
       }
-
-      // Click ripples: outward push that expands and fades with age.
-      for (let i = 0; i < DROP_COUNT; i++) {
-        if (dropT0[i] === 0) continue;
-        const age = (nowMs - dropT0[i]) / DROP_LIFE_MS;
-        if (age >= 1) {
-          dropT0[i] = 0;
-          continue;
-        }
-        const ddx = p.x - dropX[i];
-        const ddy = p.y - dropY[i];
-        const dd = Math.hypot(ddx, ddy) || 1;
-        const ring = Math.max(0, 1 - Math.abs(dd - age * 300) / 130) * (1 - age);
-        tvx += (ddx / dd) * ring * DROP_PUSH;
-        tvy += (ddy / dd) * ring * DROP_PUSH;
-      }
-
-      p.vx += (tvx - p.vx) * FLOW_INERTIA;
-      p.vy += (tvy - p.vy) * FLOW_INERTIA;
-      p.px = p.x;
-      p.py = p.y;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-
-      // Wrap around the edges (respawn far strays for an even field).
-      if (p.x < -2 || p.x > width + 2 || p.y < -2 || p.y > height + 2) {
-        const np = spawn();
-        p.x = np.x;
-        p.y = np.y;
-        p.px = p.x;
-        p.py = p.y;
-        p.vx = 0;
-        p.vy = 0;
-        continue;
-      }
-
-      const edge = Math.max(0, Math.min(1, (p.x - EDGE_FADE_START * width) / fadeSpan));
-      if (edge <= 0.001) continue;
-      const speed = Math.hypot(p.vx, p.vy);
-      const heat = Math.min(1, near + Math.min(1, speed / 110) * 0.5);
-      const col: Rgb = [
-        accent[0] + (mint[0] - accent[0]) * heat * 0.6,
-        accent[1] + (mint[1] - accent[1]) * heat * 0.6,
-        accent[2] + (mint[2] - accent[2]) * heat * 0.6,
-      ];
-      const alpha = LINE_ALPHA * (0.4 + heat * 0.6) * edge * (isLight ? 0.62 : 1);
-      ctx.strokeStyle = `rgba(${col[0] | 0}, ${col[1] | 0}, ${col[2] | 0}, ${alpha})`;
-      ctx.beginPath();
-      ctx.moveTo(p.px, p.py);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
+      bloom(x, y, rad, palette[b.ci], baseAlpha * edgeAlpha(x / width));
     }
 
-    pointerVel.x *= STIR_DECAY;
-    pointerVel.y *= STIR_DECAY;
+    // Cursor glow — a soft bloom that tracks the pointer.
+    bloom(px, py, CURSOR_BLOOM_R * minDim, palette[0], baseAlpha * 0.95 * edgeAlpha(pointer.x));
+
+    // Click ripples — a bloom that expands and fades.
+    for (let i = 0; i < DROP_COUNT; i++) {
+      if (dropT0[i] === 0) continue;
+      const age = (nowMs - dropT0[i]) / CLICK_LIFE_MS;
+      if (age >= 1) {
+        dropT0[i] = 0;
+        continue;
+      }
+      const r = (0.06 + age * 0.4) * minDim;
+      bloom(dropX[i], dropY[i], r, palette[1], baseAlpha * 1.5 * (1 - age) * edgeAlpha(dropX[i] / width));
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
   };
 
   const render = (nowMs: number): void => {
     if (disposed) return;
     raf = requestAnimationFrame(render);
-    if (!visible || document.visibilityState !== 'visible') {
-      lastFrame = nowMs;
-      return;
-    }
-    const dt = Math.min(0.05, lastFrame ? (nowMs - lastFrame) / 1000 : 0.016);
-    lastFrame = nowMs;
-
-    pointer.x += (pointerTarget.x - pointer.x) * POINTER_LERP;
-    pointer.y += (pointerTarget.y - pointer.y) * POINTER_LERP;
-
-    fade();
-    step(dt, nowMs);
+    if (!visible || document.visibilityState !== 'visible') return;
+    pointer.x += (target.x - pointer.x) * POINTER_LERP;
+    pointer.y += (target.y - pointer.y) * POINTER_LERP;
+    draw(nowMs);
   };
 
   const onPointerMove = (event: PointerEvent): void => {
     const nx = event.clientX / Math.max(window.innerWidth, 1);
     const ny = event.clientY / Math.max(window.innerHeight, 1);
-    pointerTarget.x = nx;
-    pointerTarget.y = ny;
+    target.x = nx;
+    target.y = ny;
     document.documentElement.style.setProperty('--pointer-x', String(nx));
     document.documentElement.style.setProperty('--pointer-y', String(ny));
-    const now = performance.now();
-    if (lastMove.t !== 0) {
-      const dtm = Math.max(now - lastMove.t, 8) / 1000;
-      pointerVel.x = ((nx - lastMove.x) * window.innerWidth) / dtm;
-      pointerVel.y = ((ny - lastMove.y) * window.innerHeight) / dtm;
-    }
-    lastMove.x = nx;
-    lastMove.y = ny;
-    lastMove.t = now;
   };
 
   const onPointerDown = (event: PointerEvent): void => {
@@ -302,18 +203,12 @@ export function initSplashField(
   );
 
   syncTheme();
-  clearAll();
+  draw(2600);
   layer.classList.add('is-splash-field-ready');
 
   if (options.reducedMotion) {
-    // Reduced motion: no animation loop, but render a rich STATIC frame —
-    // trace the flow into full streak lines so the field still has aesthetics
-    // (accessible: it never moves).
-    const paint = (): void => {
-      clearAll();
-      for (let i = 0; i < 200; i++) step(0.016, i * 16);
-    };
-    paint();
+    // Static frame: blooms frozen at a natural drift offset (never animates).
+    const paint = (): void => draw(2600);
     return {
       dispose: () => {
         disposed = true;
@@ -340,9 +235,6 @@ export function initSplashField(
       window.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('resize', onResize);
     },
-    syncTheme: () => {
-      syncTheme();
-      clearAll();
-    },
+    syncTheme,
   };
 }
