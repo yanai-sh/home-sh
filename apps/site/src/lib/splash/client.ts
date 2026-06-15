@@ -409,5 +409,8 @@ export function initSplash(): void {
   initMagneticGlyphs();
   initSplashFieldLayer(reducedMotion, (handle) => {
     splashField = handle;
+    // The field may initialize after the theme was applied (deferred via
+    // requestIdleCallback); re-sync so a direct light-mode load matches.
+    handle?.syncTheme();
   });
 }
