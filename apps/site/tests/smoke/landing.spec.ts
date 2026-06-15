@@ -109,13 +109,14 @@ test('404 returns not-found page', async ({ page }) => {
   expect(res?.status()).toBe(404);
 });
 
-test('reduced-motion: splash renders static shader field frame', async ({ browser }) => {
+test('reduced-motion: splash shows the pre-baked still frame', async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: 'reduce' });
   const page = await ctx.newPage();
   const errors = collectPageErrors(page);
   await page.goto(`${BASE}/`);
   await expect(page.locator('#splash')).toBeVisible();
-  await expect(page.locator('[data-splash-field]')).toHaveClass(/is-splash-field-ready/, {
+  // Reduced motion skips the live fluid and shows the static swirl image.
+  await expect(page.locator('[data-splash-field]')).toHaveClass(/is-splash-still/, {
     timeout: 15_000,
   });
   await page.waitForTimeout(300);

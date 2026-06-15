@@ -19,7 +19,10 @@
   :root,
   [data-theme='dark'] {
     color-scheme: dark;
-    --color-background: #151b22;
+    /* Pre-baked still "paint in water" frame shown when the live fluid can't run
+       (reduced motion, or no WebGL2). See splash/field.ts + layout.css. */
+    --splash-still: url('/splash-still-dark.jpg');
+    --color-background: #15191d;
     --color-surface: #1d2630;
     --color-surface-raised: #25313e;
     --color-maintext: #f5f7fa;
@@ -39,7 +42,10 @@
 
   [data-theme='light'] {
     color-scheme: light;
-    --color-background: #fbfcf8;
+    --splash-still: url('/splash-still-light.jpg');
+    /* Soft warm off-white (not stark white) so the fluid reads as colour on
+       paper rather than washing out. */
+    --color-background: #e9e6df;
     --color-surface: #ffffff;
     --color-surface-raised: #f0f4f1;
     --color-maintext: #10161d;

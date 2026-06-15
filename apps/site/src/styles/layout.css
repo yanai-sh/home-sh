@@ -11,15 +11,27 @@
   pointer-events: none;
   opacity: calc(1 - var(--split-progress, 0) * 0.18);
   transition: opacity 0.8s var(--ease);
-  /* Static gradient backdrop — shows as the graceful fallback when WebGL is
-     unavailable (the opaque canvas covers it once the field renders). */
-  background:
-    radial-gradient(
-      130% 100% at 78% 22%,
-      color-mix(in srgb, var(--accent) 16%, transparent),
-      transparent 58%
-    ),
-    var(--bg);
+  /* The fluid renders transparently, so the themed background shows through
+     here (light/dark handled by CSS, no re-init). */
+  background: var(--bg);
+}
+
+/* Pre-baked still frame, shown instead of the live fluid when it can't run.
+   field.ts adds .is-splash-still for reduced-motion and no-WebGL2; the media
+   query is a no-JS fallback so reduced-motion still gets the still image. The
+   themed image comes from --splash-still (set per theme in global.css). */
+.splash-field-layer.is-splash-still {
+  background-image: var(--splash-still);
+  background-size: cover;
+  background-position: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-field-layer {
+    background-image: var(--splash-still);
+    background-size: cover;
+    background-position: center;
+  }
 }
 
 .splash-field-layer canvas {
@@ -28,6 +40,16 @@
   display: block;
   opacity: 0;
   transition: opacity 900ms ease;
+}
+
+/* The fluid library listens for pointer events on the canvas; re-enable them
+   (the layer is pointer-events:none). Content sits above at a higher z-index,
+   so it still receives its own clicks; only empty areas stir the fluid. Gated
+   to no-preference so a reduced-motion (frozen) frame can't be stirred. */
+@media (prefers-reduced-motion: no-preference) {
+  .splash-field-layer canvas {
+    pointer-events: auto;
+  }
 }
 
 .splash-field-layer.is-splash-field-ready canvas {
