@@ -15,22 +15,26 @@ export type SplashFieldHandle = {
 
 type Rgb = [number, number, number];
 
-const PARTICLE_COUNT = 900;
-const TRAIL_FADE = 0.05; // per-frame backdrop alpha — lower = longer ink trails
+const PARTICLE_COUNT = 800;
+const TRAIL_FADE = 0.035; // per-frame backdrop alpha — lower = longer ink trails
 const FLOW_SCALE = 0.0016; // noise sampling scale (per px)
-const FLOW_SPEED = 26; // particle speed (px/sec at 60fps baseline)
-const TIME_SPEED = 0.06; // flow evolution speed
-const DAMPING = 0.82;
-const POINTER_RADIUS = 240; // px influence radius
-const POINTER_SWIRL = 0.9; // tangential stir near the pointer
-const POINTER_PUSH = 0.45; // velocity-driven shove
+const FLOW_SPEED = 58; // px/sec — ambient flow speed (must be visible at rest)
+const FLOW_INERTIA = 0.12; // how quickly velocity turns to follow the flow
+const TIME_SPEED = 0.05; // flow evolution speed
+const POINTER_RADIUS = 250; // px influence radius
+const POINTER_SWIRL = 160; // px/sec tangential stir near the pointer
+const POINTER_PUSH = 0.5; // fraction of pointer velocity imparted
 const POINTER_LERP = 0.2;
 const STIR_DECAY = 0.9;
-const LINE_WIDTH = 1.2;
-const LINE_ALPHA = 0.5;
+const LINE_WIDTH = 1.3;
+const LINE_ALPHA = 0.55;
+// Left-edge ink fade so the hero text stays legible (field is full-bleed,
+// calm on the left, full on the open right).
+const EDGE_FADE_START = 0.08;
+const EDGE_FADE_END = 0.42;
 const DROP_COUNT = 6;
 const DROP_LIFE_MS = 1500;
-const DROP_PUSH = 220; // px/sec outward impulse near a fresh drop
+const DROP_PUSH = 240; // px/sec outward impulse near a fresh drop
 
 function parseHex(raw: string, fallback: Rgb): Rgb {
   const hex = raw.trim().replace('#', '');
@@ -158,14 +162,17 @@ export function initSplashField(
     const t = nowMs * 0.001 * TIME_SPEED;
     const px = pointer.x * width;
     const py = pointer.y * height;
-    const stir = Math.hypot(pointerVel.x, pointerVel.y);
+    const fadeSpan = (EDGE_FADE_END - EDGE_FADE_START) * width;
     ctx.lineWidth = LINE_WIDTH;
     ctx.lineCap = 'round';
 
     for (const p of particles) {
+      // Velocity follows the curl flow at a constant visible speed (so the
+      // field flows on its own, not just under the cursor), with light inertia.
       const [fx, fy] = curl(p.x * FLOW_SCALE + t, p.y * FLOW_SCALE);
-      let ax = fx * FLOW_SPEED;
-      let ay = fy * FLOW_SPEED;
+      const fmag = Math.hypot(fx, fy) || 1;
+      let tvx = (fx / fmag) * FLOW_SPEED;
+      let tvy = (fy / fmag) * FLOW_SPEED;
 
       // Pointer stir: swirl + velocity-driven shove within the influence radius.
       const dx = p.x - px;
@@ -175,13 +182,13 @@ export function initSplashField(
       if (dist < POINTER_RADIUS) {
         near = 1 - dist / POINTER_RADIUS;
         const inv = 1 / (dist || 1);
-        ax += -dy * inv * near * POINTER_SWIRL * FLOW_SPEED;
-        ay += dx * inv * near * POINTER_SWIRL * FLOW_SPEED;
-        ax += pointerVel.x * near * POINTER_PUSH;
-        ay += pointerVel.y * near * POINTER_PUSH;
+        tvx += -dy * inv * near * POINTER_SWIRL;
+        tvy += dx * inv * near * POINTER_SWIRL;
+        tvx += pointerVel.x * near * POINTER_PUSH;
+        tvy += pointerVel.y * near * POINTER_PUSH;
       }
 
-      // Click ripples: outward push that fades with age.
+      // Click ripples: outward push that expands and fades with age.
       for (let i = 0; i < DROP_COUNT; i++) {
         if (dropT0[i] === 0) continue;
         const age = (nowMs - dropT0[i]) / DROP_LIFE_MS;
@@ -192,13 +199,13 @@ export function initSplashField(
         const ddx = p.x - dropX[i];
         const ddy = p.y - dropY[i];
         const dd = Math.hypot(ddx, ddy) || 1;
-        const ring = Math.max(0, 1 - Math.abs(dd - age * 260) / 120) * (1 - age);
-        ax += (ddx / dd) * ring * DROP_PUSH;
-        ay += (ddy / dd) * ring * DROP_PUSH;
+        const ring = Math.max(0, 1 - Math.abs(dd - age * 300) / 130) * (1 - age);
+        tvx += (ddx / dd) * ring * DROP_PUSH;
+        tvy += (ddy / dd) * ring * DROP_PUSH;
       }
 
-      p.vx = (p.vx + ax * dt) * DAMPING;
-      p.vy = (p.vy + ay * dt) * DAMPING;
+      p.vx += (tvx - p.vx) * FLOW_INERTIA;
+      p.vy += (tvy - p.vy) * FLOW_INERTIA;
       p.px = p.x;
       p.py = p.y;
       p.x += p.vx * dt;
@@ -216,17 +223,17 @@ export function initSplashField(
         continue;
       }
 
+      const edge = Math.max(0, Math.min(1, (p.x - EDGE_FADE_START * width) / fadeSpan));
+      if (edge <= 0.001) continue;
       const speed = Math.hypot(p.vx, p.vy);
-      const heat = Math.min(1, near + Math.min(1, speed / 60) * 0.4);
+      const heat = Math.min(1, near + Math.min(1, speed / 110) * 0.5);
       const col: Rgb = [
         accent[0] + (mint[0] - accent[0]) * heat * 0.6,
         accent[1] + (mint[1] - accent[1]) * heat * 0.6,
         accent[2] + (mint[2] - accent[2]) * heat * 0.6,
       ];
-      const alpha = Math.min(1, LINE_ALPHA * (0.4 + heat));
-      ctx.strokeStyle = isLight
-        ? `rgba(${col[0]}, ${col[1]}, ${col[2]}, ${alpha * 0.55})`
-        : `rgba(${col[0]}, ${col[1]}, ${col[2]}, ${alpha})`;
+      const alpha = LINE_ALPHA * (0.4 + heat * 0.6) * edge * (isLight ? 0.62 : 1);
+      ctx.strokeStyle = `rgba(${col[0] | 0}, ${col[1] | 0}, ${col[2] | 0}, ${alpha})`;
       ctx.beginPath();
       ctx.moveTo(p.px, p.py);
       ctx.lineTo(p.x, p.y);
