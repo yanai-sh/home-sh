@@ -26,10 +26,10 @@
        fluid darkens it toward (read in field-fluid.ts syncTheme). Ink < base. */
     --splash-base: #1b2532;
     --splash-ink: #060910;
-    /* Display tone curve (per theme): ink shows for dye in [lo, hi]. Dark keeps a
-       low floor so faint tendrils read as moody depth. */
+    /* Display tone curve (per theme): ink shows for dye in [lo, hi]. Dark is the
+       primary theme — a lower ceiling makes the ink clearly visible (not faint). */
     --splash-ink-lo: 0;
-    --splash-ink-hi: 0.9;
+    --splash-ink-hi: 0.62;
     --color-background: #15191d;
     --color-surface: #1d2630;
     --color-surface-raised: #25313e;

@@ -30,9 +30,7 @@ const DYE_RES = 768; // ink grid — higher = finer tendrils
 const PRESSURE_ITERS = 24;
 const VISCOSITY_ITERS = 10;
 const POINTER_MAX_DELTA = 0.05; // clamp per-frame mouse movement (no flick spikes)
-const VELOCITY_DISSIPATION = 0.999; // ~lossless; viscosity does the damping
 const DYE_DISSIPATION = 1.0; // ink persists (mass-conserving look)
-const NOISE_SCALE = 3.0; // spatial frequency of the curl-noise marbling
 const NOISE_DRIFT = 0.02; // how fast the noise field evolves over time
 const MAX_DPR = 2;
 const FPS_BAIL = 36; // average fps below this over the warmup window → fall back
@@ -42,13 +40,16 @@ const FPS_WARMUP_MS = 1500;
 // and "way too much". In dev they're exposed on window.__splashTune so the look
 // can be dialed in the browser console with no rebuild; bake the final numbers.
 const TUNE_DEFAULTS = {
-  noiseAmp: 0.45, // base-flow speed (calm, restrained)
+  noiseAmp: 0.32, // base-flow speed (calm, but enough folding to read as ink)
+  noiseScale: 1.6, // flow spatial frequency — lower = bigger, slower vortices
+  //                  (coherent sections that swirl together, not thin streaks)
   viscosityAlpha: 2.6, // higher = less viscous / flows more freely
-  forceRelax: 0.5, // relax rate toward the noise field
-  pointerPush: 45, // drag strength
-  pointerSwirl: 320, // vortex strength around the cursor
-  pointerRadius: 0.012, // gaussian radius² — small, tight stir area
-  pointerSmooth: 0.1, // ease rate for the stir (lower = smoother, less sudden)
+  forceRelax: 0.35, // relax rate toward the noise field
+  velocityDissipation: 0.97, // how fast motion settles after a stir (lower = shorter wake)
+  pointerPush: 130, // drag strength (tight radius, so punchy)
+  pointerSwirl: 1300, // vortex strength around the cursor
+  pointerRadius: 0.006, // gaussian radius² — tight stir area
+  pointerDecay: 0.78, // per-frame decay of the stir impulse (lower = settles faster)
   inkLo: 0.0, // display tone-curve start
   inkHi: 0.9, // ...end (shared); per-theme visibility tuned via base/ink contrast
 };
@@ -63,6 +64,22 @@ float vnoise(vec2 p){
   return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 float fbm(vec2 p){ float v = 0.0; float a = 0.5; for (int i = 0; i < 5; i++){ v += a * vnoise(p); p *= 2.0; a *= 0.5; } return v; }
+`;
+
+// Manual bilinear sampling — half-float textures aren't reliably hardware-filtered
+// (some drivers, e.g. Windows-on-ARM/ANGLE, sample NEAREST → visible sim-grid
+// blocks). Textures are NEAREST and we interpolate here, so it's GPU-agnostic.
+const BILERP_GLSL = `
+vec4 bilerp(sampler2D tex, vec2 uv, vec2 texel){
+  vec2 st = uv / texel - 0.5;
+  vec2 iuv = floor(st);
+  vec2 f = fract(st);
+  vec4 a = texture(tex, (iuv + vec2(0.5, 0.5)) * texel);
+  vec4 b = texture(tex, (iuv + vec2(1.5, 0.5)) * texel);
+  vec4 c = texture(tex, (iuv + vec2(0.5, 1.5)) * texel);
+  vec4 d = texture(tex, (iuv + vec2(1.5, 1.5)) * texel);
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
 `;
 
 // ── Shaders ──────────────────────────────────────────────────────────────────
@@ -93,7 +110,7 @@ void main(){
   vec2 p = vUv * 4.0 + uSeed;
   float n = fbm(p);
   float n2 = fbm(p * 2.0 + n * 2.2);           // domain-warp → marbled tendrils
-  float d = smoothstep(0.32, 0.8, mix(n, n2, 0.55));
+  float d = smoothstep(0.34, 0.66, mix(n, n2, 0.55));
   // fade the very edges a touch so the frame breathes
   float edge = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.88, vUv.x)
              * smoothstep(0.0, 0.12, vUv.y) * smoothstep(1.0, 0.88, vUv.y);
@@ -102,13 +119,14 @@ void main(){
 
 const FRAG_ADVECT = `#version 300 es
 precision highp float;
+${BILERP_GLSL}
 uniform sampler2D uVelocity; uniform sampler2D uSource;
-uniform vec2 uTexelSize; uniform float dt; uniform float dissipation;
+uniform vec2 uTexelSize; uniform vec2 uSourceTexel; uniform float dt; uniform float dissipation;
 in vec2 vUv; out vec4 result;
 void main(){
-  vec2 vel = texture(uVelocity, vUv).xy;
+  vec2 vel = bilerp(uVelocity, vUv, uTexelSize).xy;
   vec2 coord = vUv - dt * vel * uTexelSize;
-  result = texture(uSource, coord) * dissipation;
+  result = bilerp(uSource, coord, uSourceTexel) * dissipation;
 }`;
 
 const FRAG_DIVERGENCE = `#version 300 es
@@ -190,13 +208,17 @@ void main(){
 const FRAG_DISPLAY = `#version 300 es
 precision highp float;
 ${NOISE_GLSL}
-uniform sampler2D uDye; uniform vec3 uBase; uniform vec3 uInk;
+${BILERP_GLSL}
+uniform sampler2D uDye; uniform vec2 uDyeTexel; uniform vec3 uBase; uniform vec3 uInk;
 uniform float uInkLo; uniform float uInkHi; in vec2 vUv; out vec4 result;
 void main(){
-  float d = clamp(texture(uDye, vUv).x, 0.0, 1.0);
+  float d = clamp(bilerp(uDye, vUv, uDyeTexel).x, 0.0, 1.0);
   float t = smoothstep(uInkLo, uInkHi, d);
   vec3 col = mix(uBase, uInk, t);
-  col += (hash21(vUv * 1024.0) - 0.5) * (1.6 / 255.0); // dither away banding
+  // Interleaved-gradient-noise dither (precision-stable on weak GPUs — a vUv*1024
+  // hash banded into a square grid on some drivers).
+  float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+  col += (ign - 0.5) * (1.6 / 255.0);
   result = vec4(col, 1.0);
 }`;
 
@@ -413,7 +435,9 @@ export function initFluidField(
   const RG = { i: gl.RG16F, f: gl.RG };
   const R = { i: gl.R16F, f: gl.RED };
   const HF = gl.HALF_FLOAT;
-  const LINEAR = gl.LINEAR;
+  // All textures NEAREST — advection/display interpolate in-shader (bilerp), so we
+  // never depend on hardware half-float linear filtering (unreliable on some GPUs).
+  const NEAR = gl.NEAREST;
 
   let velocity: DoubleFBO;
   let velocity0: FBO;
@@ -425,11 +449,11 @@ export function initFluidField(
   function allocate(): boolean {
     const sim = resolution(gl!, SIM_RES);
     const dyeRes = resolution(gl!, DYE_RES);
-    const v = createDoubleFBO(gl!, sim.w, sim.h, RG.i, RG.f, HF, LINEAR);
-    const v0 = createFBO(gl!, sim.w, sim.h, RG.i, RG.f, HF, LINEAR);
-    const dy = createDoubleFBO(gl!, dyeRes.w, dyeRes.h, R.i, R.f, HF, LINEAR);
-    const pr = createDoubleFBO(gl!, sim.w, sim.h, R.i, R.f, HF, gl!.NEAREST);
-    const dv = createFBO(gl!, sim.w, sim.h, R.i, R.f, HF, gl!.NEAREST);
+    const v = createDoubleFBO(gl!, sim.w, sim.h, RG.i, RG.f, HF, NEAR);
+    const v0 = createFBO(gl!, sim.w, sim.h, RG.i, RG.f, HF, NEAR);
+    const dy = createDoubleFBO(gl!, dyeRes.w, dyeRes.h, R.i, R.f, HF, NEAR);
+    const pr = createDoubleFBO(gl!, sim.w, sim.h, R.i, R.f, HF, NEAR);
+    const dv = createFBO(gl!, sim.w, sim.h, R.i, R.f, HF, NEAR);
     if (!v || !v0 || !dy || !pr || !dv) return false;
     velocity = v;
     velocity0 = v0;
@@ -484,16 +508,16 @@ export function initFluidField(
   syncTheme();
 
   // ── Pointer ────────────────────────────────────────────────────────────────
-  const pointer = { x: 0.5, y: 0.5, dx: 0, dy: 0 }; // dx/dy = smoothed applied delta
-  let rawDx = 0;
-  let rawDy = 0;
+  const pointer = { x: 0.5, y: 0.5, dx: 0, dy: 0 }; // dx/dy = decaying stir impulse
   let lastPx = 0.5;
   let lastPy = 0.5;
   function onPointerMove(e: PointerEvent): void {
     const x = e.clientX / Math.max(window.innerWidth, 1);
     const y = 1 - e.clientY / Math.max(window.innerHeight, 1);
-    rawDx += x - lastPx;
-    rawDy += y - lastPy;
+    // Accumulate clamped movement — the clamp prevents fast-flick velocity spikes
+    // (the "sudden" feel); the per-frame decay (in step) gives a smooth ramp-down.
+    pointer.dx += Math.max(-POINTER_MAX_DELTA, Math.min(POINTER_MAX_DELTA, x - lastPx));
+    pointer.dy += Math.max(-POINTER_MAX_DELTA, Math.min(POINTER_MAX_DELTA, y - lastPy));
     lastPx = x;
     lastPy = y;
     pointer.x = x;
@@ -506,16 +530,6 @@ export function initFluidField(
   function step(dt: number): void {
     gl!.disable(gl!.BLEND);
     gl!.bindVertexArray(vao);
-
-    // Smooth + clamp the pointer movement so stirring eases in and out (no sudden
-    // velocity spikes on a fast flick). pointer.dx/dy ease toward the (clamped)
-    // movement this frame; when the cursor stops they ease back to zero.
-    const cdx = Math.max(-POINTER_MAX_DELTA, Math.min(POINTER_MAX_DELTA, rawDx));
-    const cdy = Math.max(-POINTER_MAX_DELTA, Math.min(POINTER_MAX_DELTA, rawDy));
-    pointer.dx += (cdx - pointer.dx) * cfg.pointerSmooth;
-    pointer.dy += (cdy - pointer.dy) * cfg.pointerSmooth;
-    rawDx = 0;
-    rawDy = 0;
 
     // 1) Viscosity: diffuse last frame's velocity toward neighbors (thick, syrupy).
     gl!.useProgram(P.copy.program);
@@ -540,9 +554,9 @@ export function initFluidField(
     gl!.uniform2f(P.force.uniforms.texelSize ?? null, simTexel[0], simTexel[1]);
     gl!.uniform1i(P.force.uniforms.uVelocity ?? null, velocity.read.attach(0));
     gl!.uniform1f(P.force.uniforms.dt ?? null, dt);
-    gl!.uniform1f(P.force.uniforms.uNoiseScale ?? null, NOISE_SCALE);
+    gl!.uniform1f(P.force.uniforms.uNoiseScale ?? null, cfg.noiseScale);
     gl!.uniform2f(P.force.uniforms.uNoiseOffset ?? null, time * NOISE_DRIFT, time * -0.019);
-    gl!.uniform1f(P.force.uniforms.uNoiseEps ?? null, 0.0025 * NOISE_SCALE);
+    gl!.uniform1f(P.force.uniforms.uNoiseEps ?? null, 0.0025 * cfg.noiseScale);
     gl!.uniform1f(P.force.uniforms.uNoiseAmp ?? null, cfg.noiseAmp);
     gl!.uniform1f(P.force.uniforms.uRelax ?? null, cfg.forceRelax);
     gl!.uniform2f(P.force.uniforms.uPointer ?? null, pointer.x, pointer.y);
@@ -553,6 +567,8 @@ export function initFluidField(
     gl!.uniform1f(P.force.uniforms.uAspect ?? null, canvas.width / canvas.height);
     blit(velocity.write);
     velocity.swap();
+    pointer.dx *= cfg.pointerDecay;
+    pointer.dy *= cfg.pointerDecay;
 
     // 3) Projection: make velocity divergence-free (keeps the rotational swirl).
     gl!.useProgram(P.divergence.program);
@@ -578,15 +594,17 @@ export function initFluidField(
 
     // 4) Advection: move velocity, then ink, along the flow.
     gl!.useProgram(P.advect.program);
-    gl!.uniform2f(P.advect.uniforms.texelSize ?? null, simTexel[0], simTexel[1]);
     gl!.uniform2f(P.advect.uniforms.uTexelSize ?? null, simTexel[0], simTexel[1]);
     gl!.uniform1f(P.advect.uniforms.dt ?? null, dt);
+    // velocity self-advection (source = velocity, sim resolution)
+    gl!.uniform2f(P.advect.uniforms.uSourceTexel ?? null, simTexel[0], simTexel[1]);
     gl!.uniform1i(P.advect.uniforms.uVelocity ?? null, velocity.read.attach(0));
     gl!.uniform1i(P.advect.uniforms.uSource ?? null, velocity.read.attach(0));
-    gl!.uniform1f(P.advect.uniforms.dissipation ?? null, VELOCITY_DISSIPATION);
+    gl!.uniform1f(P.advect.uniforms.dissipation ?? null, cfg.velocityDissipation);
     blit(velocity.write);
     velocity.swap();
-
+    // dye advection (source = dye, dye resolution)
+    gl!.uniform2f(P.advect.uniforms.uSourceTexel ?? null, dye.texelX, dye.texelY);
     gl!.uniform1i(P.advect.uniforms.uVelocity ?? null, velocity.read.attach(0));
     gl!.uniform1i(P.advect.uniforms.uSource ?? null, dye.read.attach(1));
     gl!.uniform1f(P.advect.uniforms.dissipation ?? null, DYE_DISSIPATION);
@@ -597,6 +615,7 @@ export function initFluidField(
   function render(): void {
     gl!.useProgram(P.display.program);
     gl!.uniform1i(P.display.uniforms.uDye ?? null, dye.read.attach(0));
+    gl!.uniform2f(P.display.uniforms.uDyeTexel ?? null, dye.texelX, dye.texelY);
     gl!.uniform3f(P.display.uniforms.uBase ?? null, base[0], base[1], base[2]);
     gl!.uniform3f(P.display.uniforms.uInk ?? null, ink[0], ink[1], ink[2]);
     gl!.uniform1f(P.display.uniforms.uInkLo ?? null, cfg.inkLo);
