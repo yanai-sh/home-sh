@@ -22,6 +22,14 @@
     /* Pre-baked still "paint in water" frame shown when the live fluid can't run
        (reduced motion, or no WebGL2). See splash/field.ts + layout.css. */
     --splash-still: url('/splash-still-dark.jpg');
+    /* Live ink renderer: --splash-base is the medium, --splash-ink the ink the
+       fluid darkens it toward (read in field-fluid.ts syncTheme). Ink < base. */
+    --splash-base: #1b2532;
+    --splash-ink: #060910;
+    /* Display tone curve (per theme): ink shows for dye in [lo, hi]. Dark keeps a
+       low floor so faint tendrils read as moody depth. */
+    --splash-ink-lo: 0;
+    --splash-ink-hi: 0.9;
     --color-background: #15191d;
     --color-surface: #1d2630;
     --color-surface-raised: #25313e;
@@ -43,6 +51,13 @@
   [data-theme='light'] {
     color-scheme: light;
     --splash-still: url('/splash-still-light.jpg');
+    /* Soft slate-grey ink on warm off-white (sumi-e). Ink < base. */
+    --splash-base: #e9e6df;
+    --splash-ink: #525b68;
+    /* High floor: only the densest ink shows → a sparse, elegant wash with lots
+       of clean paper (dark-on-light reads much stronger, so it needs restraint). */
+    --splash-ink-lo: 0.36;
+    --splash-ink-hi: 0.9;
     /* Soft warm off-white (not stark white) so the fluid reads as colour on
        paper rather than washing out. */
     --color-background: #e9e6df;

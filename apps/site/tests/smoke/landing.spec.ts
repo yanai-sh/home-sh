@@ -18,7 +18,10 @@ function collectPageErrors(page: Page): string[] {
 async function waitForSplashClient(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
   await expect(page.locator('[data-splash-field-canvas]')).toBeAttached();
-  await expect(page.locator('[data-splash-field]')).toHaveClass(/is-splash-field-ready/, {
+  // The splash client has committed to a render path once the layer is marked
+  // either live-ready (GPU fluid) or showing the baked still (reduced-motion, or
+  // no capable GPU — which is the case in headless/software-render CI).
+  await expect(page.locator('[data-splash-field]')).toHaveClass(/is-splash-(field-ready|still)/, {
     timeout: 30_000,
   });
 }

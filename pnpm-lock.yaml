@@ -53,9 +53,6 @@ importers:
       velite:
         specifier: ^0.3.1
         version: 0.3.1
-      webgl-fluid:
-        specifier: ^0.4.0
-        version: 0.4.0
       zod:
         specifier: ^4.3.6
         version: 4.4.3
@@ -2433,9 +2430,6 @@ packages:
       jsdom:
         optional: true
 
-  webgl-fluid@0.4.0:
-    resolution: {integrity: sha512-j/GMExSlSRYxNwFBAs5ogA9Xe6iXuYX+GiSERov4+dsTpcINFKesM6ObV0qiEk0RYZ0umYI6mFu8mY4BX15UxQ==}
-
   why-is-node-running@2.3.0:
     resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
     engines: {node: '>=8'}
@@ -4678,8 +4672,6 @@ snapshots:
       '@types/node': 25.9.3
     transitivePeerDependencies:
       - msw
-
-  webgl-fluid@0.4.0: {}
 
   why-is-node-running@2.3.0:
     dependencies:
