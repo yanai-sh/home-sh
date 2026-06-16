@@ -54,24 +54,16 @@ test('splash CSS and client JS return 200', async ({ page, request }) => {
   expect(js.headers()['content-type']).toMatch(/javascript/);
 });
 
-test('opening resume split shows PDF pane chrome and section nav', async ({ page }) => {
+test('opening resume split shows the themed PDF viewer and download button', async ({ page }) => {
   await page.goto(`${BASE}/`);
   await waitForSplashClient(page);
   await page.locator('button[data-open-split="resume"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-site-mode', 'resume');
   await expect(page.locator('#pane-detail')).not.toHaveAttribute('inert', '');
   await expect(page.locator('#chrome-label')).toHaveText('resume.pdf');
-  await expect(page.locator('#resume-filter')).toBeVisible();
-  await expect(page.locator('#resume-toc button[data-resume-section="experience"]')).toBeVisible();
-});
-
-test('resume section filter hides non-matching entries', async ({ page }) => {
-  await page.goto(`${BASE}/`);
-  await waitForSplashClient(page);
-  await page.locator('button[data-open-split="resume"]').click();
-  await page.locator('#resume-filter').fill('kardome');
-  await expect(page.locator('[data-resume-section="kardome"]')).toBeVisible();
-  await expect(page.locator('[data-resume-section="education"]')).toBeHidden();
+  // In-page PDF.js viewer (no sidebar/iframe) + a clear themed download button.
+  await expect(page.locator('#resume-viewer')).toBeVisible();
+  await expect(page.locator('#pdf-download')).toBeVisible();
 });
 
 test('closing resume split hides divider and returns to splash mode', async ({ page }) => {

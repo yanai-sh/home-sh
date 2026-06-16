@@ -1,3 +1,5 @@
+import { renderResumePdf } from './resume-pdf';
+
 const SPLIT_OPEN_MS = 780;
 const SPLIT_CLOSE_MS = 620;
 const SPLIT_RATIO_KEY = 'yanai-sh:split-ratio';
@@ -19,7 +21,7 @@ type SplitControllerElements = {
   chromeResumeActions: HTMLElement;
   chromeProjectActions: HTMLElement;
   projectSource: HTMLAnchorElement | null;
-  pdfFrame: HTMLIFrameElement;
+  resumePages: HTMLElement;
   pdfFallback: HTMLElement;
 };
 
@@ -80,7 +82,7 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
     chromeResumeActions,
     chromeProjectActions,
     projectSource,
-    pdfFrame,
+    resumePages,
     pdfFallback,
   } = elements;
 
@@ -183,16 +185,9 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
   const ensurePdfLoaded = (): void => {
     if (pdfLoaded) return;
     pdfLoaded = true;
-    pdfFrame.src = PDF_URL;
-    pdfFrame.hidden = false;
-    pdfFrame.addEventListener(
-      'error',
-      () => {
-        pdfFrame.hidden = true;
-        pdfFallback.classList.add('is-visible');
-      },
-      { once: true },
-    );
+    void renderResumePdf(resumePages, PDF_URL, () => {
+      pdfFallback.classList.add('is-visible');
+    });
   };
 
   const focusContactField = (): void => {

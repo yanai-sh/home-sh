@@ -25,7 +25,6 @@
   const tagline = $derived(portfolio.tagline);
   const location = $derived(portfolio.location);
   const hero = $derived(portfolio.hero);
-  const resumeSections = $derived(data.resumeIndex);
   const github = $derived(socials.find((social) => social.url.includes('github')));
   const linkedin = $derived(socials.find((social) => social.url.includes('linkedin')));
 
@@ -175,7 +174,10 @@
         <span id="chrome-sub"></span>
       </div>
       <div class="chrome-actions" id="chrome-resume-actions" hidden>
-        <a class="chrome-btn" id="pdf-open" href="/resume.pdf" target="_blank" rel="noopener">open</a>
+        <a class="chrome-btn" id="pdf-open" href="/resume.pdf" target="_blank" rel="noopener">
+          Open
+          <svg width="11" height="11" aria-hidden="true"><use href="#icon-arrow-out" /></svg>
+        </a>
         <a
           class="chrome-btn chrome-btn--primary"
           id="pdf-download"
@@ -183,7 +185,7 @@
           download="yanai-klugman-resume.pdf"
         >
           <svg width="12" height="12" aria-hidden="true"><use href="#icon-download" /></svg>
-          download
+          Download PDF
         </a>
       </div>
       <div class="chrome-actions" id="chrome-project-actions" hidden>
@@ -204,35 +206,12 @@
     </header>
 
     <div class="pane-body">
-      <section class="pane-view" id="view-resume" aria-label="Resume PDF">
-        <div class="resume-layout">
-          <aside class="resume-nav" aria-label="Resume sections">
-            <label class="resume-nav__label" for="resume-filter">Jump to section</label>
-            <input
-              class="resume-nav__filter"
-              id="resume-filter"
-              type="search"
-              placeholder="Filter sections…"
-              autocomplete="off"
-              spellcheck="false"
-            />
-            <ul class="resume-nav__list" id="resume-toc">
-              {#each resumeSections as section (section.id)}
-                <li>
-                  <button type="button" class="resume-nav__item" data-resume-section={section.id}>
-                    {section.label}
-                  </button>
-                </li>
-              {/each}
-            </ul>
-            <p class="resume-nav__empty" hidden> No sections match. </p>
-          </aside>
-          <div class="resume-viewer">
-            <iframe class="pdf-frame" id="resume-pdf" title="Resume PDF" hidden></iframe>
-            <div class="pdf-fallback" id="pdf-fallback">
-              PDF preview needs network or a deployed origin.
-              <a id="pdf-fallback-link" href="/resume.pdf">Open resume.pdf</a>
-            </div>
+      <section class="pane-view" id="view-resume" aria-label="Résumé">
+        <div class="resume-viewer" id="resume-viewer">
+          <div class="resume-pages" id="resume-pages" role="document" aria-label="Résumé pages"></div>
+          <div class="pdf-fallback" id="pdf-fallback">
+            Couldn’t render the résumé here.
+            <a id="pdf-fallback-link" href="/resume.pdf">Open resume.pdf ↗</a>
           </div>
         </div>
       </section>

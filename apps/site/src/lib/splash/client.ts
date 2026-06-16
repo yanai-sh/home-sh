@@ -1,4 +1,3 @@
-import { resumeIndex, type ResumeIndexSection } from '$lib/data/portfolio';
 import { initSplashField, type SplashFieldHandle } from './field';
 import { createSplitController, PDF_URL } from './split-controller';
 
@@ -155,54 +154,6 @@ function initSplashFieldLayer(
   }
 }
 
-function sectionMatches(section: ResumeIndexSection, query: string): boolean {
-  if (!query) return true;
-  const haystack = [section.label, ...section.keywords].join(' ').toLowerCase();
-  return haystack.includes(query);
-}
-
-function jumpPdfToSection(pdfFrame: HTMLIFrameElement, section: ResumeIndexSection): void {
-  const term = encodeURIComponent(section.label);
-  pdfFrame.src = `${PDF_URL}#search=${term}`;
-}
-
-function initResumeNav(pdfFrame: HTMLIFrameElement): void {
-  const filterInput = document.getElementById('resume-filter') as HTMLInputElement | null;
-  const toc = document.getElementById('resume-toc');
-  const emptyMessage = document.querySelector<HTMLElement>('.resume-nav__empty');
-  if (!filterInput || !toc) return;
-
-  const items = [...toc.querySelectorAll<HTMLButtonElement>('[data-resume-section]')];
-
-  const applyFilter = (): void => {
-    const query = filterInput.value.trim().toLowerCase();
-    let firstVisible: HTMLButtonElement | null = null;
-    for (const item of items) {
-      const id = item.dataset.resumeSection ?? '';
-      const section = resumeIndex.find((entry) => entry.id === id);
-      const match = section ? sectionMatches(section, query) : false;
-      item.hidden = !match;
-      item.classList.toggle('is-match', match && query.length > 0);
-      if (match && !firstVisible) firstVisible = item;
-    }
-    toc.dataset.empty = query && !firstVisible ? 'true' : 'false';
-    if (emptyMessage) emptyMessage.hidden = !(query && !firstVisible);
-  };
-
-  filterInput.addEventListener('input', applyFilter);
-
-  for (const item of items) {
-    item.addEventListener('click', () => {
-      const id = item.dataset.resumeSection ?? '';
-      const section = resumeIndex.find((entry) => entry.id === id);
-      if (!section) return;
-      jumpPdfToSection(pdfFrame, section);
-      for (const peer of items) peer.classList.remove('is-active');
-      item.classList.add('is-active');
-    });
-  }
-}
-
 function initMagneticGlyphs(): void {
   if (prefersReducedMotion() || matchMedia('(pointer: coarse)').matches) return;
   const group = document.querySelector<HTMLElement>('[data-magnetic-group]');
@@ -253,7 +204,7 @@ export function initSplash(): void {
   const chromeResumeActions = document.getElementById('chrome-resume-actions');
   const chromeProjectActions = document.getElementById('chrome-project-actions');
   const projectSource = document.getElementById('project-source') as HTMLAnchorElement | null;
-  const pdfFrame = document.getElementById('resume-pdf') as HTMLIFrameElement | null;
+  const resumePages = document.getElementById('resume-pages');
   const pdfFallback = document.getElementById('pdf-fallback');
   const pdfOpen = document.getElementById('pdf-open') as HTMLAnchorElement | null;
   const pdfDownload = document.getElementById('pdf-download') as HTMLAnchorElement | null;
@@ -271,7 +222,7 @@ export function initSplash(): void {
     !chromeSub ||
     !chromeResumeActions ||
     !chromeProjectActions ||
-    !pdfFrame ||
+    !resumePages ||
     !pdfFallback ||
     !pdfOpen ||
     !pdfDownload ||
@@ -298,7 +249,7 @@ export function initSplash(): void {
       chromeResumeActions,
       chromeProjectActions,
       projectSource,
-      pdfFrame,
+      resumePages,
       pdfFallback,
     },
     reducedMotion,
@@ -306,7 +257,6 @@ export function initSplash(): void {
   });
 
   split.bindSplitDivider();
-  initResumeNav(pdfFrame);
 
   for (const element of document.querySelectorAll<HTMLElement>('[data-open-split]')) {
     element.addEventListener('click', (event) => {
