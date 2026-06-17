@@ -7,26 +7,26 @@
  * Re-run from repo root: `pnpm exec tsx apps/site/scripts/sync-tech-icons.ts`
  * (after adding names here; requires `@iconify-json/simple-icons` in the workspace).
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const NAMES = [
-  'python',
-  'cplusplus',
-  'c',
-  'dotnet',
-  'gnubash',
-  'powershell',
-  'docker',
-  'githubactions',
-  'gitlab',
-  'linux',
-  'elasticsearch',
-  'apachekafka',
-  'apachenifi',
-  'apachespark',
-  'mysql',
+  "python",
+  "cplusplus",
+  "c",
+  "dotnet",
+  "gnubash",
+  "powershell",
+  "docker",
+  "githubactions",
+  "gitlab",
+  "linux",
+  "elasticsearch",
+  "apachekafka",
+  "apachenifi",
+  "apachespark",
+  "mysql",
 ] as const;
 
 type IconBody = { body: string; width?: number; height?: number };
@@ -37,11 +37,11 @@ type Pack = {
 };
 
 const here = dirname(fileURLToPath(import.meta.url));
-const outDir = resolve(here, '..', 'src', 'icons');
+const outDir = resolve(here, "..", "src", "icons");
 mkdirSync(outDir, { recursive: true });
 
-const packPath = '@iconify-json/simple-icons/icons.json';
-const pack = (await import(packPath, { with: { type: 'json' } })).default as Pack;
+const packPath = "@iconify-json/simple-icons/icons.json";
+const pack = (await import(packPath, { with: { type: "json" } })).default as Pack;
 const defaultW = pack.width ?? 24;
 const defaultH = pack.height ?? 24;
 
@@ -60,5 +60,5 @@ for (const name of NAMES) {
 }
 
 if (missing.length > 0) {
-  throw new Error(`Missing simple-icons entries: ${missing.join(', ')}`);
+  throw new Error(`Missing simple-icons entries: ${missing.join(", ")}`);
 }

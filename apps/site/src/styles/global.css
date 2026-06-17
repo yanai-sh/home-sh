@@ -19,7 +19,23 @@
   :root,
   [data-theme='dark'] {
     color-scheme: dark;
-    --color-background: #151b22;
+    /* Pre-baked still "paint in water" frame shown when the live fluid can't run
+       (reduced motion, or no WebGL2). See splash/field.ts + layout.css. */
+    --splash-still: url('/splash-still-dark.jpg');
+    /* Live ink renderer: --splash-base is the medium, --splash-ink the ink the
+       fluid darkens it toward (read in field-fluid.ts syncTheme). Ink < base. */
+    --splash-base: #3d5264;
+    --splash-ink: #050e1e;
+    /* Display tone curve (per theme): ink shows for dye in [lo, hi]. A higher floor
+       cuts the faint low-density wash (which reads as smoke) so the ink is solid
+       pigment; the ceiling keeps the body clearly visible. */
+    --splash-ink-lo: 0.06;
+    --splash-ink-hi: 0.42;
+    /* "Dark but lively": a cool luminous accent on the flowing ink edges, and a
+       deep-blue atmospheric depth-glow drifting behind it. */
+    --splash-edge: #5ac7f0;
+    --splash-glow: #1b3a5c;
+    --color-background: #15191d;
     --color-surface: #1d2630;
     --color-surface-raised: #25313e;
     --color-maintext: #f5f7fa;
@@ -39,7 +55,21 @@
 
   [data-theme='light'] {
     color-scheme: light;
-    --color-background: #fbfcf8;
+    --splash-still: url('/splash-still-light.jpg');
+    /* Soft slate-grey ink on warm off-white (sumi-e). Ink < base. */
+    --splash-base: #e9e6df;
+    --splash-ink: #565f6c;
+    /* Visible-but-soft wash: enough ink to read clearly, but a higher floor so it
+       stays gentle on light (dark-on-light reads stronger than dark-on-slate). */
+    --splash-ink-lo: 0.38;
+    --splash-ink-hi: 0.82;
+    /* Subtle on light (it isn't gloomy to begin with): a muted blue edge sheen and
+       a barely-there cool depth-glow near the paper tone. */
+    --splash-edge: #7d97c4;
+    --splash-glow: #dfe3ea;
+    /* Soft warm off-white (not stark white) so the fluid reads as colour on
+       paper rather than washing out. */
+    --color-background: #e9e6df;
     --color-surface: #ffffff;
     --color-surface-raised: #f0f4f1;
     --color-maintext: #10161d;
@@ -217,5 +247,34 @@
       3.25rem 3.25rem,
       3.25rem 3.25rem,
       auto;
+  }
+}
+
+/* Route View Transitions (progressive enhancement — no-op where unsupported). */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 320ms;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  ::view-transition-old(root) {
+    animation-name: vt-out;
+  }
+  ::view-transition-new(root) {
+    animation-name: vt-in;
+  }
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
 }

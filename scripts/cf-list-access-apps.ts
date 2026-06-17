@@ -8,6 +8,8 @@
  * Requires CLOUDFLARE_API_TOKEN (Access: Apps read) and CLOUDFLARE_ACCOUNT_ID.
  */
 
+export {};
+
 const token = process.env.CLOUDFLARE_API_TOKEN;
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 if (!token || !accountId) {

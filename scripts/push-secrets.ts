@@ -26,13 +26,12 @@ function resolveCfCreds(
 }
 
 async function cf<T>(base: string, token: string, path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+  headers.set("Content-Type", "application/json");
   const res = await fetch(`${base}${path}`, {
     ...init,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
+    headers,
   });
   const json = (await res.json()) as { success: boolean; result: T; errors: unknown[] };
   if (!json.success) {

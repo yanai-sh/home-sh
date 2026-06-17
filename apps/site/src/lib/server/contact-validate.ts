@@ -1,4 +1,4 @@
-import { CONTACT_ERROR } from '$lib/contact-error-codes';
+import { CONTACT_ERROR } from "$lib/contact-error-codes";
 
 export type ValidatedContact =
   | { ok: true; name: string; email: string; message: string }
@@ -9,16 +9,16 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function validateContact(body: Record<string, unknown>): ValidatedContact {
   const { name, email, message, token } = body;
   if (
-    typeof name !== 'string' ||
+    typeof name !== "string" ||
     name.trim().length < 1 ||
     name.length > 100 ||
-    typeof email !== 'string' ||
+    typeof email !== "string" ||
     email.length > 254 ||
     !EMAIL_RE.test(email) ||
-    typeof message !== 'string' ||
+    typeof message !== "string" ||
     message.trim().length < 1 ||
     message.length > 2000 ||
-    typeof token !== 'string' ||
+    typeof token !== "string" ||
     token.length === 0
   ) {
     return { ok: false, code: CONTACT_ERROR.INVALID_INPUT };

@@ -1,13 +1,13 @@
-import { error } from '@sveltejs/kit';
-import { blog } from '#content';
-import { portfolio } from '$lib/data/portfolio';
-import type { PageServerLoad } from './$types';
+import { error } from "@sveltejs/kit";
+import { blog } from "#content";
+import { portfolio } from "$lib/data/portfolio";
+import type { PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = ({ params }) => {
   const post = blog.find(
-    (entry) => entry.slug === params.slug && !('draft' in entry && entry.draft),
+    (entry) => entry.slug === params.slug && !("draft" in entry && entry.draft),
   );
-  if (!post) error(404, 'Post not found');
+  if (!post) error(404, "Post not found");
 
   return {
     post,

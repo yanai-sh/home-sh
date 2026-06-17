@@ -1,5 +1,5 @@
 name: yanai-sh / setup — pnpm-build
-description: pnpm install then vp build (Deploy path — no duplicate check/test)
+description: pnpm install then build (Deploy path — no duplicate check/test)
 inputs:
   public_turnstile_site_key:
     description: Public Turnstile site key for build-time embed (same as Deploy)
@@ -9,7 +9,7 @@ runs:
   using: composite
   steps:
     - uses: ./.github/actions/pnpm-install
-    - name: Build site (Worker bundle + wrangler.json)
+    - name: Build site (Worker bundle in .svelte-kit/cloudflare/)
       run: pnpm run build
       shell: bash
       env:

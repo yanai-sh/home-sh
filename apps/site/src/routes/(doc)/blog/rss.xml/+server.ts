@@ -1,18 +1,18 @@
-import { blog } from '#content';
-import { SITE_URL } from '@config/site';
-import type { RequestHandler } from './$types';
+import { blog } from "#content";
+import { SITE_URL } from "@config/site";
+import type { RequestHandler } from "./$types";
 
 const escapeXml = (value: string): string =>
   value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 
 export const GET: RequestHandler = () => {
   const published = blog
-    .filter((post) => !('draft' in post && post.draft))
+    .filter((post) => !("draft" in post && post.draft))
     .sort((a, b) => b.pubDate.localeCompare(a.pubDate));
 
   const items = published
@@ -26,7 +26,7 @@ export const GET: RequestHandler = () => {
       <description>${escapeXml(post.description)}</description>
     </item>`,
     )
-    .join('');
+    .join("");
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -39,8 +39,8 @@ export const GET: RequestHandler = () => {
 
   return new Response(body, {
     headers: {
-      'Content-Type': 'application/rss+xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=300',
+      "Content-Type": "application/rss+xml; charset=utf-8",
+      "Cache-Control": "public, max-age=300",
     },
   });
 };

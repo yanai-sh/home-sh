@@ -1,4 +1,4 @@
-import { defineConfig, s } from 'velite';
+import { defineConfig, s } from "velite";
 
 const skillGroupSchema = s.object({
   label: s.string(),
@@ -6,15 +6,15 @@ const skillGroupSchema = s.object({
 });
 
 export default defineConfig({
-  root: 'src/content',
+  root: "src/content",
   output: {
-    data: '.velite',
+    data: ".velite",
     clean: true,
   },
   collections: {
     experience: {
-      name: 'Experience',
-      pattern: 'experience/**/*.json',
+      name: "Experience",
+      pattern: "experience/**/*.json",
       schema: s.object({
         order: s.number(),
         company: s.string(),
@@ -26,10 +26,10 @@ export default defineConfig({
       }),
     },
     projects: {
-      name: 'Project',
-      pattern: 'projects/**/*.mdx',
+      name: "Project",
+      pattern: "projects/**/*.mdx",
       schema: s.object({
-        slug: s.slug('projects'),
+        slug: s.slug("projects"),
         title: s.string(),
         splashTitle: s.string().optional(),
         description: s.string(),
@@ -53,10 +53,10 @@ export default defineConfig({
       }),
     },
     blog: {
-      name: 'BlogPost',
-      pattern: 'blog/**/*.mdx',
+      name: "BlogPost",
+      pattern: "blog/**/*.mdx",
       schema: s.object({
-        slug: s.slug('blog'),
+        slug: s.slug("blog"),
         title: s.string(),
         description: s.string(),
         pubDate: s.isodate(),
@@ -67,13 +67,13 @@ export default defineConfig({
       }),
     },
     experiments: {
-      name: 'Experiment',
-      pattern: 'experiments/**/*.mdx',
+      name: "Experiment",
+      pattern: "experiments/**/*.mdx",
       schema: s.object({
         title: s.string(),
         description: s.string(),
         pubDate: s.isodate(),
-        status: s.enum(['active', 'prototype', 'paused', 'archived']),
+        status: s.enum(["active", "prototype", "paused", "archived"]),
         demoUrl: s.string().url().optional(),
         repoUrl: s.string().url().optional(),
         tags: s.array(s.string()).optional(),

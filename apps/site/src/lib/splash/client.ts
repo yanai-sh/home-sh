@@ -1,13 +1,10 @@
-import { errorMessage } from '$lib/contact-error-codes';
-import { resumeIndex, type ResumeIndexSection } from '$lib/data/portfolio';
-import { initSplashField, type SplashFieldHandle } from './field-gl';
-import { createSplitController, PDF_URL } from './split-controller';
+import { initSplashField, type SplashFieldHandle } from "./field";
+import { createSplitController, PDF_URL } from "./split-controller";
 
-const CONTACT_ENDPOINT = '/api/contact';
-const THEME_STORAGE_KEY = 'yanai-sh:theme';
+const THEME_STORAGE_KEY = "yanai-sh:theme";
 const THEME_COLORS = {
-  dark: '#151B22',
-  light: '#F5F7FA',
+  dark: "#151B22",
+  light: "#F5F7FA",
 } as const;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -16,9 +13,9 @@ type TurnstileApi = {
     element: HTMLElement,
     options: {
       sitekey: string;
-      theme: 'dark' | 'light';
+      theme: "dark" | "light";
       callback: () => void;
-      'expired-callback': () => void;
+      "expired-callback": () => void;
     },
   ) => void;
   getResponse: () => string;
@@ -30,21 +27,21 @@ function easeOutQuint(t: number): number {
 }
 
 function prefersReducedMotion(): boolean {
-  return matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function preferredTheme(): 'dark' | 'light' {
+function preferredTheme(): "dark" | "light" {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    if (saved === 'dark' || saved === 'light') return saved;
+    if (saved === "dark" || saved === "light") return saved;
   } catch {
     // ignore
   }
-  return 'dark';
+  return "dark";
 }
 
 function initTheme(onThemeChange?: () => void): void {
-  const applyTheme = (theme: 'dark' | 'light'): void => {
+  const applyTheme = (theme: "dark" | "light"): void => {
     document.documentElement.dataset.theme = theme;
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
@@ -52,26 +49,26 @@ function initTheme(onThemeChange?: () => void): void {
       // ignore
     }
 
-    const toggle = document.querySelector<HTMLButtonElement>('.theme-toggle');
-    toggle?.setAttribute('aria-pressed', String(theme === 'light'));
+    const toggle = document.querySelector<HTMLButtonElement>(".theme-toggle");
+    toggle?.setAttribute("aria-pressed", String(theme === "light"));
 
     const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    themeColor?.setAttribute('content', THEME_COLORS[theme]);
+    themeColor?.setAttribute("content", THEME_COLORS[theme]);
     onThemeChange?.();
   };
 
   applyTheme(preferredTheme());
 
-  document.querySelector<HTMLButtonElement>('.theme-toggle')?.addEventListener('click', () => {
-    const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
-    applyTheme(current === 'light' ? 'dark' : 'light');
+  document.querySelector<HTMLButtonElement>(".theme-toggle")?.addEventListener("click", () => {
+    const current = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+    applyTheme(current === "light" ? "dark" : "light");
   });
 }
 
 function initContactForm(): void {
-  const form = document.getElementById('contact-form') as HTMLFormElement | null;
-  const submitButton = document.getElementById('cf-submit') as HTMLButtonElement | null;
-  const statusElement = document.getElementById('cf-status') as HTMLElement | null;
+  const form = document.getElementById("contact-form") as HTMLFormElement | null;
+  const submitButton = document.getElementById("cf-submit") as HTMLButtonElement | null;
+  const statusElement = document.getElementById("cf-status") as HTMLElement | null;
   if (!form || !submitButton || !statusElement) return;
 
   const siteKey = form.dataset.sitekey;
@@ -81,112 +78,62 @@ function initContactForm(): void {
   const status = statusElement;
   const turnstileWindow = window as Window & { turnstile?: TurnstileApi };
 
-  const script = document.createElement('script');
-  script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+  const script = document.createElement("script");
+  script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
   script.async = true;
   script.defer = true;
   script.onload = () => {
-    const widgetElement = document.getElementById('cf-turnstile-widget') as HTMLElement | null;
+    const widgetElement = document.getElementById("cf-turnstile-widget") as HTMLElement | null;
     if (!widgetElement) return;
     turnstileWindow.turnstile?.render(widgetElement, {
       sitekey: siteKey,
-      theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark',
+      theme: document.documentElement.dataset.theme === "light" ? "light" : "dark",
       callback: () => {
         submit.disabled = false;
       },
-      'expired-callback': () => {
+      "expired-callback": () => {
         submit.disabled = true;
       },
     });
   };
   document.head.appendChild(script);
 
-  function setStatus(message: string, state: 'idle' | 'loading' | 'success' | 'error'): void {
+  function setStatus(message: string, state: "idle" | "loading" | "success" | "error"): void {
     status.textContent = message;
     status.dataset.state = state;
-    submit.disabled = state === 'loading';
+    submit.disabled = state === "loading";
   }
 
-  const nameInput = form.elements.namedItem('name') as HTMLInputElement;
-  const emailInput = form.elements.namedItem('email') as HTMLInputElement;
-  const messageInput = form.elements.namedItem('message') as HTMLTextAreaElement;
+  const nameInput = form.elements.namedItem("name") as HTMLInputElement;
+  const emailInput = form.elements.namedItem("email") as HTMLInputElement;
+  const messageInput = form.elements.namedItem("message") as HTMLTextAreaElement;
 
   const emailValid = (): boolean => EMAIL_RE.test(emailInput.value.trim());
 
-  emailInput.addEventListener('blur', () => {
+  emailInput.addEventListener("blur", () => {
     if (emailInput.value.trim() && !emailValid()) {
-      emailInput.setAttribute('aria-invalid', 'true');
-      setStatus(form.dataset.statusInvalidEmail as string, 'error');
+      emailInput.setAttribute("aria-invalid", "true");
+      setStatus(form.dataset.statusInvalidEmail as string, "error");
     }
   });
 
   for (const input of [nameInput, emailInput, messageInput]) {
-    input.addEventListener('input', () => {
-      input.removeAttribute('aria-invalid');
-      if (status.dataset.state === 'error') setStatus('', 'idle');
+    input.addEventListener("input", () => {
+      input.removeAttribute("aria-invalid");
+      if (status.dataset.state === "error") setStatus("", "idle");
     });
   }
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    if (!nameInput.value.trim() || !emailInput.value.trim() || !messageInput.value.trim()) {
-      setStatus(form.dataset.statusMissingFields as string, 'error');
-      return;
-    }
-    if (!emailValid()) {
-      emailInput.setAttribute('aria-invalid', 'true');
-      setStatus(form.dataset.statusInvalidEmail as string, 'error');
-      return;
-    }
-
-    const token = turnstileWindow.turnstile?.getResponse();
-    if (!token) {
-      setStatus(form.dataset.statusCaptcha as string, 'error');
-      return;
-    }
-
-    const payload = {
-      name: nameInput.value.trim(),
-      email: emailInput.value.trim(),
-      message: messageInput.value.trim(),
-      website: (form.elements.namedItem('website') as HTMLInputElement | null)?.value ?? '',
-      token,
-    };
-
-    setStatus(form.dataset.statusSending as string, 'loading');
-
-    try {
-      const response = await fetch(CONTACT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        setStatus(form.dataset.statusSent as string, 'success');
-        form.reset();
-        turnstileWindow.turnstile?.reset();
-        submit.disabled = true;
-        return;
-      }
-
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
-      setStatus(errorMessage(body.error ?? 'send_failed'), 'error');
-      turnstileWindow.turnstile?.reset();
-      submit.disabled = true;
-    } catch {
-      setStatus(form.dataset.statusNetworkError as string, 'error');
-    }
-  });
+  // Submission is handled by the SvelteKit form action + `use:enhance` in
+  // +page.svelte; this only wires Turnstile and inline field validation.
 }
 
 function initSplashFieldLayer(
   reducedMotion: boolean,
   onReady: (handle: SplashFieldHandle | null) => void,
 ): void {
-  const layer = document.querySelector<HTMLElement>('[data-splash-field]');
-  const canvas = document.querySelector<HTMLCanvasElement>('[data-splash-field-canvas]');
+  const layer = document.querySelector<HTMLElement>("[data-splash-field]");
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-splash-field-canvas]");
   if (!layer || !canvas) {
     onReady(null);
     return;
@@ -196,77 +143,29 @@ function initSplashFieldLayer(
     const handle = initSplashField(canvas, layer, { reducedMotion });
     onReady(handle);
     if (handle) {
-      window.addEventListener('pagehide', () => handle.dispose(), { once: true });
+      window.addEventListener("pagehide", () => handle.dispose(), { once: true });
     }
   };
 
-  if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(start, { timeout: 900 });
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(start, { timeout: 50 });
   } else {
-    globalThis.setTimeout(start, 120);
-  }
-}
-
-function sectionMatches(section: ResumeIndexSection, query: string): boolean {
-  if (!query) return true;
-  const haystack = [section.label, ...section.keywords].join(' ').toLowerCase();
-  return haystack.includes(query);
-}
-
-function jumpPdfToSection(pdfFrame: HTMLIFrameElement, section: ResumeIndexSection): void {
-  const term = encodeURIComponent(section.label);
-  pdfFrame.src = `${PDF_URL}#search=${term}`;
-}
-
-function initResumeNav(pdfFrame: HTMLIFrameElement): void {
-  const filterInput = document.getElementById('resume-filter') as HTMLInputElement | null;
-  const toc = document.getElementById('resume-toc');
-  const emptyMessage = document.querySelector<HTMLElement>('.resume-nav__empty');
-  if (!filterInput || !toc) return;
-
-  const items = [...toc.querySelectorAll<HTMLButtonElement>('[data-resume-section]')];
-
-  const applyFilter = (): void => {
-    const query = filterInput.value.trim().toLowerCase();
-    let firstVisible: HTMLButtonElement | null = null;
-    for (const item of items) {
-      const id = item.dataset.resumeSection ?? '';
-      const section = resumeIndex.find((entry) => entry.id === id);
-      const match = section ? sectionMatches(section, query) : false;
-      item.hidden = !match;
-      item.classList.toggle('is-match', match && query.length > 0);
-      if (match && !firstVisible) firstVisible = item;
-    }
-    toc.dataset.empty = query && !firstVisible ? 'true' : 'false';
-    if (emptyMessage) emptyMessage.hidden = !(query && !firstVisible);
-  };
-
-  filterInput.addEventListener('input', applyFilter);
-
-  for (const item of items) {
-    item.addEventListener('click', () => {
-      const id = item.dataset.resumeSection ?? '';
-      const section = resumeIndex.find((entry) => entry.id === id);
-      if (!section) return;
-      jumpPdfToSection(pdfFrame, section);
-      for (const peer of items) peer.classList.remove('is-active');
-      item.classList.add('is-active');
-    });
+    globalThis.setTimeout(start, 0);
   }
 }
 
 function initMagneticGlyphs(): void {
-  if (prefersReducedMotion() || matchMedia('(pointer: coarse)').matches) return;
-  const group = document.querySelector<HTMLElement>('[data-magnetic-group]');
+  if (prefersReducedMotion() || matchMedia("(pointer: coarse)").matches) return;
+  const group = document.querySelector<HTMLElement>("[data-magnetic-group]");
   if (!group) return;
-  const targets = [...group.querySelectorAll<HTMLElement>('a, button')];
+  const targets = [...group.querySelectorAll<HTMLElement>("a, button")];
   let raf = 0;
 
   const reset = (): void => {
-    for (const target of targets) target.style.transform = '';
+    for (const target of targets) target.style.transform = "";
   };
 
-  group.addEventListener('pointermove', (event) => {
+  group.addEventListener("pointermove", (event) => {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
       for (const target of targets) {
@@ -280,12 +179,12 @@ function initMagneticGlyphs(): void {
           const pull = (1 - distance / 48) * 3;
           target.style.transform = `translate(${(dx / distance) * pull || 0}px, ${(dy / distance) * pull || 0}px)`;
         } else {
-          target.style.transform = '';
+          target.style.transform = "";
         }
       }
     });
   });
-  group.addEventListener('pointerleave', () => {
+  group.addEventListener("pointerleave", () => {
     cancelAnimationFrame(raf);
     reset();
   });
@@ -294,23 +193,23 @@ function initMagneticGlyphs(): void {
 export function initSplash(): void {
   const reducedMotion = prefersReducedMotion();
   const root = document.documentElement;
-  const shell = document.getElementById('shell');
-  const paneDetail = document.getElementById('pane-detail');
-  const splitDivider = document.getElementById('split-divider');
-  const viewResume = document.getElementById('view-resume');
-  const viewContact = document.getElementById('view-contact');
-  const viewProject = document.getElementById('view-project');
-  const chromeLabel = document.getElementById('chrome-label');
-  const chromeSub = document.getElementById('chrome-sub');
-  const chromeResumeActions = document.getElementById('chrome-resume-actions');
-  const chromeProjectActions = document.getElementById('chrome-project-actions');
-  const projectSource = document.getElementById('project-source') as HTMLAnchorElement | null;
-  const pdfFrame = document.getElementById('resume-pdf') as HTMLIFrameElement | null;
-  const pdfFallback = document.getElementById('pdf-fallback');
-  const pdfOpen = document.getElementById('pdf-open') as HTMLAnchorElement | null;
-  const pdfDownload = document.getElementById('pdf-download') as HTMLAnchorElement | null;
-  const pdfFallbackLink = document.getElementById('pdf-fallback-link') as HTMLAnchorElement | null;
-  const contactForm = document.getElementById('contact-form');
+  const shell = document.getElementById("shell");
+  const paneDetail = document.getElementById("pane-detail");
+  const splitDivider = document.getElementById("split-divider");
+  const viewResume = document.getElementById("view-resume");
+  const viewContact = document.getElementById("view-contact");
+  const viewProject = document.getElementById("view-project");
+  const chromeLabel = document.getElementById("chrome-label");
+  const chromeSub = document.getElementById("chrome-sub");
+  const chromeResumeActions = document.getElementById("chrome-resume-actions");
+  const chromeProjectActions = document.getElementById("chrome-project-actions");
+  const projectSource = document.getElementById("project-source") as HTMLAnchorElement | null;
+  const resumePages = document.getElementById("resume-pages");
+  const pdfFallback = document.getElementById("pdf-fallback");
+  const pdfOpen = document.getElementById("pdf-open") as HTMLAnchorElement | null;
+  const pdfDownload = document.getElementById("pdf-download") as HTMLAnchorElement | null;
+  const pdfFallbackLink = document.getElementById("pdf-fallback-link") as HTMLAnchorElement | null;
+  const contactForm = document.getElementById("contact-form");
 
   if (
     !shell ||
@@ -323,7 +222,7 @@ export function initSplash(): void {
     !chromeSub ||
     !chromeResumeActions ||
     !chromeProjectActions ||
-    !pdfFrame ||
+    !resumePages ||
     !pdfFallback ||
     !pdfOpen ||
     !pdfDownload ||
@@ -350,7 +249,7 @@ export function initSplash(): void {
       chromeResumeActions,
       chromeProjectActions,
       projectSource,
-      pdfFrame,
+      resumePages,
       pdfFallback,
     },
     reducedMotion,
@@ -358,47 +257,46 @@ export function initSplash(): void {
   });
 
   split.bindSplitDivider();
-  initResumeNav(pdfFrame);
 
-  for (const element of document.querySelectorAll<HTMLElement>('[data-open-split]')) {
-    element.addEventListener('click', (event) => {
+  for (const element of document.querySelectorAll<HTMLElement>("[data-open-split]")) {
+    element.addEventListener("click", (event) => {
       event.preventDefault();
-      const pane = element.getAttribute('data-open-split');
-      if (pane === 'resume' || pane === 'contact') split.openSplit(pane);
+      const pane = element.getAttribute("data-open-split");
+      if (pane === "resume" || pane === "contact") split.openSplit(pane);
     });
   }
-  for (const element of document.querySelectorAll<HTMLElement>('[data-open-project]')) {
-    const slug = element.getAttribute('data-open-project') ?? '';
-    element.addEventListener('click', (event) => {
+  for (const element of document.querySelectorAll<HTMLElement>("[data-open-project]")) {
+    const slug = element.getAttribute("data-open-project") ?? "";
+    element.addEventListener("click", (event) => {
       event.preventDefault();
-      if (slug) split.openSplit('project', { slug });
+      if (slug) split.openSplit("project", { slug });
     });
   }
-  for (const element of document.querySelectorAll('[data-close-split]')) {
-    element.addEventListener('click', () => split.closeSplit());
+  for (const element of document.querySelectorAll("[data-close-split]")) {
+    element.addEventListener("click", () => split.closeSplit());
   }
 
   if (contactForm instanceof HTMLFormElement && !contactForm.dataset.sitekey) {
-    contactForm.addEventListener('submit', (event) => {
+    contactForm.addEventListener("submit", (event) => {
       event.preventDefault();
       contactForm.reportValidity();
     });
   }
 
-  window.addEventListener('keydown', (event) => {
+  window.addEventListener("keydown", (event) => {
     if (
-      event.key.toLowerCase() === 'c' &&
+      event.key.toLowerCase() === "c" &&
       !event.metaKey &&
       !event.ctrlKey &&
-      split.getMode() === 'splash'
+      split.getMode() === "splash"
     ) {
       const tag = (event.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag !== 'input' && tag !== 'textarea') {
+      if (tag !== "input" && tag !== "textarea") {
         event.preventDefault();
-        split.openSplit('contact');
+        split.openSplit("contact");
       }
     }
-    if (event.key === 'Escape' && split.getMode() !== 'splash') split.closeSplit();
+    if (event.key === "Escape" && split.getMode() !== "splash") split.closeSplit();
   });
 
   split.applyInitialHash();

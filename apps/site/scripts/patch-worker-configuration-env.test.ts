@@ -1,9 +1,9 @@
-import { expect, test } from 'vitest';
+import { expect, test } from "vitest";
 import {
   patchMainModule,
   patchResumeRepoToken,
   patchWorkerConfigurationTypes,
-} from './patch-worker-configuration-env';
+} from "./patch-worker-configuration-env";
 
 const SAMPLE = `declare namespace Cloudflare {
 \tinterface GlobalProps {
@@ -17,20 +17,20 @@ interface __BaseEnv_Env {
 }
 `;
 
-test('patchMainModule replaces bundled worker import', () => {
+test("patchMainModule replaces bundled worker import", () => {
   const patched = patchMainModule(SAMPLE);
-  expect(patched).toContain('mainModule: ExportedHandler<Env>');
-  expect(patched).not.toContain('.svelte-kit/cloudflare/_worker');
+  expect(patched).toContain("mainModule: ExportedHandler<Env>");
+  expect(patched).not.toContain(".svelte-kit/cloudflare/_worker");
 });
 
-test('patchResumeRepoToken collapses duplicate RESUME_REPO_TOKEN', () => {
+test("patchResumeRepoToken collapses duplicate RESUME_REPO_TOKEN", () => {
   const patched = patchResumeRepoToken(SAMPLE);
-  expect(patched).toContain('RESUME_REPO_TOKEN: SecretsStoreSecret | string');
+  expect(patched).toContain("RESUME_REPO_TOKEN: SecretsStoreSecret | string");
   expect(patched.match(/RESUME_REPO_TOKEN/g)?.length).toBe(1);
 });
 
-test('patchWorkerConfigurationTypes applies both patches', () => {
+test("patchWorkerConfigurationTypes applies both patches", () => {
   const patched = patchWorkerConfigurationTypes(SAMPLE);
-  expect(patched).toContain('mainModule: ExportedHandler<Env>');
-  expect(patched).toContain('SecretsStoreSecret | string');
+  expect(patched).toContain("mainModule: ExportedHandler<Env>");
+  expect(patched).toContain("SecretsStoreSecret | string");
 });

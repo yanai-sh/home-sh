@@ -1,11 +1,11 @@
-import { contact } from './portfolio/contact';
-import { experienceSection } from './portfolio/experience-section';
-import { hero } from './portfolio/hero';
-import { navigation } from './portfolio/navigation';
-import { profile } from './portfolio/profile';
-import { projectsSection } from './portfolio/projects-section';
+import { contact } from "./portfolio/contact";
+import { experienceSection } from "./portfolio/experience-section";
+import { hero } from "./portfolio/hero";
+import { navigation } from "./portfolio/navigation";
+import { profile } from "./portfolio/profile";
+import { projectsSection } from "./portfolio/projects-section";
 
-export type { PortfolioLink, PortfolioSocial } from './portfolio/types';
+export type { PortfolioLink, PortfolioSocial } from "./portfolio/types";
 
 export const portfolio = {
   ...profile,

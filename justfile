@@ -30,14 +30,6 @@ preview:
 worker-types:
     cd apps/site && pnpm wrangler-types
 
-# Run D1 migrations against local dev database
-migrate-local:
-    cd apps/site && pnpm exec wrangler d1 migrations apply home-sh-telemetry --local
-
-# Run D1 migrations against remote database (production — use carefully)
-migrate-remote:
-    cd apps/site && pnpm exec wrangler d1 migrations apply home-sh-telemetry --remote
-
 # ── OpenTofu / Infrastructure ────────────────────────────────────────────────
 # OpenTofu reads cloudflare_api_token + cloudflare_account_id from gitignored
 # infra/tofu/terraform.tfvars (copy terraform.tfvars.example). CI uses GitHub
@@ -69,6 +61,14 @@ tf-secrets:
 # them via `secrets_store_secrets` in apps/site/wrangler.jsonc.
 push-secrets:
     pnpm exec tsx scripts/push-secrets.ts
+
+# Delete orphaned home-sh-telemetry (D1) + home-sh-sessions (KV). Needs CF creds locally,
+# or GitHub Actions → yanai-sh / Ops — destroy legacy data (staging Environment).
+destroy-legacy-data:
+    pnpm exec tsx scripts/destroy-legacy-data-stores.ts
+
+destroy-legacy-data-dry-run:
+    pnpm exec tsx scripts/destroy-legacy-data-stores.ts --dry-run
 
 # Optional (not portable / not CI): Bitwarden → local JSON or gh. See scripts/optional/README.md
 optional-bitwarden-pull:
