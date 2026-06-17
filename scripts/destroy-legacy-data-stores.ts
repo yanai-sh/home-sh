@@ -7,45 +7,41 @@
  *   pnpm exec tsx scripts/destroy-legacy-data-stores.ts --dry-run
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
 
-const D1_NAME = 'home-sh-telemetry';
-const KV_TITLE = 'home-sh-sessions';
-const SECRETS_FILE = 'infra/secrets/worker-secrets.local.json';
+const D1_NAME = "home-sh-telemetry";
+const KV_TITLE = "home-sh-sessions";
+const SECRETS_FILE = "infra/secrets/worker-secrets.local.json";
 
 type CfList<T> = { success: boolean; result: T[]; errors?: unknown[] };
 
 function loadCreds(): { token: string; accountId: string } {
   const fromEnv = {
-    token: process.env.CLOUDFLARE_API_TOKEN?.trim() ?? '',
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim() ?? '',
+    token: process.env.CLOUDFLARE_API_TOKEN?.trim() ?? "",
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim() ?? "",
   };
   if (fromEnv.token && fromEnv.accountId) return fromEnv;
 
   try {
-    const blob = JSON.parse(readFileSync(SECRETS_FILE, 'utf8')) as Record<string, string>;
-    const token = blob.cloudflare_api_token?.trim() ?? '';
-    const accountId = blob.cloudflare_account_id?.trim() ?? '';
+    const blob = JSON.parse(readFileSync(SECRETS_FILE, "utf8")) as Record<string, string>;
+    const token = blob.cloudflare_api_token?.trim() ?? "";
+    const accountId = blob.cloudflare_account_id?.trim() ?? "";
     if (token && accountId) return { token, accountId };
   } catch {
     // fall through
   }
 
   console.error(
-    'Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, or add cloudflare_api_token and cloudflare_account_id to infra/secrets/worker-secrets.local.json',
+    "Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, or add cloudflare_api_token and cloudflare_account_id to infra/secrets/worker-secrets.local.json",
   );
   process.exit(1);
 }
 
-async function cf<T>(
-  token: string,
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
+async function cf<T>(token: string, path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
-  headers.set('Authorization', `Bearer ${token}`);
-  if (!headers.has('Content-Type') && init?.body) {
-    headers.set('Content-Type', 'application/json');
+  headers.set("Authorization", `Bearer ${token}`);
+  if (!headers.has("Content-Type") && init?.body) {
+    headers.set("Content-Type", "application/json");
   }
   const res = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
     ...init,
@@ -59,7 +55,7 @@ async function cf<T>(
 }
 
 async function main(): Promise<void> {
-  const dryRun = process.argv.includes('--dry-run');
+  const dryRun = process.argv.includes("--dry-run");
   const { token, accountId } = loadCreds();
 
   const d1List = await cf<Array<{ uuid: string; name: string }>>(
@@ -75,7 +71,9 @@ async function main(): Promise<void> {
   const kv = kvList.find((ns) => ns.title === KV_TITLE);
 
   if (!d1 && !kv) {
-    console.log('Nothing to delete — neither home-sh-telemetry (D1) nor home-sh-sessions (KV) found.');
+    console.log(
+      "Nothing to delete — neither home-sh-telemetry (D1) nor home-sh-sessions (KV) found.",
+    );
     return;
   }
 
@@ -84,7 +82,7 @@ async function main(): Promise<void> {
     if (dryRun) {
       console.log(`[dry-run] would DELETE D1 ${d1.uuid}`);
     } else {
-      await cf(token, `/accounts/${accountId}/d1/database/${d1.uuid}`, { method: 'DELETE' });
+      await cf(token, `/accounts/${accountId}/d1/database/${d1.uuid}`, { method: "DELETE" });
       console.log(`Deleted D1 ${D1_NAME}`);
     }
   } else {
@@ -97,7 +95,7 @@ async function main(): Promise<void> {
       console.log(`[dry-run] would DELETE KV ${kv.id}`);
     } else {
       await cf(token, `/accounts/${accountId}/storage/kv/namespaces/${kv.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
       console.log(`Deleted KV ${KV_TITLE}`);
     }
