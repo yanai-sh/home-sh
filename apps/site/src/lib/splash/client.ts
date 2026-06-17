@@ -148,9 +148,9 @@ function initSplashFieldLayer(
   };
 
   if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(start, { timeout: 900 });
+    window.requestIdleCallback(start, { timeout: 50 });
   } else {
-    globalThis.setTimeout(start, 120);
+    globalThis.setTimeout(start, 0);
   }
 }
 

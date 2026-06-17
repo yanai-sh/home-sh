@@ -24,12 +24,17 @@
     --splash-still: url('/splash-still-dark.jpg');
     /* Live ink renderer: --splash-base is the medium, --splash-ink the ink the
        fluid darkens it toward (read in field-fluid.ts syncTheme). Ink < base. */
-    --splash-base: #1b2532;
-    --splash-ink: #060910;
-    /* Display tone curve (per theme): ink shows for dye in [lo, hi]. Dark is the
-       primary theme — a lower ceiling makes the ink clearly visible (not faint). */
-    --splash-ink-lo: 0;
-    --splash-ink-hi: 0.62;
+    --splash-base: #3d5264;
+    --splash-ink: #050e1e;
+    /* Display tone curve (per theme): ink shows for dye in [lo, hi]. A higher floor
+       cuts the faint low-density wash (which reads as smoke) so the ink is solid
+       pigment; the ceiling keeps the body clearly visible. */
+    --splash-ink-lo: 0.06;
+    --splash-ink-hi: 0.42;
+    /* "Dark but lively": a cool luminous accent on the flowing ink edges, and a
+       deep-blue atmospheric depth-glow drifting behind it. */
+    --splash-edge: #5ac7f0;
+    --splash-glow: #1b3a5c;
     --color-background: #15191d;
     --color-surface: #1d2630;
     --color-surface-raised: #25313e;
@@ -53,11 +58,15 @@
     --splash-still: url('/splash-still-light.jpg');
     /* Soft slate-grey ink on warm off-white (sumi-e). Ink < base. */
     --splash-base: #e9e6df;
-    --splash-ink: #525b68;
-    /* High floor: only the densest ink shows → a sparse, elegant wash with lots
-       of clean paper (dark-on-light reads much stronger, so it needs restraint). */
-    --splash-ink-lo: 0.36;
-    --splash-ink-hi: 0.9;
+    --splash-ink: #565f6c;
+    /* Visible-but-soft wash: enough ink to read clearly, but a higher floor so it
+       stays gentle on light (dark-on-light reads stronger than dark-on-slate). */
+    --splash-ink-lo: 0.38;
+    --splash-ink-hi: 0.82;
+    /* Subtle on light (it isn't gloomy to begin with): a muted blue edge sheen and
+       a barely-there cool depth-glow near the paper tone. */
+    --splash-edge: #7d97c4;
+    --splash-glow: #dfe3ea;
     /* Soft warm off-white (not stark white) so the fluid reads as colour on
        paper rather than washing out. */
     --color-background: #e9e6df;
