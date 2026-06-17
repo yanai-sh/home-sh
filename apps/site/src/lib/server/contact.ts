@@ -1,19 +1,19 @@
-import { CONTACT_ERROR } from '$lib/contact-error-codes';
-import { secretValue } from '$lib/bindings';
-import { validateContact } from '$lib/server/contact-validate';
+import { CONTACT_ERROR } from "$lib/contact-error-codes";
+import { secretValue } from "$lib/bindings";
+import { validateContact } from "$lib/server/contact-validate";
 
-const ALLOWED_ORIGIN = 'https://yanai.sh';
+const ALLOWED_ORIGIN = "https://yanai.sh";
 
 const CORS: Record<string, string> = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
 };
 
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', ...CORS },
+    headers: { "Content-Type": "application/json", ...CORS },
   });
 
 const verifyTurnstile = async (
@@ -21,9 +21,9 @@ const verifyTurnstile = async (
   secret: string,
   ip: string | null,
 ): Promise<boolean> => {
-  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       secret,
       response: token,
@@ -57,7 +57,7 @@ export async function processContact(
   ip: string,
   env: Env,
 ): Promise<ContactResult> {
-  if (typeof body.website === 'string' && body.website.trim().length > 0) {
+  if (typeof body.website === "string" && body.website.trim().length > 0) {
     return { ok: true }; // honeypot tripped — accept silently
   }
 
@@ -72,7 +72,7 @@ export async function processContact(
   }
 
   const { name, email, message } = validated;
-  const token = typeof body.token === 'string' ? body.token : '';
+  const token = typeof body.token === "string" ? body.token : "";
 
   const [turnstileSecret, resendKey, contactFrom, contactTo] = await Promise.all([
     secretValue(env.TURNSTILE_SECRET),
@@ -86,11 +86,11 @@ export async function processContact(
     return { ok: false, code: CONTACT_ERROR.TURNSTILE_FAILED };
   }
 
-  const sendResponse = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
+  const sendResponse = await fetch("https://api.resend.com/emails", {
+    method: "POST",
     headers: {
       Authorization: `Bearer ${resendKey}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       from: contactFrom,
@@ -102,8 +102,8 @@ export async function processContact(
   });
 
   if (!sendResponse.ok) {
-    const responseBody = await sendResponse.text().catch(() => '<unreadable>');
-    console.error('contact: resend rejected', {
+    const responseBody = await sendResponse.text().catch(() => "<unreadable>");
+    console.error("contact: resend rejected", {
       status: sendResponse.status,
       body: responseBody,
     });
@@ -114,7 +114,7 @@ export async function processContact(
 }
 
 export async function handleContactPost(request: Request, env: Env): Promise<Response> {
-  const origin = request.headers.get('Origin');
+  const origin = request.headers.get("Origin");
   if (origin && origin !== ALLOWED_ORIGIN) {
     return json({ error: CONTACT_ERROR.FORBIDDEN_ORIGIN }, 403);
   }
@@ -126,7 +126,7 @@ export async function handleContactPost(request: Request, env: Env): Promise<Res
     return json({ error: CONTACT_ERROR.INVALID_JSON }, 400);
   }
 
-  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
   const result = await processContact(body, ip, env);
   return result.ok
     ? json({ ok: true })

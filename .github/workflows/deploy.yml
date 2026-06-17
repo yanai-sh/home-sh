@@ -190,24 +190,24 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${PREVIEW_URL}" ]; then
-            echo "::error::No version preview URL from wrangler upload; cannot verify Hono splash in CI." >&2
+            echo "::error::No version preview URL from wrangler upload; cannot verify SvelteKit splash in CI." >&2
             exit 1
           fi
           for attempt in 1 2 3 4 5 6; do
             HTTP_CODE="$(curl -sS --http1.1 -4 -o /tmp/preview-body.html -w "%{http_code}" "${PREVIEW_URL}/" || echo "000")"
             BODY="$(cat /tmp/preview-body.html 2>/dev/null || true)"
             if printf '%s' "$BODY" | grep -q 'id="shell"'; then
-              echo "Promoted version ${VERSION_ID} serves Hono splash on preview URL (attempt ${attempt}, HTTP ${HTTP_CODE})."
+              echo "Promoted version ${VERSION_ID} serves SvelteKit splash on preview URL (attempt ${attempt}, HTTP ${HTTP_CODE})."
               exit 0
             fi
             if printf '%s' "$BODY" | grep -qE 'Layout\.astro|/_astro/'; then
-              echo "::warning::Preview still looks like legacy Astro (attempt ${attempt}/6)" >&2
+              echo "::warning::Preview still looks like pre-SvelteKit static HTML (attempt ${attempt}/6)" >&2
             else
               echo "Attempt ${attempt}/6: HTTP ${HTTP_CODE}, #shell not found on ${PREVIEW_URL}" >&2
             fi
             sleep 10
           done
-          echo "::error::Version ${VERSION_ID} preview does not serve Hono splash after promote." >&2
+          echo "::error::Version ${VERSION_ID} preview does not serve SvelteKit splash after promote." >&2
           exit 1
 
       - name: Write deploy summary

@@ -1,9 +1,9 @@
-import { resumePdfResponse } from '$lib/server/resume-pdf';
-import type { RequestHandler } from './$types';
+import { resumePdfResponse } from "$lib/server/resume-pdf";
+import type { RequestHandler } from "./$types";
 
 export const GET: RequestHandler = async ({ platform }) => {
   if (!platform?.env) {
-    return new Response('Worker env is not configured.', { status: 503 });
+    return new Response("Worker env is not configured.", { status: 503 });
   }
   return resumePdfResponse(platform.env, true);
 };

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Dormant D1 + KV infra** — dropped `home-sh-telemetry` (D1) and `home-sh-sessions` (KV) from OpenTofu, `infra/migrations/`, and `just migrate-*` targets. The SvelteKit Worker never bound either; Workers observability in `wrangler.jsonc` remains. Delete any orphans in Cloudflare with **`pnpm exec tsx scripts/destroy-legacy-data-stores.ts`** (see `infra/README.md`).
+
 ## [v0.1.24] - 2026-06-15
 
 ### Fixed

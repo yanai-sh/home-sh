@@ -23,6 +23,7 @@
     "env:copy-prod": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/copy-gh-environment.ts --from staging --to production",
     "cf:list-access-apps": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/cf-list-access-apps.ts",
     "push-secrets": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/push-secrets.ts",
+    "destroy-legacy-data": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/destroy-legacy-data-stores.ts",
     "optional:bitwarden-to-secrets": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/optional/bitwarden-to-secrets.ts",
     "prepare": "node scripts/wsl-proxy.mjs sh -c \"command -v git >/dev/null 2>&1 && pnpm exec lefthook install || exit 0\""
   },

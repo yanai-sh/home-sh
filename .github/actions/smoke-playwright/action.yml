@@ -41,15 +41,15 @@ runs:
           /\/cdn-cgi\/access\//i.test(body) ||
           (title && /access/i.test(title)) ||
           /cloudflareaccess\.com\/cdn-cgi\/access\/login/i.test(location);
-        const looksLikeAstro = /Layout\.astro|\/_astro\//i.test(body);
+        const looksLikePreSvelteKit = /Layout\.astro|\/_astro\//i.test(body);
         const hasSplashShell = /id="shell"/i.test(body);
         console.log(`preflight: GET / -> ${res.status}`);
         if (title) console.log(`preflight: title="${title}"`);
         if (looksLikeAccess) {
           throw new Error("Preflight looks like Cloudflare Access. Set CF_ACCESS_CLIENT_ID/SECRET for staging previews.");
         }
-        if (looksLikeAstro && !hasSplashShell) {
-          throw new Error("Preflight looks like legacy Astro, not the splash shell (#shell missing).");
+        if (looksLikePreSvelteKit && !hasSplashShell) {
+          throw new Error("Preflight looks like pre-SvelteKit static HTML, not the splash shell (#shell missing).");
         }
         if (!hasSplashShell) {
           throw new Error("Preflight missing splash shell marker (#shell).");

@@ -27,7 +27,7 @@
  *   --splash-base (the medium) and --splash-ink (the ink) — see global.css.
  */
 
-import type { SplashFieldHandle } from './field';
+import type { SplashFieldHandle } from "./field";
 
 // ── Tunables ────────────────────────────────────────────────────────────────
 const SIM_RES = 160; // velocity / pressure / divergence grid (scaled by aspect)
@@ -317,7 +317,7 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLSh
   gl.shaderSource(sh, src);
   gl.compileShader(sh);
   if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-    console.warn('[splash] shader compile failed:', gl.getShaderInfoLog(sh));
+    console.warn("[splash] shader compile failed:", gl.getShaderInfoLog(sh));
     gl.deleteShader(sh);
     return null;
   }
@@ -337,11 +337,11 @@ function makeProgram(
   if (!program) return null;
   gl.attachShader(program, vert);
   gl.attachShader(program, frag);
-  gl.bindAttribLocation(program, 0, 'aPosition');
+  gl.bindAttribLocation(program, 0, "aPosition");
   gl.linkProgram(program);
   gl.deleteShader(frag);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.warn('[splash] program link failed:', gl.getProgramInfoLog(program));
+    console.warn("[splash] program link failed:", gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
     return null;
   }
@@ -403,7 +403,7 @@ function createFBO(
   };
 }
 
-type DoubleFBO = { read: FBO; write: FBO; swap: () => void } & Pick<FBO, 'texelX' | 'texelY'>;
+type DoubleFBO = { read: FBO; write: FBO; swap: () => void } & Pick<FBO, "texelX" | "texelY">;
 
 function createDoubleFBO(
   gl: WebGL2RenderingContext,
@@ -437,7 +437,7 @@ function createDoubleFBO(
 }
 
 function parseHex(raw: string, fallback: [number, number, number]): [number, number, number] {
-  const hex = raw.trim().replace('#', '');
+  const hex = raw.trim().replace("#", "");
   if (hex.length !== 6) return fallback;
   const n = Number.parseInt(hex, 16);
   if (Number.isNaN(n)) return fallback;
@@ -462,35 +462,35 @@ export function initFluidField(
   // renderer (e.g. headless SwiftShader) for visual QA. Compiled out of prod.
   const force =
     import.meta.env.DEV &&
-    typeof location !== 'undefined' &&
-    new URLSearchParams(location.search).has('splashforce');
+    typeof location !== "undefined" &&
+    new URLSearchParams(location.search).has("splashforce");
 
   // Live-tunable feel params (dev only — exposed for console tweaking).
   const cfg = { ...TUNE_DEFAULTS };
-  if (import.meta.env.DEV && typeof window !== 'undefined') {
+  if (import.meta.env.DEV && typeof window !== "undefined") {
     (window as unknown as { __splashTune?: typeof cfg }).__splashTune = cfg;
-    console.info('[splash] live tune → window.__splashTune (edit values, applies next frame)');
+    console.info("[splash] live tune → window.__splashTune (edit values, applies next frame)");
   }
 
-  const gl = canvas.getContext('webgl2', {
+  const gl = canvas.getContext("webgl2", {
     alpha: false,
     depth: false,
     stencil: false,
     antialias: false,
-    powerPreference: 'high-performance',
+    powerPreference: "high-performance",
     // Return null instead of a slow software-rendered context.
     failIfMajorPerformanceCaveat: !force,
   });
   if (!gl) return null;
 
   // Float render targets are required for the simulation.
-  if (!gl.getExtension('EXT_color_buffer_float')) return null;
-  gl.getExtension('OES_texture_float_linear'); // best-effort: smoother advection
+  if (!gl.getExtension("EXT_color_buffer_float")) return null;
+  gl.getExtension("OES_texture_float_linear"); // best-effort: smoother advection
 
   // Reject known software renderers (some report a context despite the caveat flag).
-  const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+  const dbg = gl.getExtension("WEBGL_debug_renderer_info");
   if (!force && dbg) {
-    const renderer = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '');
+    const renderer = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || "");
     if (SOFTWARE_RENDERER.test(renderer)) return null;
   }
 
@@ -599,10 +599,10 @@ export function initFluidField(
   let ink: [number, number, number] = [0.03, 0.05, 0.08];
   function syncTheme(): void {
     const cs = getComputedStyle(document.documentElement);
-    base = parseHex(cs.getPropertyValue('--splash-base'), base);
-    ink = parseHex(cs.getPropertyValue('--splash-ink'), ink);
-    const lo = Number.parseFloat(cs.getPropertyValue('--splash-ink-lo'));
-    const hi = Number.parseFloat(cs.getPropertyValue('--splash-ink-hi'));
+    base = parseHex(cs.getPropertyValue("--splash-base"), base);
+    ink = parseHex(cs.getPropertyValue("--splash-ink"), ink);
+    const lo = Number.parseFloat(cs.getPropertyValue("--splash-ink-lo"));
+    const hi = Number.parseFloat(cs.getPropertyValue("--splash-ink-hi"));
     if (!Number.isNaN(lo)) cfg.inkLo = lo;
     if (!Number.isNaN(hi)) cfg.inkHi = hi;
   }
@@ -624,7 +624,7 @@ export function initFluidField(
     pointer.x = x;
     pointer.y = y;
   }
-  window.addEventListener('pointermove', onPointerMove, { passive: true });
+  window.addEventListener("pointermove", onPointerMove, { passive: true });
 
   // ── Simulation step ──────────────────────────────────────────────────────────
   let time = 0;
@@ -639,7 +639,11 @@ export function initFluidField(
     gl!.uniform1i(P.force.uniforms.uVelocity ?? null, velocity.read.attach(0));
     gl!.uniform1f(P.force.uniforms.dt ?? null, dt);
     gl!.uniform1f(P.force.uniforms.uNoiseScale ?? null, cfg.noiseScale);
-    gl!.uniform2f(P.force.uniforms.uNoiseOffset ?? null, time * cfg.noiseDrift, time * -cfg.noiseDrift * 0.95);
+    gl!.uniform2f(
+      P.force.uniforms.uNoiseOffset ?? null,
+      time * cfg.noiseDrift,
+      time * -cfg.noiseDrift * 0.95,
+    );
     gl!.uniform1f(P.force.uniforms.uNoiseEps ?? null, 0.0025 * cfg.noiseScale);
     // ease the ambient force in over the first ~1.5s so the field starts calm and
     // settles into motion (no fast lurch on page load).
@@ -763,7 +767,7 @@ export function initFluidField(
       }
     }, 250);
   }
-  window.addEventListener('resize', onResize, { passive: true });
+  window.addEventListener("resize", onResize, { passive: true });
 
   // ── Loop + FPS guard ────────────────────────────────────────────────────────
   let raf = 0;
@@ -775,16 +779,16 @@ export function initFluidField(
 
   function bail(): void {
     bailed = true;
-    canvas.style.opacity = '0';
-    layer.classList.remove('is-splash-field-ready');
-    layer.classList.add('is-splash-still');
+    canvas.style.opacity = "0";
+    layer.classList.remove("is-splash-field-ready");
+    layer.classList.add("is-splash-still");
     dispose();
   }
 
   function frame(now: number): void {
     if (disposed) return;
     raf = requestAnimationFrame(frame);
-    if (document.visibilityState !== 'visible') {
+    if (document.visibilityState !== "visible") {
       prev = now;
       return;
     }
@@ -814,7 +818,7 @@ export function initFluidField(
     e.preventDefault();
     bail();
   }
-  canvas.addEventListener('webglcontextlost', onContextLost);
+  canvas.addEventListener("webglcontextlost", onContextLost);
 
   // Pre-develop the seeded masses so the field appears already gently diffused
   // (the cursor isn't here yet — the ambient flow + vorticity do the folding).
@@ -823,7 +827,7 @@ export function initFluidField(
     step(0.016);
   }
 
-  layer.classList.add('is-splash-field-ready');
+  layer.classList.add("is-splash-field-ready");
   raf = requestAnimationFrame(frame);
 
   function dispose(): void {
@@ -831,12 +835,22 @@ export function initFluidField(
     disposed = true;
     cancelAnimationFrame(raf);
     window.clearTimeout(resizeTimer);
-    window.removeEventListener('pointermove', onPointerMove);
-    window.removeEventListener('resize', onResize);
-    canvas.removeEventListener('webglcontextlost', onContextLost);
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("resize", onResize);
+    canvas.removeEventListener("webglcontextlost", onContextLost);
     if (!gl) return;
     for (const p of Object.values(P)) gl.deleteProgram(p.program);
-    for (const f of [velocity?.read, velocity?.write, dye?.read, dye?.write, pressure?.read, pressure?.write, divergence, curlFBO, seedTex]) {
+    for (const f of [
+      velocity?.read,
+      velocity?.write,
+      dye?.read,
+      dye?.write,
+      pressure?.read,
+      pressure?.write,
+      divergence,
+      curlFBO,
+      seedTex,
+    ]) {
       if (f) {
         gl.deleteTexture(f.texture);
         gl.deleteFramebuffer(f.fbo);

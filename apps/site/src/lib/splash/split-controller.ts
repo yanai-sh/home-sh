@@ -1,12 +1,12 @@
-import { renderResumePdf } from './resume-pdf';
+import { renderResumePdf } from "./resume-pdf";
 
 const SPLIT_OPEN_MS = 780;
 const SPLIT_CLOSE_MS = 620;
-const SPLIT_RATIO_KEY = 'yanai-sh:split-ratio';
-const PDF_URL = '/resume.pdf';
+const SPLIT_RATIO_KEY = "yanai-sh:split-ratio";
+const PDF_URL = "/resume.pdf";
 
-export type SiteMode = 'splash' | 'resume' | 'contact' | 'project';
-export type DetailPane = Exclude<SiteMode, 'splash'>;
+export type SiteMode = "splash" | "resume" | "contact" | "project";
+export type DetailPane = Exclude<SiteMode, "splash">;
 
 type SplitControllerElements = {
   root: HTMLElement;
@@ -62,8 +62,8 @@ function persistSplitRatio(customSplitRatio: number | null): void {
 }
 
 function hashFor(pane: DetailPane, slug: string): string {
-  if (pane === 'resume') return '#resume';
-  if (pane === 'contact') return '#contact';
+  if (pane === "resume") return "#resume";
+  if (pane === "contact") return "#contact";
   return `#p/${slug}`;
 }
 
@@ -86,8 +86,8 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
     pdfFallback,
   } = elements;
 
-  let mode: SiteMode = 'splash';
-  let activeProject = '';
+  let mode: SiteMode = "splash";
+  let activeProject = "";
   let splitProgress = 0;
   let pdfLoaded = false;
   let dragging = false;
@@ -97,15 +97,15 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
     const clamped = Math.max(0, Math.min(1, value));
     const snapped = clamped <= 0.004 ? 0 : clamped >= 0.996 ? 1 : clamped;
     splitProgress = snapped;
-    root.style.setProperty('--split-progress', String(splitProgress));
+    root.style.setProperty("--split-progress", String(splitProgress));
     if (customSplitRatio !== null && splitProgress > 0) {
-      shell.style.setProperty('--split-left', `${customSplitRatio}%`);
+      shell.style.setProperty("--split-left", `${customSplitRatio}%`);
     } else if (splitProgress === 0) {
-      shell.style.removeProperty('--split-left');
+      shell.style.removeProperty("--split-left");
     }
     splitDivider.tabIndex = splitProgress > 0.05 ? 0 : -1;
     if (splitProgress === 0) {
-      splitDivider.classList.remove('is-dragging');
+      splitDivider.classList.remove("is-dragging");
       splitDivider.blur();
     }
   };
@@ -122,7 +122,7 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
       return;
     }
 
-    root.classList.add('is-split-animating');
+    root.classList.add("is-split-animating");
     const start = performance.now();
     const from = splitProgress;
     const tick = (now: number): void => {
@@ -133,7 +133,7 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
         requestAnimationFrame(tick);
         return;
       }
-      root.classList.remove('is-split-animating');
+      root.classList.remove("is-split-animating");
       onDone?.();
     };
     requestAnimationFrame(tick);
@@ -141,36 +141,36 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
 
   const showProjectDetail = (slug: string): { title: string; repo: string } | null => {
     let found: { title: string; repo: string } | null = null;
-    for (const article of viewProject.querySelectorAll<HTMLElement>('[data-project-detail]')) {
+    for (const article of viewProject.querySelectorAll<HTMLElement>("[data-project-detail]")) {
       const isActive = article.dataset.projectDetail === slug;
       article.hidden = !isActive;
       if (isActive) {
         found = {
           title: article.dataset.projectTitle ?? slug,
-          repo: article.dataset.projectRepo ?? '',
+          repo: article.dataset.projectRepo ?? "",
         };
       }
     }
     return found;
   };
 
-  const showPaneView = (which: DetailPane, slug = ''): void => {
-    viewResume.classList.toggle('is-active', which === 'resume');
-    viewContact.classList.toggle('is-active', which === 'contact');
-    viewProject.classList.toggle('is-active', which === 'project');
-    chromeResumeActions.hidden = which !== 'resume';
-    chromeProjectActions.hidden = which !== 'project';
+  const showPaneView = (which: DetailPane, slug = ""): void => {
+    viewResume.classList.toggle("is-active", which === "resume");
+    viewContact.classList.toggle("is-active", which === "contact");
+    viewProject.classList.toggle("is-active", which === "project");
+    chromeResumeActions.hidden = which !== "resume";
+    chromeProjectActions.hidden = which !== "project";
 
-    if (which === 'resume') {
-      chromeLabel.textContent = 'resume.pdf';
-      chromeSub.textContent = '';
-    } else if (which === 'contact') {
-      chromeLabel.textContent = 'contact';
-      chromeSub.textContent = '· send a note';
+    if (which === "resume") {
+      chromeLabel.textContent = "resume.pdf";
+      chromeSub.textContent = "";
+    } else if (which === "contact") {
+      chromeLabel.textContent = "contact";
+      chromeSub.textContent = "· send a note";
     } else {
       const detail = showProjectDetail(slug);
       chromeLabel.textContent = detail?.title ?? slug;
-      chromeSub.textContent = '';
+      chromeSub.textContent = "";
       if (projectSource) {
         if (detail?.repo) {
           projectSource.href = detail.repo;
@@ -186,53 +186,53 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
     if (pdfLoaded) return;
     pdfLoaded = true;
     void renderResumePdf(resumePages, PDF_URL, () => {
-      pdfFallback.classList.add('is-visible');
+      pdfFallback.classList.add("is-visible");
     });
   };
 
   const focusContactField = (): void => {
-    document.getElementById('cf-name')?.focus();
+    document.getElementById("cf-name")?.focus();
   };
 
   const openSplit = (pane: DetailPane, options: { slug?: string } = {}): void => {
-    const slug = options.slug ?? '';
-    const alreadyOpen = mode === pane && (pane !== 'project' || activeProject === slug);
+    const slug = options.slug ?? "";
+    const alreadyOpen = mode === pane && (pane !== "project" || activeProject === slug);
     if (alreadyOpen) return;
 
-    const switching = mode !== 'splash';
-    activeProject = pane === 'project' ? slug : '';
+    const switching = mode !== "splash";
+    activeProject = pane === "project" ? slug : "";
     setMode(pane);
-    paneDetail.removeAttribute('inert');
+    paneDetail.removeAttribute("inert");
     showPaneView(pane, slug);
 
-    if (pane === 'resume') {
+    if (pane === "resume") {
       ensurePdfLoaded();
     }
 
-    history.replaceState(null, '', `${location.pathname}${hashFor(pane, slug)}`);
+    history.replaceState(null, "", `${location.pathname}${hashFor(pane, slug)}`);
 
     if (switching) {
-      if (pane === 'contact') focusContactField();
+      if (pane === "contact") focusContactField();
       return;
     }
 
     animateSplit(1, reducedMotion ? 0 : SPLIT_OPEN_MS, () => {
-      if (pane === 'contact') focusContactField();
+      if (pane === "contact") focusContactField();
     });
   };
 
   const closeSplit = (): void => {
-    if (mode === 'splash') return;
+    if (mode === "splash") return;
     animateSplit(0, reducedMotion ? 0 : SPLIT_CLOSE_MS, () => {
-      paneDetail.setAttribute('inert', '');
-      viewResume.classList.remove('is-active');
-      viewContact.classList.remove('is-active');
-      viewProject.classList.remove('is-active');
-      setMode('splash');
-      activeProject = '';
-      chromeSub.textContent = '';
-      history.replaceState(null, '', location.pathname);
-      document.querySelector<HTMLElement>('#splash')?.focus();
+      paneDetail.setAttribute("inert", "");
+      viewResume.classList.remove("is-active");
+      viewContact.classList.remove("is-active");
+      viewProject.classList.remove("is-active");
+      setMode("splash");
+      activeProject = "";
+      chromeSub.textContent = "";
+      history.replaceState(null, "", location.pathname);
+      document.querySelector<HTMLElement>("#splash")?.focus();
     });
   };
 
@@ -240,60 +240,60 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
     const rect = shell.getBoundingClientRect();
     const ratio = ((clientX - rect.left) / rect.width) * 100;
     customSplitRatio = Math.min(68, Math.max(22, ratio));
-    shell.style.setProperty('--split-left', `${customSplitRatio}%`);
+    shell.style.setProperty("--split-left", `${customSplitRatio}%`);
   };
 
   const bindSplitDivider = (): void => {
-    splitDivider.addEventListener('pointerdown', (event) => {
+    splitDivider.addEventListener("pointerdown", (event) => {
       if (splitProgress < 0.05) return;
       dragging = true;
-      splitDivider.classList.add('is-dragging');
+      splitDivider.classList.add("is-dragging");
       splitDivider.setPointerCapture(event.pointerId);
       setSplitFromPointer(event.clientX);
     });
-    splitDivider.addEventListener('pointermove', (event) => {
+    splitDivider.addEventListener("pointermove", (event) => {
       if (!dragging) return;
       setSplitFromPointer(event.clientX);
     });
-    splitDivider.addEventListener('pointerup', (event) => {
+    splitDivider.addEventListener("pointerup", (event) => {
       dragging = false;
-      splitDivider.classList.remove('is-dragging');
+      splitDivider.classList.remove("is-dragging");
       splitDivider.releasePointerCapture(event.pointerId);
       persistSplitRatio(customSplitRatio);
     });
-    splitDivider.addEventListener('dblclick', () => {
+    splitDivider.addEventListener("dblclick", () => {
       customSplitRatio = null;
-      shell.style.removeProperty('--split-left');
+      shell.style.removeProperty("--split-left");
       try {
         localStorage.removeItem(SPLIT_RATIO_KEY);
       } catch {
         // ignore
       }
     });
-    splitDivider.addEventListener('keydown', (event) => {
+    splitDivider.addEventListener("keydown", (event) => {
       if (splitProgress < 0.05) return;
       const current = customSplitRatio ?? 42;
-      if (event.key === 'ArrowLeft') {
+      if (event.key === "ArrowLeft") {
         event.preventDefault();
         customSplitRatio = Math.max(22, current - 4);
-        shell.style.setProperty('--split-left', `${customSplitRatio}%`);
+        shell.style.setProperty("--split-left", `${customSplitRatio}%`);
         persistSplitRatio(customSplitRatio);
       }
-      if (event.key === 'ArrowRight') {
+      if (event.key === "ArrowRight") {
         event.preventDefault();
         customSplitRatio = Math.min(68, current + 4);
-        shell.style.setProperty('--split-left', `${customSplitRatio}%`);
+        shell.style.setProperty("--split-left", `${customSplitRatio}%`);
         persistSplitRatio(customSplitRatio);
       }
     });
   };
 
   const applyInitialHash = (): void => {
-    if (location.hash === '#contact') openSplit('contact');
-    else if (location.hash === '#resume') openSplit('resume');
-    else if (location.hash.startsWith('#p/')) {
+    if (location.hash === "#contact") openSplit("contact");
+    else if (location.hash === "#resume") openSplit("resume");
+    else if (location.hash.startsWith("#p/")) {
       const slug = location.hash.slice(3);
-      if (slug) openSplit('project', { slug });
+      if (slug) openSplit("project", { slug });
     }
   };
 

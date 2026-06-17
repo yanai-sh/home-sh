@@ -1,6 +1,6 @@
 ## This repository
 
-**pnpm monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker (Workers with Static Assets); **`/api/contact`** and **`/resume.pdf`** on that Worker. Optional **`resume/`** git submodule (Rust PDF builder). Toolchain: **Vite 8**, **svelte-check**, **Vitest**, **Velite**. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+**pnpm monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker (Workers with Static Assets); **`/api/contact`** and **`/resume.pdf`** on that Worker. Optional **`resume/`** git submodule (Rust PDF builder). Toolchain: **Vite+** (`vp check`: Oxlint, Oxfmt, tsgo), **svelte-check**, **Vitest**, **Velite**. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ### Monorepo layout
 
@@ -11,7 +11,6 @@ apps/
 infra/
   README.md   # Infra ops: secrets layout, workflows, OpenTofu pointers
   secrets/    # Worker secret *shape* (example JSON); real values gitignored + GitHub Actions
-  migrations/ # D1 SQL migrations (legacy telemetry schema; no longer bound on site Worker)
   tofu/       # OpenTofu — `ACCESS_WORKERS.md` for optional Zero Trust on workers.dev
 ```
 
@@ -42,10 +41,10 @@ CSS custom properties live in **`src/styles/global.css`** (`:root` / `[data-them
 ### Scripts (copy-paste, run from repo root)
 
 - **`pnpm run dev`** — SvelteKit dev server (`vite dev`, port 4321)
-- **`pnpm run check`** / **`pnpm run fix`** — `svelte-check` + Velite sync
+- **`pnpm run check`** / **`pnpm run fix`** — `vp check` (Oxlint, Oxfmt, tsgo) + `svelte-check` + Velite sync
 - **`pnpm run typecheck`** — same as **`check`**
 - **`pnpm run test`** — Vitest
-- **`pnpm run verify`** — Velite → check → test → build (same as PR CI; Deploy runs build-only)
+- **`pnpm run verify`** — Velite → `vp check` + svelte-check → test → build (same as PR CI; Deploy runs build-only)
 - **`pnpm run preview`** — `wrangler dev .svelte-kit/cloudflare` (run **`build`** first)
 - **`pnpm run smoke`** — Playwright smoke tests (`apps/site/tests/smoke`; starts local preview unless **`SMOKE_BASE_URL`** is set)
 
@@ -58,7 +57,7 @@ Workflow and job names use a **`yanai-sh / …`** prefix so the Actions tab and 
   - Uses GitHub **Environments** (`staging`/`production`); staging smoke uses Cloudflare Access service token headers when set.
 - **Deps — auto-merge** (`dependabot-auto-merge.yml`, **`yanai-sh / Deps — auto-merge`**) — for **`dependabot[bot]`** PRs: **`gh pr merge --auto --squash --delete-branch`** (merges when required checks are green, then removes Dependabot’s head branch). Enable **Settings → General → Allow auto-merge** and keep branch rules compatible.
 - **Caches** — composite **`pnpm-install`** restores **`~/.local/share/pnpm/store`**; **`playwright-chromium`** restores **`~/.cache/ms-playwright`** (keyed off **`pnpm-lock.yaml`**). Key third-party actions use **commit SHAs** (comments note the tag).
-- **Path filters** — **`dorny/paths-filter`** drives an informational summary; **actionlint** runs every PR/Deploy. **`pnpm run verify`** still runs on every PR (both OSes).
+- **Path filters** — **`dorny/paths-filter`** drives an informational summary; **actionlint** runs every PR/Deploy. **`pnpm run verify`** still runs on every PR (`ubuntu-latest`).
 - **Other workflows** — **`yanai-sh / Rollback`**, **`yanai-sh / Infra — plan`**, **`yanai-sh / Secrets — push`**, **`yanai-sh / Ops — token expiry`** (`rollback.yml`, `infra-plan.yml`, `push-worker-secrets.yml`, `token-expiry-check.yml`).
 - **Auth** — Wrangler **`versions upload` / `deploy`** use **`CLOUDFLARE_API_TOKEN`** from the Environment. GitHub OIDC for Workers deploy is not a drop-in replacement yet; keep the token until upstream supports it, then migrate.
 

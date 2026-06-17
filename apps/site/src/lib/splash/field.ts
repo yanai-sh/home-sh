@@ -10,7 +10,7 @@
  * Both paths expose the same handle, so callers don't care which ran.
  */
 
-import { initFluidField } from './field-fluid';
+import { initFluidField } from "./field-fluid";
 
 export type SplashFieldHandle = {
   dispose: () => void;
@@ -26,7 +26,7 @@ export function initSplashField(
   options: { reducedMotion: boolean },
 ): SplashFieldHandle | null {
   if (options.reducedMotion) {
-    layer.classList.add('is-splash-still');
+    layer.classList.add("is-splash-still");
     return STILL_HANDLE;
   }
 
@@ -34,6 +34,6 @@ export function initSplashField(
   if (fluid) return fluid;
 
   // No WebGL2 — fall back to the same baked still frame.
-  layer.classList.add('is-splash-still');
+  layer.classList.add("is-splash-still");
   return STILL_HANDLE;
 }

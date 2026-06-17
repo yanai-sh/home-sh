@@ -26,7 +26,7 @@ function cacheKeyFor(repo: string): string {
 
 /** Workers default cache; `undefined` outside the workerd runtime. */
 function edgeCache(): Cache | undefined {
-  if (typeof caches === 'undefined') return undefined;
+  if (typeof caches === "undefined") return undefined;
   return (caches as unknown as { default?: Cache }).default;
 }
 
@@ -52,8 +52,8 @@ async function writeCached(
   try {
     const response = new Response(JSON.stringify(meta), {
       headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': `s-maxage=${CACHE_TTL_SECONDS}`,
+        "Content-Type": "application/json",
+        "Cache-Control": `s-maxage=${CACHE_TTL_SECONDS}`,
       },
     });
     const put = cache.put(cacheKeyFor(repo), response);
@@ -68,14 +68,14 @@ async function fetchFromGithub(repo: string): Promise<RepoMeta | null> {
   try {
     const response = await fetch(`https://api.github.com/repos/${repo}`, {
       headers: {
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'yanai.sh (https://yanai.sh)',
+        Accept: "application/vnd.github+json",
+        "User-Agent": "yanai.sh (https://yanai.sh)",
       },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!response.ok) return null;
     const body = (await response.json()) as GithubRepoResponse;
-    if (typeof body.stargazers_count !== 'number' || typeof body.pushed_at !== 'string') {
+    if (typeof body.stargazers_count !== "number" || typeof body.pushed_at !== "string") {
       return null;
     }
     return { stars: body.stargazers_count, pushedAt: body.pushed_at };
@@ -89,7 +89,7 @@ export async function fetchRepoMeta(
   waitUntil?: (p: Promise<unknown>) => void,
 ): Promise<RepoMeta | null> {
   // Unit tests run the Worker in plain Node — never reach out to the network.
-  if (import.meta.env?.MODE === 'test') return null;
+  if (import.meta.env?.MODE === "test") return null;
 
   const cached = await readCached(repo);
   if (cached) return cached;
@@ -115,7 +115,7 @@ export function relativeAge(iso: string, now = Date.now()): string | null {
   const then = Date.parse(iso);
   if (!Number.isFinite(then)) return null;
   const days = Math.max(0, Math.floor((now - then) / 86_400_000));
-  if (days === 0) return 'today';
+  if (days === 0) return "today";
   if (days < 14) return `${days}d`;
   if (days < 60) return `${Math.floor(days / 7)}w`;
   if (days < 365) return `${Math.floor(days / 30)}mo`;
