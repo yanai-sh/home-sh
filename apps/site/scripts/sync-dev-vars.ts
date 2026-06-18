@@ -1,6 +1,6 @@
 /**
- * Merge local résumé + Worker secrets into gitignored apps/site/.dev.vars so
- * `vite dev` / `wrangler dev` can serve /resume.pdf without manual copy-paste.
+ * Merge local Worker secrets into gitignored apps/site/.dev.vars and .env so
+ * `vite dev` (Cloudflare Vite plugin + SvelteKit private env) can serve /resume.pdf.
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(siteRoot, "../..");
 const devVarsPath = resolve(siteRoot, ".dev.vars");
+const envPath = resolve(siteRoot, ".env");
 const secretsPath = resolve(repoRoot, "infra/secrets/worker-secrets.local.json");
 
 const DEV_VAR_KEYS_FROM_SECRETS: Record<string, string> = {
@@ -20,7 +21,7 @@ const DEV_VAR_KEYS_FROM_SECRETS: Record<string, string> = {
   CONTACT_TO: "contact_to",
 };
 
-function parseDevVars(content: string): Map<string, string> {
+function parseKeyValueFile(content: string): Map<string, string> {
   const vars = new Map<string, string>();
   for (const line of content.split("\n")) {
     const trimmed = line.trim();
@@ -32,9 +33,9 @@ function parseDevVars(content: string): Map<string, string> {
   return vars;
 }
 
-function readDevVarsFile(): Map<string, string> {
-  if (!existsSync(devVarsPath)) return new Map();
-  return parseDevVars(readFileSync(devVarsPath, "utf8"));
+function readKeyValueFile(path: string): Map<string, string> {
+  if (!existsSync(path)) return new Map();
+  return parseKeyValueFile(readFileSync(path, "utf8"));
 }
 
 function readWorkerSecrets(): Record<string, string> {
@@ -46,16 +47,33 @@ function readWorkerSecrets(): Record<string, string> {
   }
 }
 
+const WINDOWS_GH = "C:\\Program Files\\GitHub CLI\\gh.exe";
+
 function ghAuthToken(): string | undefined {
-  try {
-    const token = execSync("gh auth token -u yanai-sh", {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    return token || undefined;
-  } catch {
-    return undefined;
+  const commands = [
+    "gh auth token -u yanai-sh",
+    "gh auth token",
+    `"/mnt/c/Program Files/GitHub CLI/gh.exe" auth token -u yanai-sh`,
+    `"/mnt/c/Program Files/GitHub CLI/gh.exe" auth token`,
+  ];
+
+  if (process.platform === "win32" && existsSync(WINDOWS_GH)) {
+    commands.unshift(`"${WINDOWS_GH}" auth token -u yanai-sh`, `"${WINDOWS_GH}" auth token`);
   }
+
+  for (const command of commands) {
+    try {
+      const token = execSync(command, {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+        shell: process.platform === "win32" ? true : "/bin/bash",
+      }).trim();
+      if (token) return token;
+    } catch {
+      // try next
+    }
+  }
+  return undefined;
 }
 
 function resolveResumeToken(secrets: Record<string, string>): string | undefined {
@@ -71,28 +89,40 @@ function resolveResumeToken(secrets: Record<string, string>): string | undefined
   return ghAuthToken();
 }
 
-function serializeDevVars(vars: Map<string, string>): string {
+function serializeKeyValueFile(vars: Map<string, string>): string {
   return `${[...vars.entries()].map(([key, value]) => `${key}=${value}`).join("\n")}\n`;
 }
 
-const vars = readDevVarsFile();
+function mergeMissingKeys(target: Map<string, string>, source: Map<string, string>): void {
+  for (const [key, value] of source) {
+    if (!target.has(key)) target.set(key, value);
+  }
+}
+
+const devVars = readKeyValueFile(devVarsPath);
+const dotEnv = readKeyValueFile(envPath);
 const secrets = readWorkerSecrets();
 
 for (const [devKey, secretKey] of Object.entries(DEV_VAR_KEYS_FROM_SECRETS)) {
-  if (vars.has(devKey)) continue;
+  if (devVars.has(devKey)) continue;
   const value = secrets[secretKey]?.trim();
-  if (value) vars.set(devKey, value);
+  if (value) devVars.set(devKey, value);
 }
 
-if (!vars.has("RESUME_REPO_TOKEN")) {
+if (!devVars.has("RESUME_REPO_TOKEN")) {
   const resumeToken = resolveResumeToken(secrets);
-  if (resumeToken) vars.set("RESUME_REPO_TOKEN", resumeToken);
+  if (resumeToken) devVars.set("RESUME_REPO_TOKEN", resumeToken);
 }
 
-writeFileSync(devVarsPath, serializeDevVars(vars), "utf8");
+mergeMissingKeys(dotEnv, devVars);
 
-if (vars.has("RESUME_REPO_TOKEN")) {
-  process.stdout.write("sync-dev-vars: RESUME_REPO_TOKEN ready in apps/site/.dev.vars\n");
+writeFileSync(devVarsPath, serializeKeyValueFile(devVars), "utf8");
+writeFileSync(envPath, serializeKeyValueFile(dotEnv), "utf8");
+
+if (devVars.has("RESUME_REPO_TOKEN")) {
+  process.stdout.write(
+    "sync-dev-vars: RESUME_REPO_TOKEN ready in apps/site/.dev.vars and .env\n",
+  );
 } else {
   process.stderr.write(
     "sync-dev-vars: no resume token found (gh auth, worker-secrets.local.json, or env) — /resume.pdf may 503 locally\n",

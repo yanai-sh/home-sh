@@ -1,3 +1,4 @@
+import { connectSection } from "./portfolio/connect-section";
 import { contact } from "./portfolio/contact";
 import { experienceSection } from "./portfolio/experience-section";
 import { hero } from "./portfolio/hero";
@@ -12,6 +13,7 @@ export const portfolio = {
   nav: navigation.items,
   navLabel: navigation.label,
   hero,
+  connect: connectSection,
   experience: experienceSection,
   projects: projectsSection,
   contact,

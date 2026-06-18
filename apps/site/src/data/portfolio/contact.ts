@@ -17,9 +17,13 @@ export const contact = {
       website: "Website",
     },
     submitLabel: "Send",
-    localPreviewMessage:
-      "The form is enabled on the deployed site. Local preview uses direct email.",
-    directEmailPrefix: "Email",
+    placeholders: {
+      name: "Your name…",
+      email: "you@example.com…",
+      message: "What’s this about?…",
+    },
+    captchaPreviewLabel: "Captcha loads on deploy…",
+    previewSubmitMessage: "Preview only — email sends from yanai.sh.",
     statusMessages: {
       captcha: "complete the captcha first",
       sending: "Sending…",

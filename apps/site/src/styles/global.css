@@ -23,24 +23,26 @@
        (reduced motion, or no WebGL2). See splash/field.ts + layout.css. */
     --splash-still: url('/splash-still-dark.jpg');
     /* Live ink renderer: --splash-base is the medium, --splash-ink the ink the
-       fluid darkens it toward (read in field-fluid.ts syncTheme). Ink < base. */
-    --splash-base: #3d5264;
-    --splash-ink: #050e1e;
+       fluid darkens it toward (read in field-fluid.ts syncTheme). Ink < base in
+       luminance; a teal shift (not pure black) keeps filaments visible once the
+       base is darkened for dark-mode. */
+    --splash-base: #182430;
+    --splash-ink: #061a28;
     /* Display tone curve (per theme): ink shows for dye in [lo, hi]. A higher floor
        cuts the faint low-density wash (which reads as smoke) so the ink is solid
        pigment; the ceiling keeps the body clearly visible. */
-    --splash-ink-lo: 0.06;
-    --splash-ink-hi: 0.42;
+    --splash-ink-lo: 0.04;
+    --splash-ink-hi: 0.40;
     /* "Dark but lively": a cool luminous accent on the flowing ink edges, and a
        deep-blue atmospheric depth-glow drifting behind it. */
-    --splash-edge: #5ac7f0;
-    --splash-glow: #1b3a5c;
-    --color-background: #15191d;
-    --color-surface: #1d2630;
-    --color-surface-raised: #25313e;
-    --color-maintext: #f5f7fa;
-    --color-subtext: #b7c0cc;
-    --color-muted: #8a97a6;
+    --splash-edge: #4ab8e0;
+    --splash-glow: #0f2434;
+    --color-background: #121a22;
+    --color-surface: #1a232c;
+    --color-surface-raised: #222e3a;
+    --color-maintext: #f6f8fb;
+    --color-subtext: #c2cad6;
+    --color-muted: #93a0b0;
     --color-accent: #2f6bff;
     --color-accent-text: #78a4ff;
     --color-accent-ink: #ffffff;

@@ -5,11 +5,5 @@ export function splashProjectLabel(project: {
   splashTitle?: string;
 }): string {
   if (project.splashTitle) return project.splashTitle;
-  if (project.slug === "home-sh") return "Source code";
   return project.title;
-}
-
-/** home-sh is the repo for this site — link out on splash instead of opening the case-study pane. */
-export function splashProjectOpensExternally(slug: string): boolean {
-  return slug === "home-sh";
 }

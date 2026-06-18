@@ -4,7 +4,7 @@ export const hero = {
   eyebrow: "Software engineer",
   headline: "Yanai Klugman",
   byline: "Systems, Integration, Infrastructure, Automation",
-  lede: "I work on systems, integration, and infrastructure for engineering teams building customer-facing software and internal tools.",
+  lede: "Systems, integration, and infrastructure for teams shipping customer-facing software.",
   focus: {
     label: "Current engineering focus",
     eyebrow: "Current focus",

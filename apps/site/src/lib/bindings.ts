@@ -3,5 +3,11 @@ export async function secretValue(
 ): Promise<string> {
   if (binding == null) return "";
   if (typeof binding === "string") return binding;
-  return binding.get?.() ?? "";
+  try {
+    return (await binding.get?.()) ?? "";
+  } catch {
+    // Secrets Store bindings are not populated in local `vite dev`; fall back to
+    // .dev.vars / $env/dynamic/private via the caller.
+    return "";
+  }
 }

@@ -185,6 +185,55 @@ describe("contact API", () => {
     expect(body.error).toBe(CONTACT_ERROR.INVALID_INPUT);
   });
 
+  it("rejects whitespace-only token with invalid_input", async () => {
+    const { handleContactPost } = await import("$lib/server/contact");
+    const response = await handleContactPost(
+      contactRequest({ ...validPayload(), token: "   " }),
+      mockEnv(),
+    );
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error?: string; ok?: boolean };
+    expect(body.error).toBe(CONTACT_ERROR.INVALID_INPUT);
+  });
+
+  it("rejects non-production host before rate limiting", async () => {
+    const { handleContactPost } = await import("$lib/server/contact");
+    const env = mockEnv();
+    const response = await handleContactPost(
+      new Request("https://yanai-sh-staging.example.workers.dev/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: ALLOWED_ORIGIN,
+        },
+        body: JSON.stringify(validPayload()),
+      }),
+      env,
+    );
+    expect(response.status).toBe(403);
+    const body = (await response.json()) as { error?: string; ok?: boolean };
+    expect(body.error).toBe(CONTACT_ERROR.NOT_AVAILABLE);
+    expect(vi.mocked(env.CONTACT_RATE_LIMIT).limit).not.toHaveBeenCalled();
+  });
+
+  it("rejects wrong referer with 403", async () => {
+    const { handleContactPost } = await import("$lib/server/contact");
+    const response = await handleContactPost(
+      new Request(`${ALLOWED_ORIGIN}/api/contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Referer: "https://evil.example/contact",
+        },
+        body: JSON.stringify(validPayload()),
+      }),
+      mockEnv(),
+    );
+    expect(response.status).toBe(403);
+    const body = (await response.json()) as { error?: string; ok?: boolean };
+    expect(body.error).toBe(CONTACT_ERROR.FORBIDDEN_ORIGIN);
+  });
+
   it("rejects rate-limited requests", async () => {
     const { handleContactPost } = await import("$lib/server/contact");
     const response = await handleContactPost(contactRequest(validPayload()), mockEnv(false));
@@ -198,14 +247,17 @@ describe("contact API", () => {
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true }),
+        json: async () => ({ success: true, hostname: "yanai.sh" }),
       })
       .mockResolvedValueOnce({
         ok: true,
         text: async () => "",
       });
 
-    const response = await handleContactPost(contactRequest(validPayload()), mockEnv());
+    const response = await handleContactPost(
+      contactRequest({ ...validPayload(), email: "Yanai@Example.COM" }),
+      mockEnv(),
+    );
     expect(response.status).toBe(200);
     const body = (await response.json()) as { error?: string; ok?: boolean };
     expect(body.ok).toBe(true);
@@ -219,5 +271,65 @@ describe("contact API", () => {
     const resendBody = JSON.parse(resendCall[1].body as string);
     expect(resendBody.subject).toBe("Contact from Yanai Klugman");
     expect(resendBody.reply_to).toBe("yanai@example.com");
+  });
+
+  it("rejects turnstile hostname mismatch", async () => {
+    const { handleContactPost } = await import("$lib/server/contact");
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, hostname: "evil.example" }),
+    });
+
+    const response = await handleContactPost(contactRequest(validPayload()), mockEnv());
+    expect(response.status).toBe(403);
+    const body = (await response.json()) as { error?: string; ok?: boolean };
+    expect(body.error).toBe(CONTACT_ERROR.TURNSTILE_FAILED);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects when required secrets are missing", async () => {
+    const { handleContactPost } = await import("$lib/server/contact");
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, hostname: "yanai.sh" }),
+    });
+
+    const response = await handleContactPost(contactRequest(validPayload()), {
+      CONTACT_RATE_LIMIT: { limit: vi.fn().mockResolvedValue({ success: true }) },
+      TURNSTILE_SECRET: "",
+      RESEND_API_KEY: "resend-key",
+      CONTACT_FROM: "from@example.com",
+      CONTACT_TO: "to@example.com",
+    } as unknown as Env);
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as { error?: string; ok?: boolean };
+    expect(body.error).toBe(CONTACT_ERROR.SEND_FAILED);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes injected newlines in the subject name", async () => {
+    const { handleContactPost } = await import("$lib/server/contact");
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, hostname: "yanai.sh" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => "",
+      });
+
+    const response = await handleContactPost(
+      contactRequest({
+        ...validPayload(),
+        name: "Bot\r\nBcc: spam@evil.com",
+      }),
+      mockEnv(),
+    );
+    expect(response.status).toBe(200);
+    const resendBody = JSON.parse(fetchMock.mock.calls[1][1].body as string);
+    expect(resendBody.subject).toBe("Contact from Bot Bcc: spam@evil.com");
+    expect(resendBody.subject).not.toContain("\r");
+    expect(resendBody.subject).not.toContain("\n");
   });
 });

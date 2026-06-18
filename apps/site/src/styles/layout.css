@@ -40,7 +40,10 @@
   height: 100%;
   display: block;
   opacity: 0;
-  transition: opacity 350ms ease;
+}
+
+.splash-field-layer.is-splash-field-ready canvas {
+  opacity: 1;
 }
 
 /* The fluid library listens for pointer events on the canvas; re-enable them
@@ -51,10 +54,6 @@
   .splash-field-layer canvas {
     pointer-events: auto;
   }
-}
-
-.splash-field-layer.is-splash-field-ready canvas {
-  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

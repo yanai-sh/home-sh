@@ -20,20 +20,35 @@ export type SplashFieldHandle = {
 // CSS handles the still frame (image + per-theme swap), so the handle is inert.
 const STILL_HANDLE: SplashFieldHandle = { dispose: () => {}, syncTheme: () => {} };
 
+const liveFields = new WeakMap<HTMLElement, SplashFieldHandle>();
+
 export function initSplashField(
   canvas: HTMLCanvasElement,
   layer: HTMLElement,
   options: { reducedMotion: boolean },
 ): SplashFieldHandle | null {
+  const existing = liveFields.get(layer);
+  if (existing) return existing;
+
   if (options.reducedMotion) {
     layer.classList.add("is-splash-still");
+    liveFields.set(layer, STILL_HANDLE);
     return STILL_HANDLE;
   }
 
-  const fluid = initFluidField(canvas, layer);
-  if (fluid) return fluid;
+  let fluid: SplashFieldHandle | null = null;
+  try {
+    fluid = initFluidField(canvas, layer);
+  } catch (error) {
+    console.warn("[splash] fluid init failed:", error);
+  }
+  if (fluid) {
+    liveFields.set(layer, fluid);
+    return fluid;
+  }
 
   // No WebGL2 — fall back to the same baked still frame.
   layer.classList.add("is-splash-still");
+  liveFields.set(layer, STILL_HANDLE);
   return STILL_HANDLE;
 }

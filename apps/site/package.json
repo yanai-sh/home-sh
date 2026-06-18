@@ -5,15 +5,16 @@
   "type": "module",
   "scripts": {
     "velite": "velite build",
+    "ensure-env": "test -f .env || cp -n .env.example .env",
     "wrangler-types": "rm -f ./src/worker-configuration.d.ts && wrangler types ./src/worker-configuration.d.ts && tsx ./scripts/patch-worker-configuration-env.ts",
-    "dev": "pnpm velite && tsx ./scripts/sync-dev-vars.ts && vite dev",
-    "build": "pnpm velite && pnpm wrangler-types && vite build",
-    "check": "pnpm velite && pnpm wrangler-types && svelte-kit sync && pnpm -w exec vp check && svelte-check --tsconfig ./tsconfig.json",
-    "fix": "pnpm velite && pnpm wrangler-types && svelte-kit sync && pnpm -w exec vp check --fix && svelte-check --tsconfig ./tsconfig.json",
+    "dev": "pnpm velite && pnpm ensure-env && tsx ./scripts/sync-dev-vars.ts && vite dev",
+    "build": "pnpm velite && pnpm ensure-env && pnpm wrangler-types && vite build",
+    "check": "pnpm velite && pnpm ensure-env && pnpm wrangler-types && svelte-kit sync && pnpm -w exec vp check && svelte-check --tsconfig ./tsconfig.json",
+    "fix": "pnpm velite && pnpm ensure-env && pnpm wrangler-types && svelte-kit sync && pnpm -w exec vp check --fix && svelte-check --tsconfig ./tsconfig.json",
     "typecheck": "pnpm check",
     "test": "vitest run --config vitest.config.ts",
-    "verify": "pnpm velite && pnpm wrangler-types && pnpm check && vitest run --config vitest.config.ts && vite build",
-    "preview": "tsx ./scripts/sync-dev-vars.ts && wrangler dev --config wrangler.jsonc --port 4321 --ip ::",
+    "verify": "pnpm velite && pnpm ensure-env && pnpm wrangler-types && pnpm check && vitest run --config vitest.config.ts && vite build",
+    "preview": "tsx ./scripts/sync-dev-vars.ts && wrangler dev --config wrangler.dev.jsonc --port 4321 --ip ::",
     "smoke": "playwright test --config=tests/smoke/playwright.config.ts",
     "version-upload": "wrangler versions upload --config wrangler.jsonc",
     "version-deploy": "wrangler versions deploy --config wrangler.jsonc"
@@ -24,6 +25,7 @@
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "@sveltejs/kit": "^2.65.0",
     "@tailwindcss/vite": "^4.3.1",
+    "bits-ui": "^2.18.1",
     "fuzzball": "^2.2.6",
     "pdfjs-dist": "^6.0.227",
     "svelte": "^5.56.3",
@@ -32,6 +34,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.42.0",
     "@cloudflare/workers-types": "^4.20260613.1",
     "@sveltejs/adapter-cloudflare": "^7.2.8",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
@@ -42,6 +45,6 @@
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.0",
-    "wrangler": "^4.100.0"
+    "wrangler": "^4.102.0"
   }
 }

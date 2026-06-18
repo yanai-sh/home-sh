@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { splashProjectLabel, splashProjectOpensExternally } from "./splash-project-label";
+import { splashProjectLabel } from "./splash-project-label";
 
 test("splashProjectLabel uses splashTitle when set", () => {
   expect(
@@ -7,11 +7,6 @@ test("splashProjectLabel uses splashTitle when set", () => {
   ).toBe("Source code");
 });
 
-test("splashProjectLabel defaults home-sh to Source code", () => {
-  expect(splashProjectLabel({ slug: "home-sh", title: "home-sh" })).toBe("Source code");
-});
-
-test("splashProjectOpensExternally is true only for home-sh", () => {
-  expect(splashProjectOpensExternally("home-sh")).toBe(true);
-  expect(splashProjectOpensExternally("winmint")).toBe(false);
+test("splashProjectLabel falls back to project title", () => {
+  expect(splashProjectLabel({ slug: "winmint", title: "WinMint" })).toBe("WinMint");
 });

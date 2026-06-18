@@ -1,6 +1,12 @@
 import { initSplashField, type SplashFieldHandle } from "./field";
 import { createSplitController, PDF_URL } from "./split-controller";
 
+declare global {
+  interface Window {
+    __splashFieldHandle?: SplashFieldHandle | null;
+  }
+}
+
 const THEME_STORAGE_KEY = "yanai-sh:theme";
 const THEME_COLORS = {
   dark: "#151B22",
@@ -71,32 +77,10 @@ function initContactForm(): void {
   const statusElement = document.getElementById("cf-status") as HTMLElement | null;
   if (!form || !submitButton || !statusElement) return;
 
-  const siteKey = form.dataset.sitekey;
-  if (!siteKey) return;
-
   const submit = submitButton;
   const status = statusElement;
-  const turnstileWindow = window as Window & { turnstile?: TurnstileApi };
-
-  const script = document.createElement("script");
-  script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-  script.async = true;
-  script.defer = true;
-  script.onload = () => {
-    const widgetElement = document.getElementById("cf-turnstile-widget") as HTMLElement | null;
-    if (!widgetElement) return;
-    turnstileWindow.turnstile?.render(widgetElement, {
-      sitekey: siteKey,
-      theme: document.documentElement.dataset.theme === "light" ? "light" : "dark",
-      callback: () => {
-        submit.disabled = false;
-      },
-      "expired-callback": () => {
-        submit.disabled = true;
-      },
-    });
-  };
-  document.head.appendChild(script);
+  const isLive = form.dataset.contactLive === "true";
+  const siteKey = form.dataset.sitekey;
 
   function setStatus(message: string, state: "idle" | "loading" | "success" | "error"): void {
     status.textContent = message;
@@ -124,6 +108,43 @@ function initContactForm(): void {
     });
   }
 
+  if (!isLive) {
+    const previewCheck = form.querySelector<HTMLInputElement>(".turnstile-preview__check");
+    previewCheck?.addEventListener("change", () => {
+      submit.disabled = !previewCheck.checked;
+    });
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      setStatus(form.dataset.statusPreview ?? "Preview only.", "idle");
+    });
+    return;
+  }
+
+  if (!siteKey) return;
+
+  const turnstileWindow = window as Window & { turnstile?: TurnstileApi };
+
+  const script = document.createElement("script");
+  script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+  script.async = true;
+  script.defer = true;
+  script.onload = () => {
+    const widgetElement = document.getElementById("cf-turnstile-widget") as HTMLElement | null;
+    if (!widgetElement) return;
+    turnstileWindow.turnstile?.render(widgetElement, {
+      sitekey: siteKey,
+      theme: document.documentElement.dataset.theme === "light" ? "light" : "dark",
+      callback: () => {
+        submit.disabled = false;
+      },
+      "expired-callback": () => {
+        submit.disabled = true;
+      },
+    });
+  };
+  document.head.appendChild(script);
+
   // Submission is handled by the SvelteKit form action + `use:enhance` in
   // +page.svelte; this only wires Turnstile and inline field validation.
 }
@@ -132,6 +153,12 @@ function initSplashFieldLayer(
   reducedMotion: boolean,
   onReady: (handle: SplashFieldHandle | null) => void,
 ): void {
+  const existing = window.__splashFieldHandle;
+  if (existing !== undefined) {
+    onReady(existing);
+    return;
+  }
+
   const layer = document.querySelector<HTMLElement>("[data-splash-field]");
   const canvas = document.querySelector<HTMLCanvasElement>("[data-splash-field-canvas]");
   if (!layer || !canvas) {
@@ -139,18 +166,11 @@ function initSplashFieldLayer(
     return;
   }
 
-  const start = (): void => {
-    const handle = initSplashField(canvas, layer, { reducedMotion });
-    onReady(handle);
-    if (handle) {
-      window.addEventListener("pagehide", () => handle.dispose(), { once: true });
-    }
-  };
-
-  if (typeof window.requestIdleCallback === "function") {
-    window.requestIdleCallback(start, { timeout: 50 });
-  } else {
-    globalThis.setTimeout(start, 0);
+  const handle = initSplashField(canvas, layer, { reducedMotion });
+  window.__splashFieldHandle = handle ?? null;
+  onReady(handle);
+  if (handle) {
+    window.addEventListener("pagehide", () => handle.dispose(), { once: true });
   }
 }
 
@@ -276,12 +296,6 @@ export function initSplash(): void {
     element.addEventListener("click", () => split.closeSplit());
   }
 
-  if (contactForm instanceof HTMLFormElement && !contactForm.dataset.sitekey) {
-    contactForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      contactForm.reportValidity();
-    });
-  }
 
   window.addEventListener("keydown", (event) => {
     if (

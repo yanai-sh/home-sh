@@ -9,22 +9,24 @@
  * ported to GLSL ES 3.00. We render it with our own dark-ink display, not the
  * library's additive glow.
  *
- * Model = ink: a passive dye, seeded once as distinct masses (a full, separate-blob
- * start), folded forever by a divergence-free flow — an ambient curl-noise base
- * current plus vorticity confinement (mass-conserving → never empties). The pointer
- * stirs the medium (adds velocity, never new ink).
+ * Model = ink: a passive dye, seeded once as a marbled field, then advected by a
+ * divergence-free flow — ambient curl-noise current plus vorticity confinement.
+ * Stirring redistributes ink permanently (no screen-space snap-back). Cleared
+ * patches refill slowly via neighbour diffusion and time-evolving procedural
+ * marbling in low-density regions. The pointer stirs the medium only (velocity,
+ * never new ink).
  *
  * Per-frame pipeline: curl-noise + pointer force → curl → vorticity confinement →
  * divergence → clear → Jacobi pressure → subtract gradient → advect velocity →
- * advect dye → dark-ink display pass.
+ * advect dye → diffuse → recover-to-floor → dark-ink display pass.
  *
  * Returns null when WebGL2 / float render targets / a capable GPU are unavailable
  * so the caller falls back to the baked static still (see field.ts). It also bails
  * to the still at runtime (adding .is-splash-still, hiding the canvas) if the FPS
  * guard detects a software renderer or a machine that can't keep up.
  *
- * Theme is driven by two CSS custom properties read in syncTheme():
- *   --splash-base (the medium) and --splash-ink (the ink) — see global.css.
+ * Theme is driven by CSS custom properties read in syncTheme():
+ *   --splash-base, --splash-ink, --splash-edge, --splash-glow — see global.css.
  */
 
 import type { SplashFieldHandle } from "./field";
@@ -42,27 +44,27 @@ const FPS_WARMUP_MS = 1500;
 // tendrils covering the canvas, so it reads as a body of ink dispersed in water.
 // (Sparse discrete blobs read as smoke wisps / puddles — that was the regression.)
 // The vendored solver then folds it (vorticity) and the diffusion bleeds it.
-const WARMUP_STEPS = 4; // minimal — the marbled field is already full, so show it at once
 
 // Live-tunable "feel" params. Defaults are a calm middle between "barely visible"
 // and "way too much". In dev they're exposed on window.__splashTune so the look
 // can be dialed in the browser console with no rebuild; bake the final numbers.
 const TUNE_DEFAULTS = {
-  noiseAmp: 65, // curl-noise force gain — kept low: the ink barely drifts on its own
-  noiseScale: 1.4, // flow spatial frequency — lower = bigger, slower vortices
-  //                  (coherent sections that swirl together, not thin streaks)
-  noiseDrift: 0.08, // how fast the force field evolves over time (extra de-correlation)
-  curl: 15, // vorticity confinement — self-sustaining eddies; livelier folding
-  pressureDecay: 0.8, // pressure carried between frames (Stam/PavelDoGreat default)
-  velocityDissipation: 0.97, // momentum decay — lets the cursor wake flow on a moment
-  pointerPush: 320, // drag strength — the cursor is the main mover now
-  pointerSwirl: 1100, // vortex strength around the cursor (gentle swirl)
-  pointerRadius: 0.0045, // gaussian radius² — a small area right around the cursor
-  pointerDecay: 0.86, // per-frame decay of the stir impulse (higher = longer-lasting wake)
-  dyeDiffuse: 0.003, // how fast ink bleeds/softens into neighbours (low = crisp ink filaments)
-  regen: 0.012, // self-heal rate toward the marbled field (keeps contrast; refills cleared areas)
-  inkLo: 0.0, // display tone-curve start
-  inkHi: 0.9, // ...end (shared); per-theme visibility tuned via base/ink contrast
+  noiseAmp: 75,
+  noiseScale: 1.4,
+  noiseDrift: 0.2,
+  curl: 15,
+  pressureDecay: 0.8,
+  velocityDissipation: 0.97,
+  pointerPush: 320,
+  pointerSwirl: 1100,
+  pointerRadius: 0.0045,
+  pointerDecay: 0.86,
+  dyeDiffuse: 0.005,
+  recover: 0.1,
+  recoverThreshold: 0.14,
+  ambientMin: 0.085,
+  inkLo: 0.0,
+  inkHi: 0.9,
 };
 
 // ── Small GLSL noise lib (prepended to shaders that need it) ─────────────────
@@ -121,11 +123,6 @@ void main(){
   vB = vUv - vec2(0.0, texelSize.y);
   gl_Position = vec4(aPosition, 0.0, 1.0);
 }`;
-
-const FRAG_COPY = `#version 300 es
-precision highp float;
-uniform sampler2D uTexture; in vec2 vUv; out vec4 result;
-void main(){ result = texture(uTexture, vUv); }`;
 
 // Full-screen marbled ink field — the starting state (connected ink, not blobs).
 const FRAG_SEED = `#version 300 es
@@ -236,16 +233,27 @@ precision highp float;
 uniform sampler2D uTexture; uniform float uValue; in vec2 vUv; out vec4 result;
 void main(){ result = uValue * texture(uTexture, vUv); }`;
 
-// Ink self-heal: gently pull the dye back toward the original marbled field so heavy
-// stirring can never smear it away — cleared areas refill over a few seconds.
-const FRAG_REGEN = `#version 300 es
+// Depleted regions relax upward toward a faint, textured, drifting floor (not wallpaper regen).
+const FRAG_RECOVERY = `#version 300 es
 precision highp float;
-uniform sampler2D uDye; uniform sampler2D uSeedTex; uniform float uRate;
+${NOISE_GLSL}
+uniform sampler2D uDye;
+uniform vec2 uNoiseOffset; uniform float uNoiseScale;
+uniform float uRate; uniform float uThreshold; uniform float uAmbientMin;
 in vec2 vUv; out vec4 result;
 void main(){
   float d = texture(uDye, vUv).x;
-  float s = texture(uSeedTex, vUv).x;
-  result = vec4(mix(d, s, uRate), 0.0, 0.0, 1.0);
+  vec2 p = vUv * uNoiseScale + uNoiseOffset;
+  float n = fbm(p);
+  float n2 = fbm(p * 2.0 + n * 2.4);
+  float tex = smoothstep(0.35, 0.75, mix(n, n2, 0.6));
+  float wash = uAmbientMin * (0.55 + 0.45 * tex);
+  float depleted = smoothstep(uThreshold, uThreshold * 0.4, d);
+  // ponytail: heuristic procedural floor, not physical mass conservation.
+  // Ceiling: too-high uAmbientMin reads as faint static grain. Upgrade path:
+  // couple wash to recent local history instead of pure drifting noise.
+  d += uRate * depleted * max(0.0, wash - d);
+  result = vec4(clamp(d, 0.0, 1.0), 0.0, 0.0, 1.0);
 }`;
 
 // Dye diffusion: spread ink toward its neighbours so streaks soften and bleed like
@@ -295,16 +303,25 @@ void main(){
 
 const FRAG_DISPLAY = `#version 300 es
 precision highp float;
-${NOISE_GLSL}
 ${BILERP_GLSL}
-uniform sampler2D uDye; uniform vec2 uDyeTexel; uniform vec3 uBase; uniform vec3 uInk;
-uniform float uInkLo; uniform float uInkHi; in vec2 vUv; out vec4 result;
+uniform sampler2D uDye; uniform vec2 uDyeTexel;
+uniform vec3 uBase; uniform vec3 uInk;
+uniform vec3 uEdge; uniform vec3 uGlow;
+uniform float uInkLo; uniform float uInkHi;
+in vec2 vUv; in vec2 vL; in vec2 vR; in vec2 vT; in vec2 vB; out vec4 result;
 void main(){
   float d = clamp(bilerp(uDye, vUv, uDyeTexel).x, 0.0, 1.0);
-  float t = smoothstep(uInkLo, uInkHi, d);
+  float dL = texture(uDye, vL).x;
+  float dR = texture(uDye, vR).x;
+  float dT = texture(uDye, vT).x;
+  float dB = texture(uDye, vB).x;
+  float grad = length(vec2(dR - dL, dT - dB));
+  float t = smoothstep(uInkLo, uInkHi, pow(d, 0.78));
   vec3 col = mix(uBase, uInk, t);
-  // Interleaved-gradient-noise dither (precision-stable on weak GPUs — a vUv*1024
-  // hash banded into a square grid on some drivers).
+  float edge = smoothstep(0.025, 0.13, grad) * smoothstep(0.1, 0.55, d) * (1.0 - smoothstep(0.72, 0.94, d));
+  col = mix(col, uEdge, edge * 0.24);
+  float wash = smoothstep(0.03, 0.32, d) * (1.0 - smoothstep(0.48, 0.82, d));
+  col = mix(col, mix(uGlow, col, 0.62), wash * 0.16);
   float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
   col += (ign - 0.5) * (1.6 / 255.0);
   result = vec4(col, 1.0);
@@ -498,7 +515,6 @@ export function initFluidField(
   if (!vert) return null;
 
   const programs = {
-    copy: makeProgram(gl, vert, FRAG_COPY),
     seed: makeProgram(gl, vert, FRAG_SEED),
     advect: makeProgram(gl, vert, FRAG_ADVECT),
     curl: makeProgram(gl, vert, FRAG_CURL),
@@ -506,7 +522,7 @@ export function initFluidField(
     divergence: makeProgram(gl, vert, FRAG_DIVERGENCE),
     clear: makeProgram(gl, vert, FRAG_CLEAR),
     diffuse: makeProgram(gl, vert, FRAG_DIFFUSE),
-    regen: makeProgram(gl, vert, FRAG_REGEN),
+    recovery: makeProgram(gl, vert, FRAG_RECOVERY),
     pressure: makeProgram(gl, vert, FRAG_PRESSURE),
     gradient: makeProgram(gl, vert, FRAG_GRADIENT),
     force: makeProgram(gl, vert, FRAG_FORCE),
@@ -536,7 +552,6 @@ export function initFluidField(
   let pressure: DoubleFBO;
   let divergence: FBO;
   let curlFBO: FBO;
-  let seedTex: FBO; // persistent copy of the marbled field — the self-heal target
   let simTexel: [number, number] = [0, 0];
 
   function allocate(): boolean {
@@ -547,14 +562,12 @@ export function initFluidField(
     const pr = createDoubleFBO(gl!, sim.w, sim.h, R.i, R.f, HF, NEAR);
     const dv = createFBO(gl!, sim.w, sim.h, R.i, R.f, HF, NEAR);
     const cu = createFBO(gl!, sim.w, sim.h, R.i, R.f, HF, NEAR);
-    const st = createFBO(gl!, dyeRes.w, dyeRes.h, R.i, R.f, HF, NEAR);
-    if (!v || !dy || !pr || !dv || !cu || !st) return false;
+    if (!v || !dy || !pr || !dv || !cu) return false;
     velocity = v;
     dye = dy;
     pressure = pr;
     divergence = dv;
     curlFBO = cu;
-    seedTex = st;
     simTexel = [v.read.texelX, v.read.texelY];
     return true;
   }
@@ -579,16 +592,11 @@ export function initFluidField(
     gl!.drawArrays(gl!.TRIANGLES, 0, 3);
   }
 
-  // ── Seed the marbled ink field once (a full, connected start) ───────────────
-  // Render into the persistent seedTex (the self-heal target), then copy into the
-  // live dye. A fixed offset keeps the reference pattern stable across re-seeds.
+  // ── Seed the marbled ink field once (session-unique start) ─────────────────
   const seedOffset: [number, number] = [Math.random() * 1000.0, Math.random() * 1000.0];
   function seed(): void {
     gl!.useProgram(P.seed.program);
     gl!.uniform2f(P.seed.uniforms.uSeed ?? null, seedOffset[0], seedOffset[1]);
-    blit(seedTex);
-    gl!.useProgram(P.copy.program);
-    gl!.uniform1i(P.copy.uniforms.uTexture ?? null, seedTex.attach(0));
     blit(dye.write);
     dye.swap();
   }
@@ -597,16 +605,24 @@ export function initFluidField(
   // ── Theme ──────────────────────────────────────────────────────────────────
   let base: [number, number, number] = [0.1, 0.14, 0.18];
   let ink: [number, number, number] = [0.03, 0.05, 0.08];
+  let edge: [number, number, number] = [0.35, 0.72, 0.88];
+  let glow: [number, number, number] = [0.06, 0.14, 0.2];
   function syncTheme(): void {
     const cs = getComputedStyle(document.documentElement);
     base = parseHex(cs.getPropertyValue("--splash-base"), base);
     ink = parseHex(cs.getPropertyValue("--splash-ink"), ink);
+    edge = parseHex(cs.getPropertyValue("--splash-edge"), edge);
+    glow = parseHex(cs.getPropertyValue("--splash-glow"), glow);
     const lo = Number.parseFloat(cs.getPropertyValue("--splash-ink-lo"));
     const hi = Number.parseFloat(cs.getPropertyValue("--splash-ink-hi"));
     if (!Number.isNaN(lo)) cfg.inkLo = lo;
     if (!Number.isNaN(hi)) cfg.inkHi = hi;
   }
   syncTheme();
+
+  // First paint: seeded marbling on screen immediately.
+  render();
+  layer.classList.add("is-splash-field-ready");
 
   // ── Pointer ────────────────────────────────────────────────────────────────
   const pointer = { x: 0.5, y: 0.5, dx: 0, dy: 0 }; // dx/dy = decaying stir impulse
@@ -734,13 +750,19 @@ export function initFluidField(
       dye.swap();
     }
 
-    // self-heal — pull the dye gently back toward the marbled reference so stirring
-    // can never smear the ink away (cleared areas refill over a few seconds).
-    if (cfg.regen > 0) {
-      gl!.useProgram(P.regen.program);
-      gl!.uniform1i(P.regen.uniforms.uDye ?? null, dye.read.attach(0));
-      gl!.uniform1i(P.regen.uniforms.uSeedTex ?? null, seedTex.attach(1));
-      gl!.uniform1f(P.regen.uniforms.uRate ?? null, Math.min(cfg.regen * dt * 60.0, 0.5));
+    // relax depleted regions toward a faint textured floor (not screen-space wallpaper regen).
+    if (cfg.recover > 0) {
+      gl!.useProgram(P.recovery.program);
+      gl!.uniform1i(P.recovery.uniforms.uDye ?? null, dye.read.attach(0));
+      gl!.uniform2f(
+        P.recovery.uniforms.uNoiseOffset ?? null,
+        time * cfg.noiseDrift,
+        time * -cfg.noiseDrift * 0.95,
+      );
+      gl!.uniform1f(P.recovery.uniforms.uNoiseScale ?? null, cfg.noiseScale);
+      gl!.uniform1f(P.recovery.uniforms.uRate ?? null, Math.min(cfg.recover * dt * 60.0, 0.5));
+      gl!.uniform1f(P.recovery.uniforms.uThreshold ?? null, cfg.recoverThreshold);
+      gl!.uniform1f(P.recovery.uniforms.uAmbientMin ?? null, cfg.ambientMin);
       blit(dye.write);
       dye.swap();
     }
@@ -748,10 +770,13 @@ export function initFluidField(
 
   function render(): void {
     gl!.useProgram(P.display.program);
+    gl!.uniform2f(P.display.uniforms.texelSize ?? null, dye.texelX, dye.texelY);
     gl!.uniform1i(P.display.uniforms.uDye ?? null, dye.read.attach(0));
     gl!.uniform2f(P.display.uniforms.uDyeTexel ?? null, dye.texelX, dye.texelY);
     gl!.uniform3f(P.display.uniforms.uBase ?? null, base[0], base[1], base[2]);
     gl!.uniform3f(P.display.uniforms.uInk ?? null, ink[0], ink[1], ink[2]);
+    gl!.uniform3f(P.display.uniforms.uEdge ?? null, edge[0], edge[1], edge[2]);
+    gl!.uniform3f(P.display.uniforms.uGlow ?? null, glow[0], glow[1], glow[2]);
     gl!.uniform1f(P.display.uniforms.uInkLo ?? null, cfg.inkLo);
     gl!.uniform1f(P.display.uniforms.uInkHi ?? null, cfg.inkHi);
     blit(null);
@@ -820,14 +845,6 @@ export function initFluidField(
   }
   canvas.addEventListener("webglcontextlost", onContextLost);
 
-  // Pre-develop the seeded masses so the field appears already gently diffused
-  // (the cursor isn't here yet — the ambient flow + vorticity do the folding).
-  for (let i = 0; i < WARMUP_STEPS; i++) {
-    time += 0.016;
-    step(0.016);
-  }
-
-  layer.classList.add("is-splash-field-ready");
   raf = requestAnimationFrame(frame);
 
   function dispose(): void {
@@ -849,7 +866,6 @@ export function initFluidField(
       pressure?.write,
       divergence,
       curlFBO,
-      seedTex,
     ]) {
       if (f) {
         gl.deleteTexture(f.texture);
