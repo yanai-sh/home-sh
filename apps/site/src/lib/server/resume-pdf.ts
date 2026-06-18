@@ -5,6 +5,7 @@ import {
   ResumeReleaseError,
 } from "$lib/resume-release";
 import { secretValue } from "$lib/bindings";
+import { resolveResumeRepoToken } from "$lib/server/resume-token";
 
 const errorResponse = (message: string, status: number): Response =>
   new Response(message, {
@@ -20,16 +21,14 @@ const copyHeader = (from: Headers, to: Headers, name: string): void => {
   if (value) to.set(name, value);
 };
 
-const resumeRepoToken = async (env: Env): Promise<string> => {
-  const localToken = process.env.RESUME_REPO_TOKEN ?? import.meta.env.RESUME_REPO_TOKEN;
-  if (localToken) return localToken;
-
-  try {
-    return await secretValue(env.RESUME_REPO_TOKEN);
-  } catch {
-    return "";
-  }
-};
+async function resumeRepoToken(env: Env): Promise<string> {
+  const binding = await secretValue(env.RESUME_REPO_TOKEN);
+  return resolveResumeRepoToken({
+    binding,
+    processEnv: process.env,
+    metaEnv: import.meta.env as Record<string, string | undefined>,
+  });
+}
 
 export async function resumePdfResponse(env: Env, includeBody: boolean): Promise<Response> {
   const token = await resumeRepoToken(env);

@@ -17,6 +17,14 @@
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --split-left: 100%;
   --split-progress: 0;
+  /* Legibility over the live ink field (splash page only). */
+  --splash-text-shadow:
+    0 1px 16px color-mix(in srgb, var(--splash-base) 92%, black),
+    0 2px 22px color-mix(in srgb, black 42%, transparent);
+  --splash-text-shadow-strong:
+    0 1px 20px color-mix(in srgb, var(--splash-base) 96%, black),
+    0 0 2px color-mix(in srgb, black 72%, transparent),
+    0 2px 28px color-mix(in srgb, black 48%, transparent);
 }
 * {
   box-sizing: border-box;
@@ -175,13 +183,20 @@ html.is-split-animating .splash-field-layer.splash-field {
 .stage-inner::before {
   content: '';
   position: absolute;
-  inset: -3.5rem -4.5rem;
+  inset: -4rem -5rem -3rem -4rem;
   z-index: -1;
-  background: radial-gradient(
-    closest-side,
-    color-mix(in srgb, var(--bg) 90%, transparent),
-    transparent
-  );
+  background:
+    radial-gradient(
+      ellipse 120% 95% at 12% 18%,
+      color-mix(in srgb, var(--splash-base) 82%, black),
+      color-mix(in srgb, var(--splash-base) 38%, transparent) 52%,
+      transparent 78%
+    ),
+    radial-gradient(
+      closest-side at 35% 55%,
+      color-mix(in srgb, var(--bg) 68%, transparent),
+      transparent
+    );
   pointer-events: none;
 }
 .stage-head {
@@ -200,9 +215,10 @@ html.is-split-animating .splash-field-layer.splash-field {
 }
 .stage-name {
   margin: 0;
-  font: 600 clamp(2.7rem, 8vw, 4.6rem) / 1.02 var(--head);
+  font: 600 clamp(2.5rem, 7.5vw, 4.2rem) / 1.02 var(--head);
   letter-spacing: -0.03em;
   text-wrap: balance;
+  text-shadow: var(--splash-text-shadow-strong);
   animation: name-settle 1s var(--ease) both;
 }
 @keyframes name-settle {
@@ -220,7 +236,8 @@ html.is-split-animating .splash-field-layer.splash-field {
   color: var(--subtext);
   font-size: 1.02rem;
   letter-spacing: 0.005em;
-  animation: stage-rise 0.72s var(--ease) 0.08s both;
+  text-shadow: var(--splash-text-shadow);
+  animation: stage-rise 0.5s var(--ease) 0.08s both;
 }
 .stage-location {
   /* Refined dateline — mono, the project's "data value" voice. */
@@ -229,7 +246,8 @@ html.is-split-animating .splash-field-layer.splash-field {
   font: 500 0.72rem/1 var(--font-mono);
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  animation: stage-rise 0.72s var(--ease) 0.1s both;
+  text-shadow: var(--splash-text-shadow);
+  animation: stage-rise 0.5s var(--ease) 0.1s both;
 }
 .stage-deck {
   margin: 1.4rem 0 0;
@@ -238,7 +256,8 @@ html.is-split-animating .splash-field-layer.splash-field {
   font-size: 1rem;
   line-height: 1.68;
   text-wrap: pretty;
-  animation: stage-rise 0.72s var(--ease) 0.16s both;
+  text-shadow: var(--splash-text-shadow);
+  animation: stage-rise 0.5s var(--ease) 0.16s both;
 }
 
 /* ── Link column (t3.gg-style) ───────────────────────────────────────────── */
@@ -247,9 +266,18 @@ html.is-split-animating .splash-field-layer.splash-field {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.62rem;
-  margin-top: 1.7rem;
-  animation: stage-rise 0.72s var(--ease) 0.22s both;
+  gap: 0;
+  margin-top: 1.6rem;
+  animation: stage-rise 0.5s var(--ease) 0.22s both;
+}
+.stage-links__block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.58rem;
+}
+.stage-links__block--work {
+  margin-top: 1.1rem;
 }
 .stage-links .text-link {
   display: block;
@@ -257,20 +285,37 @@ html.is-split-animating .splash-field-layer.splash-field {
   color: var(--text);
   font: 550 1.04rem var(--body);
   letter-spacing: -0.005em;
+  text-shadow: var(--splash-text-shadow-strong);
+}
+.text-link--work {
+  color: var(--subtext);
+  font: 500 0.97rem var(--body);
 }
 
-/* ── Footer glyphs ───────────────────────────────────────────────────────── */
+/* ── Footer glyphs + source meta ─────────────────────────────────────────── */
 
 .stage-footer {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-  margin-top: 1.75rem;
-  padding-top: 1rem;
-  border-top: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
-  animation: stage-rise 0.78s var(--ease) 0.28s both;
+  gap: 1rem 1.25rem;
+  margin-top: 1.65rem;
+  text-shadow: var(--splash-text-shadow);
+  animation: stage-rise 0.5s var(--ease) 0.28s both;
+}
+.stage-source {
+  color: var(--muted);
+  font: 500 0.72rem/1 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.stage-source:hover,
+.stage-source:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 .text-link {
   border: 0;
@@ -429,23 +474,43 @@ html[data-site-mode='contact'] .chrome-dot {
   background: color-mix(in srgb, var(--surface) 94%, transparent);
 }
 
+/* Light splash: the ink field is pale — drop the heavy scrim/shadow treatment. */
+[data-theme='light'] {
+  --splash-text-shadow: none;
+  --splash-text-shadow-strong: none;
+}
+[data-theme='light'] .stage-inner::before {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--bg) 90%, transparent),
+    transparent
+  );
+}
+
 /* ── Pane views ──────────────────────────────────────────────────────────── */
 
 /* ── Résumé viewer (PDF.js canvas pages on the page surface) ─────────────── */
+
+#view-resume {
+  padding: 0.7rem clamp(0.55rem, 2.2vw, 0.9rem) clamp(0.75rem, 2.4vw, 1rem);
+}
 
 .resume-viewer {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 1.4rem clamp(0.9rem, 4vw, 2.2rem) 2.2rem;
-  background: color-mix(in srgb, var(--bg) 88%, black);
+  padding: 1rem clamp(0.75rem, 3vw, 1.35rem) 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--rule) 88%, transparent);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--surface) 78%, var(--bg));
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--subtext) 30%, transparent) transparent;
 }
 
 [data-theme='light'] .resume-viewer {
-  background: color-mix(in srgb, var(--bg) 72%, var(--surface));
+  background: color-mix(in srgb, var(--surface) 94%, var(--bg));
+  border-color: color-mix(in srgb, var(--rule-strong) 72%, transparent);
 }
 
 .resume-viewer::-webkit-scrollbar {
@@ -472,14 +537,16 @@ html[data-site-mode='contact'] .chrome-dot {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 6px;
+  border-radius: 2px;
   box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.38),
-    0 1px 0 rgba(255, 255, 255, 0.04);
+    0 6px 18px rgba(0, 0, 0, 0.22),
+    0 0 0 1px color-mix(in srgb, var(--rule) 55%, transparent);
 }
 
 [data-theme='light'] .resume-page {
-  box-shadow: 0 12px 30px rgba(26, 42, 56, 0.14);
+  box-shadow:
+    0 6px 16px rgba(26, 42, 56, 0.1),
+    0 0 0 1px color-mix(in srgb, var(--rule-strong) 45%, transparent);
 }
 
 .pane-body {
@@ -580,6 +647,7 @@ html.is-split-animating .pane-view {
 .contact-intro h2 {
   margin: 0;
   font: 600 1.25rem var(--head);
+  text-wrap: balance;
 }
 .contact-intro p {
   margin: 0.4rem 0 0;
@@ -591,6 +659,12 @@ html.is-split-animating .pane-view {
   display: grid;
   gap: 0.85rem;
 }
+#view-contact .form-field label {
+  font: 600 0.74rem var(--body);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ok) 70%, var(--muted));
+}
 .form-field {
   display: grid;
   gap: 0.4rem;
@@ -599,6 +673,16 @@ html.is-split-animating .pane-view {
   font: 600 0.74rem var(--body);
   letter-spacing: 0.03em;
   color: var(--muted);
+}
+#view-contact .form-field input,
+#view-contact .form-field textarea {
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--surface) 78%, var(--bg));
+  border-color: color-mix(in srgb, var(--rule-strong) 88%, transparent);
+}
+#view-contact .form-field input::placeholder,
+#view-contact .form-field textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
 }
 .form-field input,
 .form-field textarea {
@@ -619,6 +703,13 @@ html.is-split-animating .pane-view {
   resize: vertical;
   line-height: 1.5;
 }
+#view-contact .form-field input:focus,
+#view-contact .form-field textarea:focus,
+#view-contact .form-field input:focus-visible,
+#view-contact .form-field textarea:focus-visible {
+  border-color: color-mix(in srgb, var(--ok) 58%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 14%, transparent);
+}
 .form-field input:focus,
 .form-field textarea:focus,
 .form-field input:focus-visible,
@@ -630,6 +721,13 @@ html.is-split-animating .pane-view {
 .form-field input[aria-invalid='true'],
 .form-field textarea[aria-invalid='true'] {
   border-color: color-mix(in srgb, #ff7676 60%, var(--rule-strong));
+}
+#view-contact .form-turnstile {
+  min-height: 3.25rem;
+  border-color: color-mix(in srgb, var(--ok) 28%, var(--rule));
+  color: color-mix(in srgb, var(--muted) 88%, var(--ok));
+  font: 500 0.72rem var(--font-mono);
+  letter-spacing: 0.02em;
 }
 .form-turnstile {
   min-height: 3.25rem;
@@ -645,6 +743,37 @@ html.is-split-animating .pane-view {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+}
+#view-contact .form-footer {
+  padding-top: 0.15rem;
+}
+#view-contact .form-submit {
+  border: 1px solid color-mix(in srgb, var(--ok) 55%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--ok) 90%, var(--surface));
+  color: color-mix(in srgb, var(--bg) 90%, var(--text));
+  font: 600 0.88rem var(--body);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+#view-contact .form-submit:not(:disabled):hover {
+  filter: none;
+  border-color: var(--ok);
+  background: var(--ok);
+}
+#view-contact .form-submit:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ok) 55%, transparent);
+  outline-offset: 2px;
+}
+[data-theme='light'] #view-contact .form-submit {
+  color: #fff;
+}
+[data-theme='light'] #view-contact .form-field input,
+[data-theme='light'] #view-contact .form-field textarea {
+  background: color-mix(in srgb, var(--surface) 94%, var(--bg));
+  border-color: color-mix(in srgb, var(--rule-strong) 72%, transparent);
 }
 .form-submit {
   padding: 0.65rem 1.15rem;
@@ -667,9 +796,32 @@ html.is-split-animating .pane-view {
 .form-status {
   font-size: 0.82rem;
   color: var(--subtext);
+  line-height: 1.5;
 }
 .form-status[data-state='success'] {
   color: var(--ok);
+}
+.form-local-note {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px dashed color-mix(in srgb, var(--ok) 24%, var(--rule));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  font-size: 0.82rem;
+  color: var(--subtext);
+  line-height: 1.55;
+}
+.contact-local-email {
+  display: inline-flex;
+  margin-top: 0.45rem;
+  color: var(--ok);
+  font: 600 0.82rem var(--body);
+  text-decoration: none;
+}
+.contact-local-email:hover,
+.contact-local-email:focus-visible {
+  text-decoration: underline;
+  color: color-mix(in srgb, var(--ok) 82%, var(--text));
 }
 .hp-trap {
   position: absolute;
@@ -738,6 +890,9 @@ html.is-split-animating .pane-view {
   }
   .pane-chrome {
     padding-top: 0.95rem;
+  }
+  #view-resume {
+    padding: 0.55rem 0.65rem 0.7rem;
   }
   .stage {
     opacity: 1;

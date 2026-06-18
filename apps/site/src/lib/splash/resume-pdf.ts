@@ -7,6 +7,27 @@
 
 let started = false;
 
+function waitForLayoutWidth(element: HTMLElement, timeoutMs = 2_400): Promise<void> {
+  if (element.clientWidth > 0) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (): void => {
+      if (settled) return;
+      settled = true;
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve();
+    };
+
+    const observer = new ResizeObserver(() => {
+      if (element.clientWidth > 0) finish();
+    });
+    observer.observe(element);
+    const timer = window.setTimeout(finish, timeoutMs);
+  });
+}
+
 export async function renderResumePdf(
   pages: HTMLElement,
   url: string,
@@ -15,6 +36,8 @@ export async function renderResumePdf(
   if (started) return;
   started = true;
   try {
+    await waitForLayoutWidth(pages);
+
     const pdfjs = await import("pdfjs-dist");
     // Vite resolves ?url to the emitted worker asset URL.
     const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
