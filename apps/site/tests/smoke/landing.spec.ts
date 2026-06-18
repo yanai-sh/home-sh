@@ -102,6 +102,9 @@ test("/workspace redirect lands on /", async ({ page }) => {
 test("404 returns not-found page", async ({ page }) => {
   const res = await page.goto(`${BASE}/this-does-not-exist`, { waitUntil: "commit" });
   expect(res?.status()).toBe(404);
+  await expect(page.locator("h1")).toHaveText("Page not found");
+  await expect(page.getByText("This route does not exist.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back to home" })).toBeVisible();
 });
 
 test("reduced-motion: splash shows the pre-baked still frame", async ({ browser }) => {
@@ -138,9 +141,10 @@ test("project link in stage column opens the project pane", async ({ page }) => 
   await expect(page.locator('[data-project-detail="winmint"]:not([hidden])')).toBeVisible();
 });
 
-test("source code link targets the site repository", async ({ page }) => {
+test("view source link targets the site repository", async ({ page }) => {
   await page.goto(`${BASE}/`);
-  const link = page.getByRole("link", { name: /Source code/i });
+  const link = page.locator('.stage-links a.text-link[href*="home-sh"]');
+  await expect(link).toHaveText("View source");
   await expect(link).toHaveAttribute("href", /github\.com\/yanai-sh\/home-sh/);
 });
 
