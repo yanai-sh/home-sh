@@ -1,10 +1,13 @@
 ---
 slug: winmint
 title: WinMint
-description: Builds Windows 11 install images from profiles for my own machines.
+description: >-
+  Declarative Windows 11 images: version-controlled profiles, offline ISO
+  builds, unattended install from blank disk to a provisioned desktop.
 category: Personal Project
 order: 10
 featured: true
+splashStatus: beta
 repo: yanai-sh/winmint
 problem: >-
   Reinstalling Windows by hand meant hours of clicking through OOBE, debloating,
@@ -12,7 +15,7 @@ problem: >-
   changed between installs.
 approach: >-
   A PowerShell image builder that takes a declarative profile and produces a
-  customized Windows 11 ISO — apps, policies, and provisioning baked in offline,
+  customized Windows 11 ISO with apps, policies, and provisioning baked in offline,
   so the result is reproducible from a clean source image.
 outcome: >-
   A fresh machine goes from blank disk to fully provisioned desktop in one
@@ -20,6 +23,8 @@ outcome: >-
   version control.
 images:
   - /brand/og-cover.svg
+splashImage: /brand/winmint-hero.png
+splashImageFit: contain
 tech:
   - PowerShell
   - Windows 11

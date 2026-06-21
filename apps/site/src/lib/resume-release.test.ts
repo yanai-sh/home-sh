@@ -4,11 +4,27 @@ import {
   fetchResumePdfAsset,
   findResumePdfAsset,
   githubApiHeaders,
+  RESUME_PDF_CANONICAL_NAME,
+  RESUME_PDF_MIN_MATCH_SCORE,
   RESUME_RELEASE_API_URL,
   ResumeReleaseError,
+  scoreResumePdfFilename,
 } from "./resume-release";
 
-test("findResumePdfAsset selects the versioned CV PDF from release assets", () => {
+test("findResumePdfAsset selects the canonical CV PDF from release assets", () => {
+  const asset = findResumePdfAsset({
+    tag_name: "resume-10",
+    assets: [
+      { name: "resume.zip", url: "https://example.com/zip" },
+      { name: "YanaiKlugman.docx", url: "https://example.com/docx" },
+      { name: "YanaiKlugman.pdf", url: "https://example.com/pdf" },
+    ],
+  });
+
+  expect(asset?.url).toBe("https://example.com/pdf");
+});
+
+test("findResumePdfAsset matches legacy versioned CV filenames via fuzzy scoring", () => {
   const asset = findResumePdfAsset({
     tag_name: "v2.0.1",
     assets: [
@@ -18,6 +34,43 @@ test("findResumePdfAsset selects the versioned CV PDF from release assets", () =
   });
 
   expect(asset?.url).toBe("https://example.com/pdf");
+});
+
+test("findResumePdfAsset picks the highest-scoring PDF when several are close", () => {
+  const asset = findResumePdfAsset({
+    tag_name: "resume-11",
+    assets: [
+      { name: "notes.pdf", url: "https://example.com/notes" },
+      { name: "YanaiKlugman.pdf", url: "https://example.com/canonical" },
+      { name: "YanaiKlugman_CV_2.0.1.pdf", url: "https://example.com/legacy" },
+    ],
+  });
+
+  expect(asset?.url).toBe("https://example.com/canonical");
+});
+
+test("findResumePdfAsset rejects unrelated PDFs below the confidence threshold", () => {
+  const asset = findResumePdfAsset({
+    tag_name: "resume-11",
+    assets: [
+      { name: "changelog.pdf", url: "https://example.com/changelog" },
+      { name: "release-notes.pdf", url: "https://example.com/notes" },
+    ],
+  });
+
+  expect(asset).toBeUndefined();
+});
+
+test("scoreResumePdfFilename ranks canonical and legacy names above unrelated files", () => {
+  const canonical = scoreResumePdfFilename("YanaiKlugman.pdf");
+  const legacy = scoreResumePdfFilename("YanaiKlugman_CV_2.0.1.pdf");
+  const unrelated = scoreResumePdfFilename("changelog.pdf");
+
+  expect(canonical).toBeGreaterThanOrEqual(RESUME_PDF_MIN_MATCH_SCORE);
+  expect(legacy).toBeGreaterThanOrEqual(RESUME_PDF_MIN_MATCH_SCORE);
+  expect(unrelated).toBeLessThan(RESUME_PDF_MIN_MATCH_SCORE);
+  expect(canonical).toBeGreaterThanOrEqual(legacy);
+  expect(legacy).toBeGreaterThan(unrelated);
 });
 
 test("githubApiHeaders sends GitHub release API headers", () => {
@@ -47,7 +100,7 @@ test("fetchResumePdfAsset requests the asset API URL as an octet stream", async 
   };
 
   const response = await fetchResumePdfAsset(fetcher, "token-value", {
-    name: "YanaiKlugman_CV_2.0.1.pdf",
+    name: RESUME_PDF_CANONICAL_NAME,
     url: "https://api.github.com/repos/yanai-sh/resume/releases/assets/1",
   });
 

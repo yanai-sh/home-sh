@@ -12,12 +12,14 @@
   "scripts": {
     "setup:wsl": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/wsl-run.ps1 bash scripts/wsl-setup.sh",
     "dev": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site dev",
+    "dev:fresh": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site dev:fresh",
+    "check:dev": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site check:dev",
     "build": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site build",
     "check": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site check",
     "fix": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site fix",
     "typecheck": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site typecheck",
     "test": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site test",
-    "verify": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site verify",
+    "verify": "node scripts/wsl-proxy.mjs sh scripts/verify-with-progress.sh",
     "preview": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site preview",
     "smoke": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site smoke",
     "env:copy-prod": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/copy-gh-environment.ts --from staging --to production",
@@ -28,7 +30,6 @@
     "prepare": "node scripts/wsl-proxy.mjs sh -c \"command -v git >/dev/null 2>&1 && pnpm exec lefthook install || exit 0\""
   },
   "devDependencies": {
-    "@iconify-json/simple-icons": "^1.2.84",
     "lefthook": "^2.1.9",
     "playwright": "^1.60.0",
     "tsx": "^4.21.0",

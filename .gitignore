@@ -66,6 +66,8 @@ target/
 # --- TEST ARTIFACTS ---
 test-results/
 playwright-report/
+apps/site/.shots/
+**/lab-check-*.html
 
 # --- LOCAL SCRATCH ---
 openswarm/

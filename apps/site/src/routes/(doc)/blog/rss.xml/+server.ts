@@ -31,7 +31,7 @@ export const GET: RequestHandler = () => {
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>yanai.sh — blog</title>
+    <title>yanai.sh - blog</title>
     <link>${SITE_URL}/blog</link>
     <description>Notes from Yanai Klugman</description>${items}
   </channel>

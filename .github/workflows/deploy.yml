@@ -210,6 +210,23 @@ jobs:
           echo "::error::Version ${VERSION_ID} preview does not serve SvelteKit splash after promote." >&2
           exit 1
 
+      - name: Assert production contact form is enabled
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            HTTP_CODE="$(curl -sS --http1.1 -4 -o /tmp/yanai-body.html -w "%{http_code}" "https://yanai.sh/" || echo "000")"
+            BODY="$(cat /tmp/yanai-body.html 2>/dev/null || true)"
+            if printf '%s' "$BODY" | grep -qE 'contactFormLive":true|contactFormLive:true'; then
+              echo "Production serves live contact form (attempt ${attempt}, HTTP ${HTTP_CODE})."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/6: HTTP ${HTTP_CODE}, contactFormLive not true on https://yanai.sh" >&2
+            sleep 10
+          done
+          echo "::error::https://yanai.sh does not advertise contactFormLive:true after promote." >&2
+          exit 1
+
       - name: Write deploy summary
         run: |
           set -euo pipefail

@@ -16,23 +16,34 @@ function collectPageErrors(page: Page): string[] {
 }
 
 async function waitForSplashClient(page: Page): Promise<void> {
-  await page.waitForLoadState("networkidle");
-  await expect(page.locator("[data-splash-field-canvas]")).toBeAttached();
-  // The splash client has committed to a render path once the layer is marked
-  // either live-ready (GPU fluid) or showing the baked still (reduced-motion, or
-  // no capable GPU — which is the case in headless/software-render CI).
-  await expect(page.locator("[data-splash-field]")).toHaveClass(/is-splash-(field-ready|still)/, {
-    timeout: 30_000,
-  });
+  // ponytail: networkidle never settles on Cloudflare Workers (analytics, Turnstile, etc.)
+  await page.waitForLoadState("load");
+  await expect(page.locator("[data-splash-ambient]")).toBeAttached();
+  await expect(page.locator('button[data-open-split="resume"]')).toBeVisible();
 }
 
-test("splash stage renders with resume CTA and shader field layer", async ({ page }) => {
+async function waitForSplitOpen(page: Page): Promise<void> {
+  await expect(page.locator("html")).toHaveAttribute("data-split-open", "true");
+  await expect(page.locator("html")).toHaveCSS("--split-progress", "1");
+  await page.waitForFunction(
+    () => !document.documentElement.classList.contains("is-split-animating"),
+  );
+}
+
+test("splash stage renders with resume CTA and CSS ambient layer", async ({ page }) => {
   await page.goto(`${BASE}/`);
   await expect(page.locator("#shell")).toBeVisible();
   await expect(page.locator("#splash")).toBeVisible();
   await expect(page.locator(".stage-name")).toBeVisible();
-  await expect(page.locator("[data-splash-field-canvas]")).toBeAttached();
-  await expect(page.locator('.stage-links button[data-open-split="resume"]')).toBeVisible();
+  await expect(page.locator("[data-splash-ambient]")).toHaveAttribute(
+    "data-splash-ambient-draft",
+    "paper-fog",
+  );
+  await expect(page.locator("[data-splash-ambient]")).toHaveAttribute(
+    "data-splash-ambient-ready",
+    "still",
+  );
+  await expect(page.locator('.stage-nav button[data-open-split="resume"]')).toBeVisible();
 });
 
 function resolveAssetUrl(base: string, path: string): string {
@@ -74,20 +85,44 @@ test("closing resume split hides divider and returns to splash mode", async ({ p
   await page.locator("[data-close-split]").click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "splash");
   await expect(page.locator("#pane-detail")).toHaveAttribute("inert", "");
-  const dividerBox = await page.locator("#split-divider").boundingBox();
-  expect(dividerBox?.width ?? 0).toBeLessThanOrEqual(1);
-  await expect(page.locator("#pane-detail")).toHaveCSS("border-left-width", "0px");
+  await expect(page.locator("#pane-detail")).toHaveCSS("opacity", "0");
   await expect(page.locator("html")).toHaveCSS("--split-progress", "0");
 });
 
-test("closing contact split leaves no divider hairline", async ({ page }) => {
+test("repeat nav click closes an open pane without reopening", async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
+  const resume = page.locator('button[data-open-split="resume"]');
+  await resume.click();
+  await expect(page.locator("html")).toHaveAttribute("data-site-mode", "resume");
+  await waitForSplitOpen(page);
+  await resume.click();
+  await expect(page.locator("html")).toHaveAttribute("data-site-mode", "splash");
+  await expect(page.locator("html")).not.toHaveAttribute("data-split-open");
+  await expect(page.locator("html")).toHaveCSS("--split-progress", "0");
+});
+
+test("switching panes keeps flyout open and changes mode", async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
+  await page.locator('button[data-open-split="resume"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-site-mode", "resume");
+  await waitForSplitOpen(page);
+  await page.locator('button[data-open-split="contact"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-site-mode", "contact");
+  await expect(page.locator("html")).toHaveAttribute("data-split-open", "true");
+  await expect(page.locator("#view-contact")).toHaveClass(/is-active/);
+  await expect(page.locator("#chrome-label")).toHaveText("contact");
+});
+
+test("closing contact split resets flyout state", async ({ page }) => {
   await page.goto(`${BASE}/`);
   await waitForSplashClient(page);
   await page.locator('button[data-open-split="contact"]').click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "contact");
   await page.locator("[data-close-split]").click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "splash");
-  await expect(page.locator("#pane-detail")).toHaveCSS("border-left-width", "0px");
+  await expect(page.locator("#pane-detail")).toHaveCSS("opacity", "0");
   await expect(page.locator("html")).toHaveCSS("--split-progress", "0");
 });
 
@@ -102,18 +137,18 @@ test("/workspace redirect lands on /", async ({ page }) => {
 test("404 returns not-found page", async ({ page }) => {
   const res = await page.goto(`${BASE}/this-does-not-exist`, { waitUntil: "commit" });
   expect(res?.status()).toBe(404);
+  await expect(page.locator("h1")).toHaveText("Page not found");
+  await expect(page.getByText("This route does not exist.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back to home" })).toBeVisible();
 });
 
-test("reduced-motion: splash shows the pre-baked still frame", async ({ browser }) => {
+test("reduced-motion: splash ambient stays visible", async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: "reduce" });
   const page = await ctx.newPage();
   const errors = collectPageErrors(page);
   await page.goto(`${BASE}/`);
   await expect(page.locator("#splash")).toBeVisible();
-  // Reduced motion skips the live fluid and shows the static swirl image.
-  await expect(page.locator("[data-splash-field]")).toHaveClass(/is-splash-still/, {
-    timeout: 15_000,
-  });
+  await expect(page.locator("[data-splash-ambient]")).toBeAttached();
   await page.waitForTimeout(300);
   expect(errors).toEqual([]);
   await ctx.close();
@@ -127,21 +162,36 @@ test("contact split opens from command button", async ({ page }) => {
   await expect(page.locator("#contact-title")).toBeVisible();
 });
 
-test("project link in stage column opens the project pane", async ({ page }) => {
+test("projects flyout opens from nav and lists project cards", async ({ page }) => {
   await page.goto(`${BASE}/`);
   await waitForSplashClient(page);
-  const winmint = page.locator('button[data-open-project="winmint"]');
-  await expect(winmint).toBeVisible();
-  await winmint.click();
+  await page.locator('button[data-open-split="projects"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-site-mode", "projects");
+  await expect(page.locator("#view-projects")).toHaveClass(/is-active/);
+  await expect(page.locator('[data-open-project="winmint"]')).toBeVisible();
+});
+
+test("project card in projects flyout opens project detail", async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
+  await page.locator('button[data-open-split="projects"]').click();
+  await page.locator('[data-open-project="winmint"]').click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "project");
-  await expect(page.locator("#view-project")).toBeVisible();
   await expect(page.locator('[data-project-detail="winmint"]:not([hidden])')).toBeVisible();
 });
 
-test("source code link targets the site repository", async ({ page }) => {
+test("source link targets the site repository", async ({ page }) => {
   await page.goto(`${BASE}/`);
-  const link = page.getByRole("link", { name: /Source code/i });
-  await expect(link).toHaveAttribute("href", /github\.com\/yanai-sh\/home-sh/);
+  await waitForSplashClient(page);
+  await page.locator('button[data-open-split="projects"]').click();
+  const card = page.locator('[data-open-project="home-sh"]');
+  await expect(card).toBeVisible();
+  await expect(card.locator(".project-card__title")).toHaveText("Source code");
+  await page.locator('[data-open-project="home-sh"]').click();
+  await expect(page.locator("#project-source")).toHaveAttribute(
+    "href",
+    /github\.com\/yanai-sh\/home-sh/,
+  );
 });
 
 test("/resume redirects to resume.pdf", async ({ request }) => {
@@ -150,15 +200,36 @@ test("/resume redirects to resume.pdf", async ({ request }) => {
   expect(response.headers()["location"]).toMatch(/\/resume\.pdf$/);
 });
 
-test("theme toggle is present in the stage glyphs", async ({ page }) => {
+test("social glyphs and copy-email control are present under the stage head", async ({ page }) => {
   await page.goto(`${BASE}/`);
-  await expect(page.locator(".stage-glyphs .theme-toggle")).toBeVisible();
+  await expect(page.locator('.stage-glyphs a[aria-label="GitHub"]')).toBeVisible();
+  await expect(page.locator('.stage-glyphs button[aria-label="Copy email address"]')).toBeVisible();
 });
 
 test("blog index lists a published post", async ({ page }) => {
   await page.goto(`${BASE}/blog`);
   await expect(page.locator("h1")).toContainText("Blog");
   await expect(page.getByRole("link", { name: "Edge-native personal sites" })).toBeVisible();
+});
+
+test("robots.txt references a live sitemap", async ({ request }) => {
+  const robots = await request.get(`${BASE}/robots.txt`);
+  expect(robots.status()).toBe(200);
+  const body = await robots.text();
+  expect(body).toMatch(/Sitemap:\s+\S+\/sitemap\.xml/);
+
+  const sitemap = await request.get(`${BASE}/sitemap.xml`);
+  expect(sitemap.status()).toBe(200);
+  expect(sitemap.headers()["content-type"]).toMatch(/xml/);
+  const xml = await sitemap.text();
+  expect(xml).toContain("https://yanai.sh/uses");
+  expect(xml).toContain("/blog/edge-native-personal-sites");
+});
+
+test("splash footer links to document pages", async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await expect(page.locator('.stage-footer a[href="/uses"]')).toBeVisible();
+  await expect(page.locator('.stage-footer a[href="/now"]')).toBeVisible();
 });
 
 test("mobile viewport (375px wide) shows splash without overflow", async ({ browser }) => {
@@ -170,5 +241,35 @@ test("mobile viewport (375px wide) shows splash without overflow", async ({ brow
     () => document.documentElement.scrollWidth > window.innerWidth,
   );
   expect(hasOverflow).toBe(false);
+  await ctx.close();
+});
+
+async function expectNoHorizontalOverflow(page: Page): Promise<void> {
+  const hasOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
+  );
+  expect(hasOverflow).toBe(false);
+}
+
+test("mobile viewport: document routes fit without horizontal overflow", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
+  const page = await ctx.newPage();
+
+  for (const path of ["/blog", "/uses", "/now"]) {
+    await page.goto(`${BASE}${path}`);
+    await expectNoHorizontalOverflow(page);
+  }
+
+  await ctx.close();
+});
+
+test("mobile viewport: resume flyout fits without horizontal overflow", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
+  await page.locator('button[data-open-split="resume"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-site-mode", "resume");
+  await expectNoHorizontalOverflow(page);
   await ctx.close();
 });

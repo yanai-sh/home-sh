@@ -11,7 +11,7 @@ export const load: PageServerLoad = ({ params }) => {
 
   return {
     post,
-    title: `${post.title} — ${portfolio.pageTitle}`,
+    title: `${post.title} - ${portfolio.pageTitle}`,
     pathname: `/blog/${post.slug}`,
   };
 };

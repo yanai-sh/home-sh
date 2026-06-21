@@ -1,11 +1,18 @@
+import { SITE_URL } from "@config/site";
 import { CONTACT_ERROR } from "$lib/contact-error-codes";
 import { secretValue } from "$lib/bindings";
+import {
+  contactAllowedOrigin,
+  contactOriginError,
+  isProductionContactHost,
+} from "$lib/server/contact-request";
+import { singleLine } from "$lib/server/contact-sanitize";
 import { validateContact } from "$lib/server/contact-validate";
 
-const ALLOWED_ORIGIN = "https://yanai.sh";
+const PRODUCTION_HOST = new URL(SITE_URL).hostname;
 
 const CORS: Record<string, string> = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+  "Access-Control-Allow-Origin": contactAllowedOrigin(),
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
@@ -15,6 +22,12 @@ const json = (body: unknown, status = 200): Response =>
     status,
     headers: { "Content-Type": "application/json", ...CORS },
   });
+
+type TurnstileVerifyResponse = {
+  success?: boolean;
+  hostname?: string;
+  "error-codes"?: string[];
+};
 
 const verifyTurnstile = async (
   token: string,
@@ -27,11 +40,20 @@ const verifyTurnstile = async (
     body: JSON.stringify({
       secret,
       response: token,
-      ...(ip ? { remoteip: ip } : {}),
+      ...(ip && ip !== "unknown" ? { remoteip: ip } : {}),
     }),
   });
-  const data = (await response.json()) as { success: boolean };
-  return data.success === true;
+
+  if (!response.ok) return false;
+
+  const data = (await response.json()) as TurnstileVerifyResponse;
+  if (data.success !== true) return false;
+  if (data.hostname !== PRODUCTION_HOST) {
+    console.warn("contact: turnstile hostname mismatch", { hostname: data.hostname });
+    return false;
+  }
+
+  return true;
 };
 
 export function handleContactOptions(): Response {
@@ -40,10 +62,15 @@ export function handleContactOptions(): Response {
 
 export type ContactResult = { ok: true } | { ok: false; code: string };
 
+export type ProcessContactOptions = {
+  requestHost: string;
+};
+
 /** HTTP status for a contact error code (shared by the JSON endpoint + action). */
 export function contactErrorStatus(code: string): number {
   if (code === CONTACT_ERROR.RATE_LIMITED) return 429;
   if (code === CONTACT_ERROR.TURNSTILE_FAILED) return 403;
+  if (code === CONTACT_ERROR.NOT_AVAILABLE) return 403;
   if (code === CONTACT_ERROR.SEND_FAILED) return 502;
   return 400;
 }
@@ -56,9 +83,14 @@ export async function processContact(
   body: Record<string, unknown>,
   ip: string,
   env: Env,
+  options: ProcessContactOptions,
 ): Promise<ContactResult> {
   if (typeof body.website === "string" && body.website.trim().length > 0) {
     return { ok: true }; // honeypot tripped — accept silently
+  }
+
+  if (!isProductionContactHost(options.requestHost)) {
+    return { ok: false, code: CONTACT_ERROR.NOT_AVAILABLE };
   }
 
   const limit = await env.CONTACT_RATE_LIMIT.limit({ key: ip });
@@ -72,7 +104,7 @@ export async function processContact(
   }
 
   const { name, email, message } = validated;
-  const token = typeof body.token === "string" ? body.token : "";
+  const token = typeof body.token === "string" ? body.token.trim() : "";
 
   const [turnstileSecret, resendKey, contactFrom, contactTo] = await Promise.all([
     secretValue(env.TURNSTILE_SECRET),
@@ -81,11 +113,17 @@ export async function processContact(
     secretValue(env.CONTACT_TO),
   ]);
 
+  if (!turnstileSecret || !resendKey || !contactFrom || !contactTo) {
+    console.error("contact: missing required secrets");
+    return { ok: false, code: CONTACT_ERROR.SEND_FAILED };
+  }
+
   const verified = await verifyTurnstile(token, turnstileSecret, ip);
   if (!verified) {
     return { ok: false, code: CONTACT_ERROR.TURNSTILE_FAILED };
   }
 
+  const safeName = singleLine(name);
   const sendResponse = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -96,8 +134,8 @@ export async function processContact(
       from: contactFrom,
       to: [contactTo],
       reply_to: email,
-      subject: `Contact from ${name}`,
-      text: `From: ${name} <${email}>\n\n${message}`,
+      subject: `Contact from ${safeName}`,
+      text: `From: ${safeName} <${email}>\n\n${message}`,
     }),
   });
 
@@ -114,9 +152,9 @@ export async function processContact(
 }
 
 export async function handleContactPost(request: Request, env: Env): Promise<Response> {
-  const origin = request.headers.get("Origin");
-  if (origin && origin !== ALLOWED_ORIGIN) {
-    return json({ error: CONTACT_ERROR.FORBIDDEN_ORIGIN }, 403);
+  const originError = contactOriginError(request);
+  if (originError) {
+    return json({ error: originError }, 403);
   }
 
   let body: Record<string, unknown>;
@@ -127,7 +165,8 @@ export async function handleContactPost(request: Request, env: Env): Promise<Res
   }
 
   const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
-  const result = await processContact(body, ip, env);
+  const requestHost = new URL(request.url).hostname;
+  const result = await processContact(body, ip, env, { requestHost });
   return result.ok
     ? json({ ok: true })
     : json({ error: result.code }, contactErrorStatus(result.code));

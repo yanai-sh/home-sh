@@ -5,6 +5,7 @@ export const CONTACT_ERROR = {
   INVALID_INPUT: "invalid_input",
   TURNSTILE_FAILED: "turnstile_failed",
   RATE_LIMITED: "rate_limited",
+  NOT_AVAILABLE: "not_available",
   SEND_FAILED: "send_failed",
 } as const;
 
@@ -17,6 +18,7 @@ const MESSAGES: Record<ContactErrorCode, string> = {
   invalid_input: "check the name, email, and message fields",
   turnstile_failed: "complete the captcha and try again",
   rate_limited: "too many requests, try again in a minute",
+  not_available: "contact isn't available in this preview",
   send_failed: "something went wrong on our side",
 };
 

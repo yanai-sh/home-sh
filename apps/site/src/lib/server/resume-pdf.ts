@@ -1,3 +1,4 @@
+import { env as privateEnv } from "$env/dynamic/private";
 import {
   fetchLatestResumeRelease,
   fetchResumePdfAsset,
@@ -5,6 +6,8 @@ import {
   ResumeReleaseError,
 } from "$lib/resume-release";
 import { secretValue } from "$lib/bindings";
+import { devResumeRepoToken } from "$lib/server/dev-resume-token";
+import { resolveResumeRepoToken } from "$lib/server/resume-token";
 
 const errorResponse = (message: string, status: number): Response =>
   new Response(message, {
@@ -20,16 +23,22 @@ const copyHeader = (from: Headers, to: Headers, name: string): void => {
   if (value) to.set(name, value);
 };
 
-const resumeRepoToken = async (env: Env): Promise<string> => {
-  const localToken = process.env.RESUME_REPO_TOKEN ?? import.meta.env.RESUME_REPO_TOKEN;
-  if (localToken) return localToken;
+async function resumeRepoToken(env: Env): Promise<string> {
+  const devToken = devResumeRepoToken();
+  if (devToken) return devToken;
 
-  try {
-    return await secretValue(env.RESUME_REPO_TOKEN);
-  } catch {
-    return "";
-  }
-};
+  const fromPrivate = privateEnv.RESUME_REPO_TOKEN?.trim();
+  if (fromPrivate) return fromPrivate;
+
+  const fromBinding = await secretValue(env.RESUME_REPO_TOKEN);
+  if (fromBinding) return fromBinding;
+
+  return resolveResumeRepoToken({
+    privateEnv: privateEnv as Record<string, string | undefined>,
+    processEnv: process.env,
+    metaEnv: import.meta.env as Record<string, string | undefined>,
+  });
+}
 
 export async function resumePdfResponse(env: Env, includeBody: boolean): Promise<Response> {
   const token = await resumeRepoToken(env);

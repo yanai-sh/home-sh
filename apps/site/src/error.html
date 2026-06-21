@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>%sveltekit.status% - yanai.sh</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #121a22;
+        --surface: #1a232c;
+        --surface-raised: #222e3a;
+        --text: #f6f8fb;
+        --subtext: #c2cad6;
+        --muted: #93a0b0;
+        --accent: #2f6bff;
+        --accent-text: #78a4ff;
+        --accent-ink: #ffffff;
+        --rule: rgba(245, 247, 250, 0.12);
+        --rule-strong: rgba(245, 247, 250, 0.24);
+        --shadow: 0 18px 44px rgba(0, 0, 0, 0.24);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100svh;
+        overflow-x: hidden;
+        background:
+          radial-gradient(
+            circle at 74% 12%,
+            color-mix(in srgb, var(--accent) 10%, transparent),
+            transparent 24rem
+          ),
+          linear-gradient(90deg, color-mix(in srgb, var(--rule) 28%, transparent) 1px, transparent 1px),
+          linear-gradient(180deg, color-mix(in srgb, var(--rule) 24%, transparent) 1px, transparent 1px),
+          var(--bg);
+        background-attachment: fixed;
+        background-size: auto, 4.75rem 4.75rem, 4.75rem 4.75rem, auto;
+        color: var(--text);
+        font-family:
+          'Geist Variable',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        line-height: 1.6;
+      }
+
+      .header {
+        width: min(1180px, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 1.25rem 0 0;
+      }
+
+      .header a {
+        color: var(--muted);
+        font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+        font-size: 0.85rem;
+        text-decoration: none;
+      }
+
+      .header a:hover {
+        color: var(--accent);
+      }
+
+      main {
+        width: min(1180px, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 1.5rem 0 4rem;
+      }
+
+      .panel {
+        position: relative;
+        width: min(28rem, 100%);
+        margin: 0 auto;
+        padding: 2rem 1.75rem 1.85rem;
+        overflow: hidden;
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        box-shadow: var(--shadow);
+      }
+
+      .panel::before {
+        content: '%sveltekit.status%';
+        position: absolute;
+        top: 0.35rem;
+        right: 0.5rem;
+        font-family:
+          'Space Grotesk',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        font-size: clamp(4.5rem, 16vw, 6.5rem);
+        font-weight: 600;
+        line-height: 1;
+        color: color-mix(in srgb, var(--accent) 14%, transparent);
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .head {
+        position: relative;
+        z-index: 1;
+      }
+
+      .label {
+        margin: 0;
+        color: var(--muted);
+        font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0.35rem 0 0;
+        max-width: 14ch;
+        font-family:
+          'Space Grotesk',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        font-size: clamp(1.85rem, 4.5vw, 2.35rem);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+
+      .message {
+        margin: 0.85rem 0 0;
+        max-width: 32ch;
+        color: var(--subtext);
+        line-height: 1.65;
+      }
+
+      .actions {
+        position: relative;
+        z-index: 1;
+        margin-top: 1.75rem;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        border: 1px solid var(--accent);
+        border-radius: 999px;
+        padding: 0.75rem 1.05rem;
+        background: var(--accent);
+        color: var(--accent-ink);
+        font-size: 0.9rem;
+        font-weight: 800;
+        line-height: 1;
+        text-decoration: none;
+      }
+
+      .button:hover {
+        background: color-mix(in srgb, var(--accent) 86%, var(--text));
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <a href="/">yanai.sh</a>
+    </header>
+    <main>
+      <article class="panel">
+        <header class="head">
+          <p class="label">Error %sveltekit.status%</p>
+          <h1>Something went wrong</h1>
+          <p class="message">%sveltekit.error.message%</p>
+        </header>
+        <div class="actions">
+          <a class="button" href="/">Back to home</a>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

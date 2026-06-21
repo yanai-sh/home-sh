@@ -9,7 +9,7 @@ export const load: PageServerLoad = ({ params }) => {
 
   return {
     project,
-    title: `${project.title} — ${portfolio.pageTitle}`,
+    title: `${project.title} - ${portfolio.pageTitle}`,
     pathname: `/projects/${project.slug}`,
   };
 };
