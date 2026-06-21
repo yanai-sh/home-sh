@@ -5,12 +5,11 @@ set -eu
 root="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
-# Line-buffered when available (helps under lefthook / non-TTY).
-if command -v stdbuf >/dev/null 2>&1; then
-  exec stdbuf -oL -eL "$0" --run "$@"
-fi
+# Line-buffered when available (helps under lefthook / non-TTY). Guard --run to avoid re-exec loop.
 if [ "${1:-}" = "--run" ]; then
   shift
+elif command -v stdbuf >/dev/null 2>&1; then
+  exec stdbuf -oL -eL "$0" --run "$@"
 fi
 
 say() {
