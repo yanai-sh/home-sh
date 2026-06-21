@@ -179,13 +179,11 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
     if (splitProgress === 0) {
       splitDivider.classList.remove("is-dragging");
       splitDivider.blur();
-      paneSplash.removeAttribute("inert");
       setSplitOpenAttr(false);
       updateAriaExpanded(false);
       releaseFocusTrap?.();
       releaseFocusTrap = null;
     } else {
-      paneSplash.setAttribute("inert", "");
       setSplitOpenAttr(true);
       updateAriaExpanded(true);
     }
