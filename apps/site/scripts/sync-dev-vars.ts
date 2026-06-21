@@ -2,7 +2,7 @@
  * Merge local Worker secrets into gitignored apps/site/.dev.vars and .env so
  * `vite dev` (Cloudflare Vite plugin + SvelteKit private env) can serve /resume.pdf.
  */
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -63,11 +63,13 @@ function ghAuthToken(): string | undefined {
 
   for (const command of commands) {
     try {
-      const token = execSync(command, {
+      const { status, stdout } = spawnSync(command, {
         encoding: "utf8",
+        shell: true,
         stdio: ["ignore", "pipe", "ignore"],
-        shell: process.platform === "win32" ? true : "/bin/bash",
-      }).trim();
+      });
+      if (status !== 0) continue;
+      const token = stdout.trim();
       if (token) return token;
     } catch {
       // try next
@@ -120,9 +122,7 @@ writeFileSync(devVarsPath, serializeKeyValueFile(devVars), "utf8");
 writeFileSync(envPath, serializeKeyValueFile(dotEnv), "utf8");
 
 if (devVars.has("RESUME_REPO_TOKEN")) {
-  process.stdout.write(
-    "sync-dev-vars: RESUME_REPO_TOKEN ready in apps/site/.dev.vars and .env\n",
-  );
+  process.stdout.write("sync-dev-vars: RESUME_REPO_TOKEN ready in apps/site/.dev.vars and .env\n");
 } else {
   process.stderr.write(
     "sync-dev-vars: no resume token found (gh auth, worker-secrets.local.json, or env) — /resume.pdf may 503 locally\n",

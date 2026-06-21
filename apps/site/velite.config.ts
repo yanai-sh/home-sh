@@ -1,10 +1,5 @@
 import { defineConfig, s } from "velite";
 
-const skillGroupSchema = s.object({
-  label: s.string(),
-  skills: s.array(s.string()).min(1),
-});
-
 export default defineConfig({
   root: "src/content",
   output: {
@@ -12,19 +7,6 @@ export default defineConfig({
     clean: true,
   },
   collections: {
-    experience: {
-      name: "Experience",
-      pattern: "experience/**/*.json",
-      schema: s.object({
-        order: s.number(),
-        company: s.string(),
-        role: s.string(),
-        period: s.string(),
-        scope: s.string().optional(),
-        description: s.string(),
-        skillGroups: s.array(skillGroupSchema).min(1),
-      }),
-    },
     projects: {
       name: "Project",
       pattern: "projects/**/*.mdx",
@@ -47,6 +29,9 @@ export default defineConfig({
         approach: s.string().optional(),
         outcome: s.string().optional(),
         images: s.array(s.string()).optional(),
+        splashImage: s.string().optional(),
+        splashImageFit: s.enum(["cover", "contain"]).optional(),
+        splashStatus: s.enum(["complete", "beta", "alpha", "concept"]).optional(),
         tech: s.array(s.string()).optional(),
         platforms: s.array(s.string()).optional(),
         content: s.markdown(),
@@ -64,20 +49,6 @@ export default defineConfig({
         draft: s.boolean().optional(),
         tags: s.array(s.string()).optional(),
         content: s.markdown(),
-      }),
-    },
-    experiments: {
-      name: "Experiment",
-      pattern: "experiments/**/*.mdx",
-      schema: s.object({
-        title: s.string(),
-        description: s.string(),
-        pubDate: s.isodate(),
-        status: s.enum(["active", "prototype", "paused", "archived"]),
-        demoUrl: s.string().url().optional(),
-        repoUrl: s.string().url().optional(),
-        tags: s.array(s.string()).optional(),
-        tech: s.array(s.string()).optional(),
       }),
     },
   },

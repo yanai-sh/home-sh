@@ -2,31 +2,32 @@
 slug: home-sh
 title: home-sh
 splashTitle: Source code
-description: SvelteKit on Cloudflare Workers with Rust/WASM field, contact API, and resume proxy.
+description: SvelteKit on Cloudflare Workers with split-pane resume and contact, Velite content, and a paper-fog splash stage.
 category: Personal Project
 order: 20
 featured: false
 repo: yanai-sh/home-sh
+splashImage: /brand/yanai-sh-logo.svg
+splashImageFit: contain
 problem: >-
-  A portfolio should prove engineering ability by existing, not by claiming it —
+  A portfolio should prove engineering ability by existing, not by claiming it,
   but template sites and heavy frameworks demonstrate nothing and load slowly.
 approach: >-
-  A SvelteKit app on Cloudflare Workers with Rust/WASM modules — a
-  canvas-rendered systems field, split-pane resume and contact on the same
-  Worker, and Velite-backed content. CSS and a single client module carry
-  the splash interaction.
+  A SvelteKit app on Cloudflare Workers with split-pane resume and contact on the
+  same Worker, Velite-backed content, and a small client module for the splash
+  interaction.
 outcome: >-
-  Sub-second loads from the edge, a background that is computed rather than
-  decorated, and a deploy pipeline (staging/production Workers, SemVer tags,
-  smoke tests) that mirrors how I ship real services.
+  Sub-second loads from the edge, a calm ambient stage with flyout detail panes,
+  and a deploy pipeline (staging/production Workers, SemVer tags, smoke tests)
+  that mirrors how I ship real services.
 tech:
   - SvelteKit
   - Cloudflare Workers
-  - Rust
-  - WebAssembly
+  - TypeScript
+  - Velite
   - Vite
 platforms:
   - web
 ---
 
-The source of yanai.sh itself: edge SSR, Rust/WASM modules, and a two-branch deploy pipeline.
+The source of yanai.sh itself: edge Worker, split-pane splash, and a two-branch deploy pipeline.

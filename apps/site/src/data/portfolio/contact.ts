@@ -1,15 +1,8 @@
 export const contact = {
-  id: "contact",
-  titleId: "contact-title",
-  eyebrow: "Contact",
   title: "Email me.",
   deck: "Send a short note with context. I'll reply when I can.",
-  primaryLabel: "Email me",
-  emailSubject: "Hello from yanai.sh",
-  actionsLabel: "Contact actions",
   form: {
     label: "Contact form",
-    directLabel: "Direct contact",
     fields: {
       name: "Name",
       email: "Email",
@@ -22,8 +15,7 @@ export const contact = {
       email: "you@example.com…",
       message: "What’s this about?…",
     },
-    captchaPreviewLabel: "Captcha loads on deploy…",
-    previewSubmitMessage: "Preview only — email sends from yanai.sh.",
+    previewSubmitMessage: "Preview only: email sends from yanai.sh.",
     statusMessages: {
       captcha: "complete the captcha first",
       sending: "Sending…",

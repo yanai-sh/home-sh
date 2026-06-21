@@ -2,16 +2,8 @@ import type { PortfolioSocial } from "./types";
 
 export const profile = {
   pageTitle: "yanai.sh",
-  brand: {
-    prefix: "yanai",
-    suffix: ".sh",
-    homeLabel: "yanai.sh home",
-  },
   name: "Yanai Klugman",
-  tagline: "Software & Systems Engineer",
-  location: "Raanana, Israel",
-  resumeUrl: "/resume.pdf",
-  resumeLabel: "Resume PDF",
+  tagline: "Software Engineer · Integration · Infrastructure · Deployment",
   socials: [
     {
       name: "github.com",

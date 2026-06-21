@@ -1,0 +1,45 @@
+/* Splash stage theming — baseline tokens + ink-native / warm-paper drafts.
+   Production uses :root defaults until data-splash-theme is set on /. */
+
+:root {
+  --splash-stage-offset: clamp(4.75rem, 17vh, 8.5rem);
+  --splash-identity-gap: 0.5rem;
+  --splash-head-gap: 1rem;
+  --splash-nav-offset: 1.5rem;
+  --splash-name-size: clamp(2.5rem, 7.5vw, 4.2rem);
+  --splash-name-weight: 900;
+  --splash-name-font: 'Chiron GoRound TC', var(--font-body);
+  --splash-role-weight: 500;
+  --splash-role-size: 1rem;
+  --splash-link-size: 1.125rem;
+  --splash-link-weight: 550;
+  --splash-link-gap: 0.625rem;
+  --splash-link-color: var(--color-maintext);
+  /* Pastel peach-orange — warmer than #ecd0c0, softer than accent-warm. */
+  --splash-stage-accent: #e8b08a;
+  --splash-stage-font: 'Chiron GoRound TC', var(--font-body);
+  --splash-link-hover: var(--splash-stage-accent);
+  --splash-glyph-hover: var(--splash-stage-accent);
+  --splash-meta-size: 0.72rem;
+  --splash-meta-color: var(--color-muted);
+  --splash-rule-color: var(--color-rule);
+}
+
+[data-splash-theme='ink-native'] {
+  --splash-link-hover: var(--splash-edge);
+  --splash-rule-color: color-mix(in srgb, var(--splash-edge) 28%, var(--color-rule));
+  --splash-name-weight: 650;
+}
+
+[data-splash-theme='warm-paper'] {
+  --splash-link-color: color-mix(in srgb, #f4f0e8 90%, var(--color-maintext));
+  --splash-link-hover: var(--color-accent-warm);
+  --splash-meta-color: color-mix(in srgb, var(--color-muted) 85%, #c4a574);
+  --splash-rule-color: color-mix(in srgb, var(--color-accent-warm) 22%, var(--color-rule));
+  --splash-name-weight: 550;
+}
+
+[data-theme='light'] [data-splash-theme='warm-paper'] {
+  --splash-link-color: color-mix(in srgb, #2a2218 88%, var(--color-maintext));
+  --splash-link-hover: var(--color-accent-warm);
+}

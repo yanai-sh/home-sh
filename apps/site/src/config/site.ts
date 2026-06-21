@@ -14,7 +14,7 @@ export const SITE_LEDE = "";
 
 /** Meta description for search / sharing (~160 chars max). */
 export const SITE_DESCRIPTION =
-  "Yanai Klugman, software engineer. Systems, integration, infrastructure, and automation.";
+  "Yanai Klugman, software engineer. Integration, infrastructure, and deployment.";
 
 export const SITE_EMAIL = "me@yanai.sh";
 
@@ -28,4 +28,4 @@ export const SITE_BRAND = {
 
 /** Homepage career (#resume) section — short deck under the chapter heading. */
 export const HOME_RESUME_SECTION_DECK =
-  "Roles and milestones from the CV — the full narrative and PDF are linked from the top of the page.";
+  "Roles and milestones from the CV. The full narrative and PDF are linked from the top of the page.";

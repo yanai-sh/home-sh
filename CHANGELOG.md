@@ -7,9 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.27] - 2026-06-21
+
+### Added
+
+- **Splash paper-fog background** — static baked blue-charcoal paper texture with a restrained horizon band; replaces WebGL/marbling ambient on `/`.
+- **Splash labs** — background draft picker (`/labs/splash-bg-draft`), variant mocks (`/labs/splash-variants`), split-pane UX (toggle close, vertical pane switch).
+- **Geist** body font, splash home refactor (`SplashHomePage`), projects flyout with cards and detail panes.
+
+### Changed
+
+- **Splash ambient** — CSS-only `data-splash-ambient-ready="still"`; production stills baked from shared `paper-fog-rgba` module.
+- **Dev tooling** — `pnpm run bake:splash`, `check:dev` / `dev:fresh` guards against stale bundles.
+- **SEO** — dynamic `/sitemap.xml` (home, docs, blog posts, project pages); `robots.txt` fixed and `/labs/` disallowed.
+- **Splash polish** — stage footer links to Uses and Now; home-sh project copy matches paper-fog stack; meta description aligned with tagline.
+
+### Removed
+
+- **Dead splash/portfolio code** — unused ThemeToggle, TechIcon stack, spring helper, resume TOC data, portfolio section stubs, Velite `experience`/`experiments` collections, and orphaned scripts (`sync-tech-icons`, `capture-splash-loop`, `diag-splash-tier`, `check-lab-page`, `shot.mjs`).
+- **CSS loop tokens** — `--splash-loop*` vars for missing `public/splash-loop-*` assets.
+- **WebGPU / video field stack** — `field.ts`, `field-wgpu.ts`, `wgpu/*`, splash-probe, and lab tier boot code; production uses paper-fog still only.
+- **Copy / hybrid labs** — `/labs/splash-preview`, `/labs/splash-hybrid`, and related copy-lab components; labs trimmed to bg-draft + variant mocks.
+- **Unused assets** — light splash stills, extra dark PNG, `splash-tokens.css`.
+
+### Fixed
+
+- **Turnstile embed check** — post-build assert after `vite build` (no nested build inside Vitest); `verify` sets a test key once instead of building twice.
+- **Lab chrome** — lab banners no longer link to `localhost` on production.
+- **Home load** — trimmed unused server payload fields from `/`.
+
 ### Removed
 
 - **Dormant D1 + KV infra** — dropped `home-sh-telemetry` (D1) and `home-sh-sessions` (KV) from OpenTofu, `infra/migrations/`, and `just migrate-*` targets. The SvelteKit Worker never bound either; Workers observability in `wrangler.jsonc` remains. Delete any orphans in Cloudflare with **`pnpm exec tsx scripts/destroy-legacy-data-stores.ts`** (see `infra/README.md`).
+- **WebGL splash ambient on `/`** — removed; production uses baked paper-fog still. Lab routes may still load WebGPU field experiments locally.
 
 ## [v0.1.24] - 2026-06-15
 

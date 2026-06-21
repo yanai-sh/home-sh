@@ -23,7 +23,7 @@ routes/             # SvelteKit pages (+page, +layout, +server)
   resume/           # GET /resume → 308 PDF
   (doc)/            # DocumentLayout — blog, projects, uses, now
 lib/
-  components/       # Svelte UI (SiteMeta, ThemeToggle, IconSprite)
+  components/       # Svelte UI (SiteMeta, IconSprite)
   server/           # contact, resume-pdf, security helpers
   splash/client.ts  # split pane, contact form, resume TOC (onMount)
 hooks.server.ts     # security headers, /workspace redirect
@@ -40,7 +40,9 @@ CSS custom properties live in **`src/styles/global.css`** (`:root` / `[data-them
 
 ### Scripts (copy-paste, run from repo root)
 
-- **`pnpm run dev`** — SvelteKit dev server (`vite dev`, port 4321)
+- **`pnpm run dev`** — SvelteKit dev server (`vite dev`, port **4322**; override with `SITE_DEV_PORT`). **`predev`** frees the port so zombie servers cannot serve stale bundles. On WSL + **`/mnt/c`**, Vite uses file polling for reliable HMR.
+- **`pnpm run dev:fresh`** — kill port, clear **`node_modules/.vite`**, then start dev (use when the UI still looks like an old build).
+- **`pnpm run check:dev`** — HTTP probe that `/` and lab routes include **`data-dev-build`** and exclude known stale markers; fails with a fix hint if not.
 - **`pnpm run check`** / **`pnpm run fix`** — `vp check` (Oxlint, Oxfmt, tsgo) + `svelte-check` + Velite sync
 - **`pnpm run typecheck`** — same as **`check`**
 - **`pnpm run test`** — Vitest

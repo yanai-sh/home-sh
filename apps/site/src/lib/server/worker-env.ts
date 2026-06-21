@@ -3,8 +3,7 @@ import { devResumeRepoToken } from "$lib/server/dev-resume-token";
 
 /** Minimal Env for routes that only need the résumé token in local `vite dev`. */
 export function devResumeEnv(): Env {
-  const token =
-    devResumeRepoToken() || privateEnv.RESUME_REPO_TOKEN?.trim() || "";
+  const token = devResumeRepoToken() || privateEnv.RESUME_REPO_TOKEN?.trim() || "";
   return { RESUME_REPO_TOKEN: token } as Env;
 }
 

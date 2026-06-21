@@ -1,63 +1,31 @@
-:root {
-  --pointer-x: 0.68;
-  --pointer-y: 0.48;
-}
-
-.splash-field-layer {
+.splash-ambient {
   position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  opacity: calc(1 - var(--split-progress, 0) * 0.18);
-  transition: opacity 0.8s var(--ease);
-  /* Solid on-theme backdrop behind the (opaque) ink canvas, so the page's grid
-     background never shows through during the canvas's load/fade-in. Matches the
-     ink medium, so the fade is seamless. */
-  background: var(--splash-base);
-}
-
-/* Pre-baked still frame, shown instead of the live fluid when it can't run.
-   field.ts adds .is-splash-still for reduced-motion and no-WebGL2; the media
-   query is a no-JS fallback so reduced-motion still gets the still image. The
-   themed image comes from --splash-still (set per theme in global.css). */
-.splash-field-layer.is-splash-still {
+  background-color: var(--splash-base);
   background-image: var(--splash-still);
   background-size: cover;
   background-position: center;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .splash-field-layer {
-    background-image: var(--splash-still);
-    background-size: cover;
-    background-position: center;
-  }
-}
-
-.splash-field-layer canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-  opacity: 0;
-}
-
-.splash-field-layer.is-splash-field-ready canvas {
-  opacity: 1;
-}
-
-/* The fluid library listens for pointer events on the canvas; re-enable them
-   (the layer is pointer-events:none). Content sits above at a higher z-index,
-   so it still receives its own clicks; only empty areas stir the fluid. Gated
-   to no-preference so a reduced-motion (frozen) frame can't be stirred. */
-@media (prefers-reduced-motion: no-preference) {
-  .splash-field-layer canvas {
-    pointer-events: auto;
-  }
+.splash-ambient__shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 95% 85% at 50% 48%,
+      transparent 0%,
+      rgba(0, 0, 0, 0.04) 78%,
+      rgba(0, 0, 0, 0.12) 100%
+    );
+  opacity: 0.35;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .splash-field-layer canvas {
-    transition: none;
+  .splash-ambient__shade {
+    opacity: 0.2;
   }
 }

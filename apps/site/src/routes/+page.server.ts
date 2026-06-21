@@ -2,44 +2,35 @@ import { dev } from "$app/environment";
 import { fail } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 import { projects } from "#content";
-import { portfolio, resumeIndex } from "$lib/data/portfolio";
+import { splashFlyoutProjects } from "$lib/portfolio-content";
+import { portfolio } from "$lib/data/portfolio";
 import { fetchRepoMetaMap, type RepoMeta } from "$lib/github-repo-meta";
 import { contactFormAvailability } from "$lib/contact-form-availability";
 import { contactErrorStatus, processContact } from "$lib/server/contact";
 import { contactOriginError } from "$lib/server/contact-request";
 import { PUBLIC_TURNSTILE_SITE_KEY } from "$env/static/public";
 
-export const load: PageServerLoad = async ({ url, platform }) => {
-  const featuredProjects = [...projects]
-    .filter((project) => project.featured)
-    .sort((a, b) => a.order - b.order);
-
-  const splashProjects = featuredProjects.filter((project) => project.slug !== "home-sh");
+export const load: PageServerLoad = async ({ platform }) => {
+  const splashProjects = splashFlyoutProjects(projects);
 
   const repos = splashProjects
     .map((project) => project.repo)
     .filter((repo): repo is string => Boolean(repo));
 
   const waitUntil = platform?.ctx?.waitUntil?.bind(platform.ctx);
-  // Streamed (deferred): don't await — SvelteKit serialises this promise and
-  // streams the repo stats in after the shell HTML, so first paint isn't
-  // blocked on the GitHub round-trip.
   const repoMeta = fetchRepoMetaMap(repos, waitUntil).catch(
     (): Record<string, RepoMeta | null> => ({}),
   );
 
-  const { canUseContactForm, contactFormLive, turnstileSiteKey } = contactFormAvailability(
+  const { contactFormLive, turnstileSiteKey } = contactFormAvailability(
     PUBLIC_TURNSTILE_SITE_KEY,
     dev,
   );
 
   return {
     portfolio,
-    featuredProjects,
     splashProjects,
     repoMeta,
-    resumeIndex,
-    canUseContactForm,
     contactFormLive,
     turnstileSiteKey,
   };

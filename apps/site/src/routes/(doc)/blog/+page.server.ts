@@ -9,7 +9,7 @@ export const load: PageServerLoad = () => {
 
   return {
     posts: published,
-    title: `Blog — ${portfolio.pageTitle}`,
+    title: `Blog - ${portfolio.pageTitle}`,
     pathname: "/blog",
   };
 };

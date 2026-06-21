@@ -1,17 +1,6 @@
-import { initSplashField, type SplashFieldHandle } from "./field";
 import { createSplitController, PDF_URL } from "./split-controller";
 
-declare global {
-  interface Window {
-    __splashFieldHandle?: SplashFieldHandle | null;
-  }
-}
-
-const THEME_STORAGE_KEY = "yanai-sh:theme";
-const THEME_COLORS = {
-  dark: "#151B22",
-  light: "#F5F7FA",
-} as const;
+const SPLASH_THEME_COLOR = "#151B22";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type TurnstileApi = {
@@ -28,47 +17,15 @@ type TurnstileApi = {
   reset: () => void;
 };
 
-function easeOutQuint(t: number): number {
-  return 1 - (1 - t) ** 5;
-}
-
 function prefersReducedMotion(): boolean {
   return matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function preferredTheme(): "dark" | "light" {
-  try {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    if (saved === "dark" || saved === "light") return saved;
-  } catch {
-    // ignore
-  }
-  return "dark";
-}
-
-function initTheme(onThemeChange?: () => void): void {
-  const applyTheme = (theme: "dark" | "light"): void => {
-    document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch {
-      // ignore
-    }
-
-    const toggle = document.querySelector<HTMLButtonElement>(".theme-toggle");
-    toggle?.setAttribute("aria-pressed", String(theme === "light"));
-
-    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    themeColor?.setAttribute("content", THEME_COLORS[theme]);
-    onThemeChange?.();
-  };
-
-  applyTheme(preferredTheme());
-
-  document.querySelector<HTMLButtonElement>(".theme-toggle")?.addEventListener("click", () => {
-    const current = document.documentElement.dataset.theme === "light" ? "light" : "dark";
-    applyTheme(current === "light" ? "dark" : "light");
-  });
+function applySplashTheme(): void {
+  document.documentElement.dataset.theme = "dark";
+  document
+    .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    ?.setAttribute("content", SPLASH_THEME_COLOR);
 }
 
 function initContactForm(): void {
@@ -134,7 +91,7 @@ function initContactForm(): void {
     if (!widgetElement) return;
     turnstileWindow.turnstile?.render(widgetElement, {
       sitekey: siteKey,
-      theme: document.documentElement.dataset.theme === "light" ? "light" : "dark",
+      theme: "dark",
       callback: () => {
         submit.disabled = false;
       },
@@ -149,75 +106,16 @@ function initContactForm(): void {
   // +page.svelte; this only wires Turnstile and inline field validation.
 }
 
-function initSplashFieldLayer(
-  reducedMotion: boolean,
-  onReady: (handle: SplashFieldHandle | null) => void,
-): void {
-  const existing = window.__splashFieldHandle;
-  if (existing !== undefined) {
-    onReady(existing);
-    return;
-  }
-
-  const layer = document.querySelector<HTMLElement>("[data-splash-field]");
-  const canvas = document.querySelector<HTMLCanvasElement>("[data-splash-field-canvas]");
-  if (!layer || !canvas) {
-    onReady(null);
-    return;
-  }
-
-  const handle = initSplashField(canvas, layer, { reducedMotion });
-  window.__splashFieldHandle = handle ?? null;
-  onReady(handle);
-  if (handle) {
-    window.addEventListener("pagehide", () => handle.dispose(), { once: true });
-  }
-}
-
-function initMagneticGlyphs(): void {
-  if (prefersReducedMotion() || matchMedia("(pointer: coarse)").matches) return;
-  const group = document.querySelector<HTMLElement>("[data-magnetic-group]");
-  if (!group) return;
-  const targets = [...group.querySelectorAll<HTMLElement>("a, button")];
-  let raf = 0;
-
-  const reset = (): void => {
-    for (const target of targets) target.style.transform = "";
-  };
-
-  group.addEventListener("pointermove", (event) => {
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => {
-      for (const target of targets) {
-        const rect = target.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = event.clientX - cx;
-        const dy = event.clientY - cy;
-        const distance = Math.hypot(dx, dy);
-        if (distance < 48) {
-          const pull = (1 - distance / 48) * 3;
-          target.style.transform = `translate(${(dx / distance) * pull || 0}px, ${(dy / distance) * pull || 0}px)`;
-        } else {
-          target.style.transform = "";
-        }
-      }
-    });
-  });
-  group.addEventListener("pointerleave", () => {
-    cancelAnimationFrame(raf);
-    reset();
-  });
-}
-
 export function initSplash(): void {
   const reducedMotion = prefersReducedMotion();
   const root = document.documentElement;
   const shell = document.getElementById("shell");
+  const paneSplash = document.getElementById("pane-splash");
   const paneDetail = document.getElementById("pane-detail");
   const splitDivider = document.getElementById("split-divider");
   const viewResume = document.getElementById("view-resume");
   const viewContact = document.getElementById("view-contact");
+  const viewProjects = document.getElementById("view-projects");
   const viewProject = document.getElementById("view-project");
   const chromeLabel = document.getElementById("chrome-label");
   const chromeSub = document.getElementById("chrome-sub");
@@ -229,14 +127,15 @@ export function initSplash(): void {
   const pdfOpen = document.getElementById("pdf-open") as HTMLAnchorElement | null;
   const pdfDownload = document.getElementById("pdf-download") as HTMLAnchorElement | null;
   const pdfFallbackLink = document.getElementById("pdf-fallback-link") as HTMLAnchorElement | null;
-  const contactForm = document.getElementById("contact-form");
 
   if (
     !shell ||
+    !paneSplash ||
     !paneDetail ||
     !splitDivider ||
     !viewResume ||
     !viewContact ||
+    !viewProjects ||
     !viewProject ||
     !chromeLabel ||
     !chromeSub ||
@@ -259,10 +158,12 @@ export function initSplash(): void {
     elements: {
       root,
       shell,
+      paneSplash,
       paneDetail,
       splitDivider: splitDivider as HTMLButtonElement,
       viewResume,
       viewContact,
+      viewProjects,
       viewProject,
       chromeLabel,
       chromeSub,
@@ -273,20 +174,21 @@ export function initSplash(): void {
       pdfFallback,
     },
     reducedMotion,
-    easeOutQuint,
   });
 
   split.bindSplitDivider();
 
   for (const element of document.querySelectorAll<HTMLElement>("[data-open-split]")) {
+    split.registerTrigger(element);
     element.addEventListener("click", (event) => {
       event.preventDefault();
       const pane = element.getAttribute("data-open-split");
-      if (pane === "resume" || pane === "contact") split.openSplit(pane);
+      if (pane === "resume" || pane === "contact" || pane === "projects") split.openSplit(pane);
     });
   }
   for (const element of document.querySelectorAll<HTMLElement>("[data-open-project]")) {
     const slug = element.getAttribute("data-open-project") ?? "";
+    split.registerTrigger(element);
     element.addEventListener("click", (event) => {
       event.preventDefault();
       if (slug) split.openSplit("project", { slug });
@@ -295,7 +197,12 @@ export function initSplash(): void {
   for (const element of document.querySelectorAll("[data-close-split]")) {
     element.addEventListener("click", () => split.closeSplit());
   }
-
+  for (const element of document.querySelectorAll("[data-back-to-projects]")) {
+    element.addEventListener("click", (event) => {
+      event.preventDefault();
+      split.backToProjects();
+    });
+  }
 
   window.addEventListener("keydown", (event) => {
     if (
@@ -315,14 +222,6 @@ export function initSplash(): void {
 
   split.applyInitialHash();
 
-  let splashField: SplashFieldHandle | null = null;
-  initTheme(() => splashField?.syncTheme());
+  applySplashTheme();
   initContactForm();
-  initMagneticGlyphs();
-  initSplashFieldLayer(reducedMotion, (handle) => {
-    splashField = handle;
-    // The field may initialize after the theme was applied (deferred via
-    // requestIdleCallback); re-sync so a direct light-mode load matches.
-    handle?.syncTheme();
-  });
 }

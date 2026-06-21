@@ -1,20 +1,11 @@
-import { connectSection } from "./portfolio/connect-section";
 import { contact } from "./portfolio/contact";
-import { experienceSection } from "./portfolio/experience-section";
 import { hero } from "./portfolio/hero";
-import { navigation } from "./portfolio/navigation";
 import { profile } from "./portfolio/profile";
-import { projectsSection } from "./portfolio/projects-section";
 
-export type { PortfolioLink, PortfolioSocial } from "./portfolio/types";
+export type { PortfolioSocial } from "./portfolio/types";
 
 export const portfolio = {
   ...profile,
-  nav: navigation.items,
-  navLabel: navigation.label,
   hero,
-  connect: connectSection,
-  experience: experienceSection,
-  projects: projectsSection,
   contact,
 } as const;

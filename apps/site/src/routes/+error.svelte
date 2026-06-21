@@ -11,28 +11,28 @@
   const copy = $derived.by(() => {
     if (status === 404) {
       return {
-        title: '404 — yanai.sh',
+        title: '404 - yanai.sh',
         heading: 'Page not found',
         body: detail ?? 'This route does not exist.',
       };
     }
     if (status === 403) {
       return {
-        title: '403 — yanai.sh',
+        title: '403 - yanai.sh',
         heading: 'Access denied',
         body: detail ?? 'You do not have permission to view this page.',
       };
     }
     if (status === 401) {
       return {
-        title: '401 — yanai.sh',
+        title: '401 - yanai.sh',
         heading: 'Sign in required',
         body: detail ?? 'Sign in is required to view this page.',
       };
     }
     if (status >= 500) {
       return {
-        title: 'Error — yanai.sh',
+        title: 'Error - yanai.sh',
         heading: 'Something went wrong',
         body:
           import.meta.env.DEV && detail
@@ -41,7 +41,7 @@
       };
     }
     return {
-      title: 'Error — yanai.sh',
+      title: 'Error - yanai.sh',
       heading: 'Request failed',
       body: detail ?? 'Something went wrong.',
     };

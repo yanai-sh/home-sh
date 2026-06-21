@@ -49,6 +49,11 @@ export function applySecurityHeaders(
   headers.set("X-Frame-Options", pathname === "/resume.pdf" ? "SAMEORIGIN" : "DENY");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
+  if (isDev && response.headers.get("content-type")?.includes("text/html")) {
+    headers.set("Cache-Control", "no-store, must-revalidate");
+    headers.set("Pragma", "no-cache");
+  }
+
   const isHttps = url.protocol === "https:";
   if (isHttps) {
     headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");

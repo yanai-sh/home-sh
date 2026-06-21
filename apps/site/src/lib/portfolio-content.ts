@@ -1,19 +1,19 @@
-type OrderedEntry = {
+type SplashFlyoutEntry = {
   order: number;
-};
-
-type FeaturedProjectEntry = OrderedEntry & {
   featured: boolean;
+  slug: string;
 };
 
-function byOrder<T extends OrderedEntry>(left: T, right: T) {
+function byOrder<T extends { order: number }>(left: T, right: T) {
   return left.order - right.order;
 }
 
-export function sortHomepageExperience<T extends OrderedEntry>(entries: readonly T[]) {
-  return [...entries].sort(byOrder);
-}
-
-export function featuredHomepageProjects<T extends FeaturedProjectEntry>(entries: readonly T[]) {
-  return entries.filter((entry) => entry.featured).sort(byOrder);
+/** Featured splash cards plus the site repo (`home-sh`), ordered for the flyout grid. */
+export function splashFlyoutProjects<T extends SplashFlyoutEntry>(entries: readonly T[]): T[] {
+  const homeSh = entries.find((entry) => entry.slug === "home-sh");
+  const featured = entries
+    .filter((entry) => entry.featured && entry.slug !== "home-sh")
+    .sort(byOrder);
+  if (!homeSh) return featured;
+  return [...featured, homeSh].sort(byOrder);
 }
