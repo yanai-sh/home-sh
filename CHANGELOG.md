@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Staging smoke** — drop `networkidle` wait; Cloudflare Workers never reach idle.
 - **Turnstile embed check** — post-build assert after `vite build` (no nested build inside Vitest); `verify` sets a test key once instead of building twice.
 - **Lab chrome** — lab banners no longer link to `localhost` on production.
 - **Home load** — trimmed unused server payload fields from `/`.

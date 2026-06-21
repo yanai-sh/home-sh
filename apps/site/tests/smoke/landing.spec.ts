@@ -16,8 +16,10 @@ function collectPageErrors(page: Page): string[] {
 }
 
 async function waitForSplashClient(page: Page): Promise<void> {
-  await page.waitForLoadState("networkidle");
+  // ponytail: networkidle never settles on Cloudflare Workers (analytics, Turnstile, etc.)
+  await page.waitForLoadState("load");
   await expect(page.locator("[data-splash-ambient]")).toBeAttached();
+  await expect(page.locator('button[data-open-split="resume"]')).toBeVisible();
 }
 
 test("splash stage renders with resume CTA and CSS ambient layer", async ({ page }) => {
