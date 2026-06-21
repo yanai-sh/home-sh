@@ -32,7 +32,7 @@ if (!useWsl) {
   runLocal();
 }
 
-console.error("wsl-proxy: routing to WSL (first output may take 30–60s on /mnt/c)…");
+console.log("wsl-proxy: routing to WSL2 (first output may take 30–60s on /mnt/c)…");
 
 const ps1 = join(root, "scripts", "wsl-run.ps1");
 const result = spawnSync(

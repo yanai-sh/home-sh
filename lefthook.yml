@@ -16,4 +16,6 @@ pre-push:
       # WSL proxy + step banners (see scripts/verify-with-progress.sh). Avoid
       # `pnpm run verify` here: Windows pnpm's script-runner exits non-zero with
       # no output when run non-interactively (as lefthook does).
+      # interactive: stream stdout/stderr live instead of buffering until the end.
       run: node scripts/wsl-proxy.mjs sh scripts/verify-with-progress.sh
+      interactive: true
