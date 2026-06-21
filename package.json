@@ -19,7 +19,7 @@
     "fix": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site fix",
     "typecheck": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site typecheck",
     "test": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site test",
-    "verify": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site verify",
+    "verify": "node scripts/wsl-proxy.mjs sh scripts/verify-with-progress.sh",
     "preview": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site preview",
     "smoke": "node scripts/wsl-proxy.mjs pnpm --filter @yanai-sh/site smoke",
     "env:copy-prod": "node scripts/wsl-proxy.mjs pnpm exec tsx scripts/copy-gh-environment.ts --from staging --to production",
