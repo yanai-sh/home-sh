@@ -9,7 +9,7 @@ cd "$root"
 if [ "${1:-}" = "--run" ]; then
   shift
 elif command -v stdbuf >/dev/null 2>&1; then
-  exec stdbuf -oL -eL "$0" --run "$@"
+  exec stdbuf -oL -eL sh "$0" --run "$@"
 fi
 
 say() {
