@@ -212,19 +212,27 @@ jobs:
 
       - name: Assert production contact form is enabled
         if: github.ref == 'refs/heads/main'
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.preview_url }}
+          VERSION_ID: ${{ steps.upload.outputs.version_id }}
         run: |
           set -euo pipefail
+          if [ -z "${PREVIEW_URL}" ]; then
+            echo "::error::No version preview URL; cannot verify contactFormLive in CI." >&2
+            exit 1
+          fi
+          # ponytail: probe preview URL, not yanai.sh — CI gets 403 on the custom domain (bot/WAF).
           for attempt in 1 2 3 4 5 6; do
-            HTTP_CODE="$(curl -sS --http1.1 -4 -o /tmp/yanai-body.html -w "%{http_code}" "https://yanai.sh/" || echo "000")"
+            HTTP_CODE="$(curl -sS --http1.1 -4 -o /tmp/yanai-body.html -w "%{http_code}" "${PREVIEW_URL}/" || echo "000")"
             BODY="$(cat /tmp/yanai-body.html 2>/dev/null || true)"
-            if printf '%s' "$BODY" | grep -qE 'contactFormLive":true|contactFormLive:true'; then
-              echo "Production serves live contact form (attempt ${attempt}, HTTP ${HTTP_CODE})."
+            if printf '%s' "$BODY" | grep -qE 'contactFormLive":true|contactFormLive:true|data-contact-live="true"'; then
+              echo "Version ${VERSION_ID} advertises live contact form (attempt ${attempt}, HTTP ${HTTP_CODE})."
               exit 0
             fi
-            echo "Attempt ${attempt}/6: HTTP ${HTTP_CODE}, contactFormLive not true on https://yanai.sh" >&2
+            echo "Attempt ${attempt}/6: HTTP ${HTTP_CODE}, contact form not live on ${PREVIEW_URL}" >&2
             sleep 10
           done
-          echo "::error::https://yanai.sh does not advertise contactFormLive:true after promote." >&2
+          echo "::error::Version ${VERSION_ID} preview does not advertise contactFormLive after promote." >&2
           exit 1
 
       - name: Write deploy summary
