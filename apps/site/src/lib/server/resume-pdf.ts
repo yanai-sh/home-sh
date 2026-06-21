@@ -30,14 +30,10 @@ async function resumeRepoToken(env: Env): Promise<string> {
   const fromPrivate = privateEnv.RESUME_REPO_TOKEN?.trim();
   if (fromPrivate) return fromPrivate;
 
-  if (typeof env.RESUME_REPO_TOKEN === "string") {
-    const direct = env.RESUME_REPO_TOKEN.trim();
-    if (direct) return direct;
-  }
+  const fromBinding = await secretValue(env.RESUME_REPO_TOKEN);
+  if (fromBinding) return fromBinding;
 
-  const binding = await secretValue(env.RESUME_REPO_TOKEN);
   return resolveResumeRepoToken({
-    binding,
     privateEnv: privateEnv as Record<string, string | undefined>,
     processEnv: process.env,
     metaEnv: import.meta.env as Record<string, string | undefined>,

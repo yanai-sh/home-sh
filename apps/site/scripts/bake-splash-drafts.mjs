@@ -286,9 +286,8 @@ for (const [slug, bake] of Object.entries(bakers)) {
     await writeJpg(`${base}.jpg`, data, WIDTH, HEIGHT);
     console.log(`[bake-splash-drafts] wrote ${slug}`);
   } catch (error) {
-    console.error(
-      `[bake-splash-drafts] sharp required: ${error instanceof Error ? error.message : error}`,
-    );
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[bake-splash-drafts] sharp required: ${message}`);
     process.exit(1);
   }
 }

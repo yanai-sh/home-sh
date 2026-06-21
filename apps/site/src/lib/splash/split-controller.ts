@@ -92,7 +92,6 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
   const {
     root,
     shell,
-    paneSplash,
     paneDetail,
     splitDivider,
     viewResume,
