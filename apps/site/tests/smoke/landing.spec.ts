@@ -22,6 +22,14 @@ async function waitForSplashClient(page: Page): Promise<void> {
   await expect(page.locator('button[data-open-split="resume"]')).toBeVisible();
 }
 
+async function waitForSplitOpen(page: Page): Promise<void> {
+  await expect(page.locator("html")).toHaveAttribute("data-split-open", "true");
+  await expect(page.locator("html")).toHaveCSS("--split-progress", "1");
+  await page.waitForFunction(
+    () => !document.documentElement.classList.contains("is-split-animating"),
+  );
+}
+
 test("splash stage renders with resume CTA and CSS ambient layer", async ({ page }) => {
   await page.goto(`${BASE}/`);
   await expect(page.locator("#shell")).toBeVisible();
@@ -87,7 +95,7 @@ test("repeat nav click closes an open pane without reopening", async ({ page }) 
   const resume = page.locator('button[data-open-split="resume"]');
   await resume.click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "resume");
-  await expect(page.locator("html")).toHaveAttribute("data-split-open", "true");
+  await waitForSplitOpen(page);
   await resume.click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "splash");
   await expect(page.locator("html")).not.toHaveAttribute("data-split-open");
@@ -99,7 +107,7 @@ test("switching panes keeps flyout open and changes mode", async ({ page }) => {
   await waitForSplashClient(page);
   await page.locator('button[data-open-split="resume"]').click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "resume");
-  await expect(page.locator("html")).toHaveAttribute("data-split-open", "true");
+  await waitForSplitOpen(page);
   await page.locator('button[data-open-split="contact"]').click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "contact");
   await expect(page.locator("html")).toHaveAttribute("data-split-open", "true");

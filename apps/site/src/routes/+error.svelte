@@ -13,7 +13,7 @@
       return {
         title: '404 - yanai.sh',
         heading: 'Page not found',
-        body: detail ?? 'This route does not exist.',
+        body: 'This route does not exist.',
       };
     }
     if (status === 403) {
