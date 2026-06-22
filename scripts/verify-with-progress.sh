@@ -2,6 +2,9 @@
 # ponytail: step banners + heartbeats so pre-push verify is not silent for ~6–10 min on WSL /mnt/c.
 set -eu
 
+export PATH="${HOME}/.nub/bin:${PATH:-}"
+export NODE_COMPAT=1
+
 root="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
@@ -53,18 +56,18 @@ run_step() {
 
 say "Verify pipeline — typically 6–10 min on WSL (/mnt/c); steps print as they start."
 
-run_step '1/6 velite' pnpm --filter @yanai-sh/site velite
+run_step '1/6 velite' nub -F @yanai-sh/site run velite
 
 step '2/6 ensure-env + wrangler-types'
-pnpm --filter @yanai-sh/site ensure-env
-pnpm --filter @yanai-sh/site wrangler-types
+nub -F @yanai-sh/site run ensure-env
+nub -F @yanai-sh/site run wrangler-types
 
-run_step '3/6 check (vp check + svelte-check)' pnpm --filter @yanai-sh/site check
-run_step '4/6 unit tests (vitest)' pnpm --filter @yanai-sh/site test
-run_step '5/6 production build (vite)' env PUBLIC_TURNSTILE_SITE_KEY=0xTEST_SITE_KEY_EMBED pnpm --filter @yanai-sh/site exec vite build
+run_step '3/6 check (vp check + svelte-check)' nub -F @yanai-sh/site run check
+run_step '4/6 unit tests (vitest)' nub -F @yanai-sh/site run test
+run_step '5/6 production build (vite)' env PUBLIC_TURNSTILE_SITE_KEY=0xTEST_SITE_KEY_EMBED sh -c 'cd apps/site && nub exec vite build'
 
 step '6/6 turnstile embed assert'
-PUBLIC_TURNSTILE_SITE_KEY=0xTEST_SITE_KEY_EMBED pnpm --filter @yanai-sh/site exec tsx ./scripts/assert-turnstile-embed.ts
+PUBLIC_TURNSTILE_SITE_KEY=0xTEST_SITE_KEY_EMBED sh -c 'cd apps/site && nub exec tsx ./scripts/assert-turnstile-embed.ts'
 
 say ""
 say "✓ verify complete"
