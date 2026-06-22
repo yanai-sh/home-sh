@@ -28,30 +28,31 @@ function runtimeProcessEnv(): Record<string, string | undefined> | undefined {
 }
 
 async function resumeRepoToken(env: Env): Promise<string> {
-  const devToken = devResumeRepoToken();
-  if (devToken) return devToken;
+  try {
+    const devToken = devResumeRepoToken();
+    if (devToken) return devToken;
 
-  const fromPrivate = privateEnv.RESUME_REPO_TOKEN?.trim();
-  if (fromPrivate) return fromPrivate;
+    if (import.meta.env.DEV) {
+      const fromPrivate = privateEnv.RESUME_REPO_TOKEN?.trim();
+      if (fromPrivate) return fromPrivate;
+    }
 
-  const fromBinding = await secretValue(env.RESUME_REPO_TOKEN);
-  if (fromBinding) return fromBinding;
+    const fromBinding = await secretValue(env.RESUME_REPO_TOKEN);
+    if (fromBinding) return fromBinding;
 
-  return resolveResumeRepoToken({
-    privateEnv: privateEnv as Record<string, string | undefined>,
-    processEnv: runtimeProcessEnv(),
-    metaEnv: import.meta.env as Record<string, string | undefined>,
-  });
+    return resolveResumeRepoToken({
+      privateEnv: privateEnv as Record<string, string | undefined>,
+      processEnv: runtimeProcessEnv(),
+      metaEnv: import.meta.env as Record<string, string | undefined>,
+    });
+  } catch (error) {
+    console.error("resume-pdf: token resolution failed", error);
+    return "";
+  }
 }
 
 export async function resumePdfResponse(env: Env, includeBody: boolean): Promise<Response> {
-  let token = "";
-  try {
-    token = await resumeRepoToken(env);
-  } catch (error) {
-    console.error("resume-pdf: token resolution failed", error);
-    return errorResponse("Resume token lookup failed.", 502);
-  }
+  const token = await resumeRepoToken(env);
   if (!token) {
     return errorResponse("Resume token is not configured.", 503);
   }
