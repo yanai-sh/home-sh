@@ -7,13 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- **Inline résumé quality** — defer PDF.js render until the flyout finishes opening; render at logical width with DPR transform so text is not upscaled from a narrow mid-animation bitmap.
+## [v0.1.31] - 2026-06-22
 
 ### Changed
 
 - **Toolchain** — migrate package manager from pnpm to [Nub](https://nubjs.com/) (`lock.yaml`, `nub ci` / `nub run` in CI and scripts).
+
+### Fixed
+
+- **CI (Nub)** — wrangler deploy uses workspace filter; Playwright smoke runs with `NODE_COMPAT=1`.
+
+## [v0.1.30] - 2026-06-22
+
+### Fixed
+
+- **Inline résumé quality** — defer PDF.js render until the flyout finishes opening; render at logical width with DPR transform so text is not upscaled from a narrow mid-animation bitmap.
 
 ## [v0.1.27] - 2026-06-21
 
