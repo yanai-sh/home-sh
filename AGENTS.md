@@ -1,6 +1,6 @@
 ## This repository
 
-**pnpm monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker (Workers with Static Assets); **`/api/contact`** and **`/resume.pdf`** on that Worker. Optional **`resume/`** git submodule (Rust PDF builder). Toolchain: **Vite+** (`vp check`: Oxlint, Oxfmt, tsgo), **svelte-check**, **Vitest**, **Velite**. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+**Nub monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker (Workers with Static Assets); **`/api/contact`** and **`/resume.pdf`** on that Worker. Optional **`resume/`** git submodule (Rust PDF builder). Toolchain: **Vite+** (`vp check`: Oxlint, Oxfmt, tsgo), **svelte-check**, **Vitest**, **Velite**. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ### Monorepo layout
 
@@ -40,15 +40,15 @@ CSS custom properties live in **`src/styles/global.css`** (`:root` / `[data-them
 
 ### Scripts (copy-paste, run from repo root)
 
-- **`pnpm run dev`** — SvelteKit dev server (`vite dev`, port **4322**; override with `SITE_DEV_PORT`). **`predev`** frees the port so zombie servers cannot serve stale bundles. On WSL + **`/mnt/c`**, Vite uses file polling for reliable HMR.
-- **`pnpm run dev:fresh`** — kill port, clear **`node_modules/.vite`**, then start dev (use when the UI still looks like an old build).
-- **`pnpm run check:dev`** — HTTP probe that `/` and lab routes include **`data-dev-build`** and exclude known stale markers; fails with a fix hint if not.
-- **`pnpm run check`** / **`pnpm run fix`** — `vp check` (Oxlint, Oxfmt, tsgo) + `svelte-check` + Velite sync
-- **`pnpm run typecheck`** — same as **`check`**
-- **`pnpm run test`** — Vitest
-- **`pnpm run verify`** — Velite → `vp check` + svelte-check → test → build (same as PR CI; Deploy runs build-only)
-- **`pnpm run preview`** — `wrangler dev .svelte-kit/cloudflare` (run **`build`** first)
-- **`pnpm run smoke`** — Playwright smoke tests (`apps/site/tests/smoke`; starts local preview unless **`SMOKE_BASE_URL`** is set)
+- **`nub run dev`** — SvelteKit dev server (`vite dev`, port **4322**; override with `SITE_DEV_PORT`). **`predev`** frees the port so zombie servers cannot serve stale bundles. On WSL + **`/mnt/c`**, Vite uses file polling for reliable HMR.
+- **`nub run dev:fresh`** — kill port, clear **`node_modules/.vite`**, then start dev (use when the UI still looks like an old build).
+- **`nub run check:dev`** — HTTP probe that `/` and lab routes include **`data-dev-build`** and exclude known stale markers; fails with a fix hint if not.
+- **`nub run check`** / **`nub run fix`** — `vp check` (Oxlint, Oxfmt, tsgo) + `svelte-check` + Velite sync
+- **`nub run typecheck`** — same as **`check`**
+- **`nub run test`** — Vitest
+- **`nub run verify`** — Velite → `vp check` + svelte-check → test → build (same as PR CI; Deploy runs build-only)
+- **`nub run preview`** — `wrangler dev .svelte-kit/cloudflare` (run **`build`** first)
+- **`nub run smoke`** — Playwright smoke tests (`apps/site/tests/smoke`; starts local preview unless **`SMOKE_BASE_URL`** is set)
 
 ### GitHub Actions
 
@@ -58,8 +58,8 @@ Workflow and job names use a **`yanai-sh / …`** prefix so the Actions tab and 
 - **Deploy** (`deploy.yml`, **`yanai-sh / Deploy`**): **`push`** to **`dev`** / **`main`** and **`workflow_dispatch`** (**`skip_smoke: 'true'`** skips staging smoke; **`version_bump`** on **`main`** dispatch: **patch** / **minor** on **`v0.y.z`**, or **major** → **`v1.0.0`**). Jobs: **`yanai-sh / deploy — publish`**, **`yanai-sh / deploy — version tag`** (**`main`** only), **`yanai-sh / deploy — GitHub release`** (**`main`** only), **`yanai-sh / deploy — smoke`**. No **`pull_request`** on deploy. Project-pinned wrangler 4.x; config from **`apps/site/wrangler.jsonc`** (build output in **`.svelte-kit/cloudflare/`**).
   - Uses GitHub **Environments** (`staging`/`production`); staging smoke uses Cloudflare Access service token headers when set.
 - **Deps — auto-merge** (`dependabot-auto-merge.yml`, **`yanai-sh / Deps — auto-merge`**) — for **`dependabot[bot]`** PRs: **`gh pr merge --auto --squash --delete-branch`** (merges when required checks are green, then removes Dependabot’s head branch). Enable **Settings → General → Allow auto-merge** and keep branch rules compatible.
-- **Caches** — composite **`pnpm-install`** restores **`~/.local/share/pnpm/store`**; **`playwright-chromium`** restores **`~/.cache/ms-playwright`** (keyed off **`pnpm-lock.yaml`**). Key third-party actions use **commit SHAs** (comments note the tag).
-- **Path filters** — **`dorny/paths-filter`** drives an informational summary; **actionlint** runs every PR/Deploy. **`pnpm run verify`** still runs on every PR (`ubuntu-latest`).
+- **Caches** — composite **`nub-install`** restores **`~/.local/share/nub/store/v1`**; **`playwright-chromium`** restores **`~/.cache/ms-playwright`** (keyed off **`lock.yaml`**). Key third-party actions use **commit SHAs** (comments note the tag).
+- **Path filters** — **`dorny/paths-filter`** drives an informational summary; **actionlint** runs every PR/Deploy. **`nub run verify`** still runs on every PR (`ubuntu-latest`).
 - **Other workflows** — **`yanai-sh / Rollback`**, **`yanai-sh / Infra — plan`**, **`yanai-sh / Secrets — push`**, **`yanai-sh / Ops — token expiry`** (`rollback.yml`, `infra-plan.yml`, `push-worker-secrets.yml`, `token-expiry-check.yml`).
 - **Auth** — Wrangler **`versions upload` / `deploy`** use **`CLOUDFLARE_API_TOKEN`** from the Environment. GitHub OIDC for Workers deploy is not a drop-in replacement yet; keep the token until upstream supports it, then migrate.
 
@@ -67,9 +67,9 @@ Workflow and job names use a **`yanai-sh / …`** prefix so the Actions tab and 
 
 Two long-lived branches, two Workers: **`yanai-sh-staging`** on **`dev`**, **`yanai-sh`** on **`main`** (same `apps/site/wrangler.jsonc`; deploy passes **`--name yanai-sh-staging`** on **`dev`**). **Deploy** runs on **`push`** to **`dev`** or **`main`**, not on **`pull_request`** into **`dev`** (avoids uploading twice when a PR merges). **Staging** uses a Wrangler-only label (**`dev-<run_id>`**); **no git tags on `dev`**. **Production** tags are SemVer **`v0.y.z`** (pre-1.0); the first deploy after any legacy **`v1+.*`** tag (e.g. **`v2.7.0`**) is **`v0.1.0`** (hard reset). Normal pushes to **`main`** bump **patch**; **minor** / **major** (including shipping **`v1.0.0`**) use **workflow_dispatch**.
 
-**Solo loop (three beats):** (1) **`pnpm run verify`** locally before every push. (2) Open PRs to **`main`** (CI) and merge work into **`dev`**; each **`push`** to **`dev`** runs **Deploy** → staging Worker + optional smoke on the version preview URL. (3) When staging looks right, PR **`dev` → `main`** → production upload + promote + release. Secrets and Environment names: **`infra/README.md`**.
+**Solo loop (three beats):** (1) **`nub run verify`** locally before every push. (2) Open PRs to **`main`** (CI) and merge work into **`dev`**; each **`push`** to **`dev`** runs **Deploy** → staging Worker + optional smoke on the version preview URL. (3) When staging looks right, PR **`dev` → `main`** → production upload + promote + release. Secrets and Environment names: **`infra/README.md`**.
 
-Day-to-day: **`git checkout dev && git pull`** → topic branch → **`pnpm run verify`** → PR → **`dev`** → QA staging preview (smoke supports Cloudflare Access via **`CF_ACCESS_CLIENT_ID`** / **`CF_ACCESS_CLIENT_SECRET`** on the **`staging`** Environment) → PR **`dev` → `main`**. **`CHANGELOG`**: keep **`[Unreleased]`** on **`dev`**; before **`dev` → `main`**, cut a dated **`[v0.y.z]`** section aligned with the tag Deploy will create (or fix up after merge). **`./scripts/gh-protect-main.sh`** (see **`README.md`**) documents **`main`** ruleset expectations.
+Day-to-day: **`git checkout dev && git pull`** → topic branch → **`nub run verify`** → PR → **`dev`** → QA staging preview (smoke supports Cloudflare Access via **`CF_ACCESS_CLIENT_ID`** / **`CF_ACCESS_CLIENT_SECRET`** on the **`staging`** Environment) → PR **`dev` → `main`**. **`CHANGELOG`**: keep **`[Unreleased]`** on **`dev`**; before **`dev` → `main`**, cut a dated **`[v0.y.z]`** section aligned with the tag Deploy will create (or fix up after merge). **`./scripts/gh-protect-main.sh`** (see **`README.md`**) documents **`main`** ruleset expectations.
 
 ### Resume PDF and `RESUME_REPO_TOKEN`
 
@@ -81,31 +81,31 @@ The canonical resume is **`GET /resume.pdf`** — streams the latest **`YanaiKlu
 
 ### Releases and rollback
 
-A production release is whatever lands on **`main`** (Deploy auto-tags the next **`v0.y.z`** — **patch** by default). Before **`dev` → `main`**: move **`CHANGELOG`** **`[Unreleased]`** into **`## [v0.y.z] - YYYY-MM-DD`**, leave a fresh **`[Unreleased]`**. For **minor** bumps on the **`0.*`** line or shipping **`v1.0.0`**, use **Actions → Deploy → Run workflow** on **`main`** with **`version_bump`**. Watch deploy: **`gh run watch`**. Smoke prod: **`pnpm run --dir apps/site smoke`** with **`SMOKE_BASE_URL=https://yanai.sh`** when needed. If prod is wrong, **`ARCHITECTURE.md`** documents Worker rollback.
+A production release is whatever lands on **`main`** (Deploy auto-tags the next **`v0.y.z`** — **patch** by default). Before **`dev` → `main`**: move **`CHANGELOG`** **`[Unreleased]`** into **`## [v0.y.z] - YYYY-MM-DD`**, leave a fresh **`[Unreleased]`**. For **minor** bumps on the **`0.*`** line or shipping **`v1.0.0`**, use **Actions → Deploy → Run workflow** on **`main`** with **`version_bump`**. Watch deploy: **`gh run watch`**. Smoke prod: **`nub run --dir apps/site smoke`** with **`SMOKE_BASE_URL=https://yanai.sh`** when needed. If prod is wrong, **`ARCHITECTURE.md`** documents Worker rollback.
 
 ### Commits, dependencies, style
 
-Use clear messages; **Conventional Commits** are optional. **Dependabot**: **`.github/dependabot.yml`** — **monthly** **pnpm** (grouped: runtime / tooling / root scripts) + grouped **GitHub Actions** bumps. **Vite+** (`vp check --fix`) is the source of truth for JS/TS style.
+Use clear messages; **Conventional Commits** are optional. **Dependabot**: **`.github/dependabot.yml`** — **monthly** **npm** (grouped: runtime / tooling / root scripts) + grouped **GitHub Actions** bumps. **Vite+** (`vp check --fix`) is the source of truth for JS/TS style.
 
 ### Optional maintainer tooling
 
-- **`scripts/optional/`** — never run by CI or **`verify`**. Example: **`pnpm run optional:bitwarden-to-secrets`** (Bitwarden CLI → local JSON / `gh`). See **`scripts/optional/README.md`**.
+- **`scripts/optional/`** — never run by CI or **`verify`**. Example: **`nub run optional:bitwarden-to-secrets`** (Bitwarden CLI → local JSON / `gh`). See **`scripts/optional/README.md`**.
 
 ### Local hooks
 
-After **`pnpm install`**, **`prepare`** runs **Lefthook** (skipped when **`CI`** is set). **`pre-push`** runs **`pnpm run verify`**. To skip: **`LEFTHOOK=0`** or **`git push --no-verify`** (use sparingly).
+After **`nub install`**, **`prepare`** runs **Lefthook** (skipped when **`CI`** is set). **`pre-push`** runs **`nub run verify`**. To skip: **`LEFTHOOK=0`** or **`git push --no-verify`** (use sparingly).
 
-### Node / pnpm / Vite+
+### Node / Nub / Vite+
 
-Use **pnpm** + **Vite+** (`vp dev`, `vp check`, `vp test`, `vp build`, `vp run verify`). Node **22+** via **`.node-version`**. **`pnpm exec tsx`** for root scripts.
+Use **Nub** + **Vite+** (`vp dev`, `vp check`, `vp test`, `vp build`, `vp run verify`). Node **22+** via **`.node-version`**. **`nub exec tsx`** for root scripts. Set **`NODE_COMPAT=1`** when Nub's runtime hooks break tools (tsx, vite in verify).
 
-**Windows ARM64 — use WSL2:** `workerd` has no **`@cloudflare/workerd-windows-arm64`** npm package yet. All **`pnpm run …`** JS commands auto-route through **WSL2** via **`scripts/wsl-proxy.mjs`**. Bootstrap once:
+**Windows ARM64 — use WSL2:** `workerd` has no **`@cloudflare/workerd-windows-arm64`** npm package yet. All **`nub run …`** JS commands auto-route through **WSL2** via **`scripts/wsl-proxy.mjs`**. Bootstrap once:
 
 ```bash
-pnpm run setup:wsl
+nub run setup:wsl
 ```
 
-That installs Fedora packages (git, **gh**, just, node, Playwright libs), **rustup** (for the **resume/** submodule), Linux **node_modules**, **resume** submodule, **lefthook**, **Playwright chromium**, and runs **`pnpm run verify`**. Repo can stay on **`/mnt/c/...`** (Vitest uses **`pool: 'threads'`** because fork workers hang on drvfs). **Do not** run **`pnpm install`** from Windows arm64 Node.
+That installs Fedora packages (git, **gh**, just, node, Playwright libs), **rustup** (for the **resume/** submodule), Linux **node_modules**, **resume** submodule, **lefthook**, **Playwright chromium**, and runs **`nub run verify`**. Repo can stay on **`/mnt/c/...`** (Vitest uses **`pool: 'threads'`** because fork workers hang on drvfs). **Do not** run **`nub install`** from Windows arm64 Node.
 
 Before first setup, on Windows run **`gh auth switch -u yanai-sh`** so the private **`resume/`** submodule can clone (or **`gh auth login`** inside WSL).
 
@@ -113,6 +113,6 @@ Before first setup, on Windows run **`gh auth switch -u yanai-sh`** so the priva
 
 ### Local Cloudflare cache
 
-**`.wrangler/`** (under `apps/site/`) is Wrangler's local cache (gitignored). Safe to delete; recreated on **`pnpm run preview`**.
+**`.wrangler/`** (under `apps/site/`) is Wrangler's local cache (gitignored). Safe to delete; recreated on **`nub run preview`**.
 
 **`target/`** is Rust's build cache (gitignored). Safe to delete; recreated on next `cargo build`.

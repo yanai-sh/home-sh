@@ -26,6 +26,6 @@ jobs:
 
       - uses: ./.github/actions/actionlint
 
-      - uses: ./.github/actions/pnpm-verify
+      - uses: ./.github/actions/nub-verify
         with:
           public_turnstile_site_key: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}

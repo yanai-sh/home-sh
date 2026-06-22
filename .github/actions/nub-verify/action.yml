@@ -1,5 +1,5 @@
-name: yanai-sh / setup — pnpm-build
-description: pnpm install then build (Deploy path — no duplicate check/test)
+name: yanai-sh / setup — nub-verify
+description: nub ci then nub run verify (expects repo checkout before this action)
 inputs:
   public_turnstile_site_key:
     description: Public Turnstile site key for build-time embed (same as Deploy)
@@ -8,9 +8,10 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: ./.github/actions/pnpm-install
-    - name: Build site (Worker bundle in .svelte-kit/cloudflare/)
-      run: pnpm run build
+    - uses: ./.github/actions/nub-install
+    - name: Run monorepo verify
+      run: nub run verify
       shell: bash
       env:
+        NODE_COMPAT: "1"
         PUBLIC_TURNSTILE_SITE_KEY: ${{ inputs.public_turnstile_site_key }}

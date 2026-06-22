@@ -2,7 +2,7 @@
 #
 # Promotes an existing immutable version to 100% — no rebuild required.
 # Find version_id: Cloudflare Dashboard → yanai-sh → Deployments, or
-# `pnpm --dir apps/site exec wrangler versions list --config wrangler.jsonc`.
+# `nub -F @yanai-sh/site exec wrangler versions list --config wrangler.jsonc`.
 
 name: yanai-sh / Rollback
 
@@ -36,7 +36,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
-      - uses: ./.github/actions/pnpm-install
+      - uses: ./.github/actions/nub-install
 
       - name: Promote rollback version to production (100%)
         env:
@@ -46,7 +46,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          DEPLOY_OUTPUT="$(WRANGLER_CI=1 pnpm --dir apps/site exec wrangler versions deploy \
+          DEPLOY_OUTPUT="$(WRANGLER_CI=1 nub -F @yanai-sh/site exec wrangler versions deploy \
             --config wrangler.jsonc \
             --version-id "${VERSION_ID}" \
             --percentage 100 \
@@ -57,7 +57,7 @@ jobs:
             echo "Promoted ${VERSION_ID} to 100%."
             exit 0
           fi
-          LIST="$(WRANGLER_CI=1 pnpm --dir apps/site exec wrangler deployments list --config wrangler.jsonc 2>&1 || true)"
+          LIST="$(WRANGLER_CI=1 nub -F @yanai-sh/site exec wrangler deployments list --config wrangler.jsonc 2>&1 || true)"
           echo "$LIST"
           if printf '%s\n' "$LIST" | grep -qE "\(100%\)[[:space:]]${VERSION_ID}"; then
             echo "Promoted ${VERSION_ID} to 100% (confirmed via deployments list)."
