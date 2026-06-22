@@ -299,9 +299,10 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
   };
 
   const ensurePdfLoaded = (): void => {
-    if (pdfLoaded) return;
+    if (pdfLoaded && resumePages.dataset.rendered === "true") return;
     pdfLoaded = true;
     void renderResumePdf(resumePages, PDF_URL, () => {
+      pdfLoaded = false;
       pdfFallback.classList.add("is-visible");
     });
   };

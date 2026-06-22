@@ -41,7 +41,7 @@ export function scoreResumePdfFilename(filename: string): number {
 }
 
 export function findResumePdfAsset(release: ResumeRelease): ResumeReleaseAsset | undefined {
-  const pdfs = release.assets.filter((asset) => asset.name.toLowerCase().endsWith(".pdf"));
+  const pdfs = (release.assets ?? []).filter((asset) => asset.name.toLowerCase().endsWith(".pdf"));
   if (pdfs.length === 0) return undefined;
 
   const matches = extract(

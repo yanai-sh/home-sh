@@ -197,12 +197,14 @@ export function initSplash(): void {
   for (const element of document.querySelectorAll("[data-close-split]")) {
     element.addEventListener("click", () => split.closeSplit());
   }
-  for (const element of document.querySelectorAll("[data-back-to-projects]")) {
-    element.addEventListener("click", (event) => {
-      event.preventDefault();
-      split.backToProjects();
-    });
-  }
+  // ponytail: delegate — project detail mounts after {#await repoMeta}; init-time query misses it.
+  paneDetail.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (!target.closest("[data-back-to-projects]")) return;
+    event.preventDefault();
+    split.backToProjects();
+  });
 
   window.addEventListener("keydown", (event) => {
     if (
