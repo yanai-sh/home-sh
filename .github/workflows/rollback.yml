@@ -47,7 +47,7 @@ jobs:
         run: |
           set -euo pipefail
           DEPLOY_OUTPUT="$(WRANGLER_CI=1 nub -F @yanai-sh/site exec wrangler versions deploy \
-            --config wrangler.jsonc \
+            --config apps/site/wrangler.jsonc \
             --version-id "${VERSION_ID}" \
             --percentage 100 \
             --message "rollback by ${GITHUB_ACTOR}: ${ROLLBACK_REASON}" \
@@ -57,7 +57,7 @@ jobs:
             echo "Promoted ${VERSION_ID} to 100%."
             exit 0
           fi
-          LIST="$(WRANGLER_CI=1 nub -F @yanai-sh/site exec wrangler deployments list --config wrangler.jsonc 2>&1 || true)"
+          LIST="$(WRANGLER_CI=1 nub -F @yanai-sh/site exec wrangler deployments list --config apps/site/wrangler.jsonc 2>&1 || true)"
           echo "$LIST"
           if printf '%s\n' "$LIST" | grep -qE "\(100%\)[[:space:]]${VERSION_ID}"; then
             echo "Promoted ${VERSION_ID} to 100% (confirmed via deployments list)."
