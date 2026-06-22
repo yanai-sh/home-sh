@@ -34,13 +34,7 @@ async function resumeRepoToken(env: Env): Promise<string> {
   const fromPrivate = privateEnv.RESUME_REPO_TOKEN?.trim();
   if (fromPrivate) return fromPrivate;
 
-  const binding = env.RESUME_REPO_TOKEN;
-  if (typeof binding === "string") {
-    const direct = binding.trim();
-    if (direct) return direct;
-  }
-
-  const fromBinding = await secretValue(binding);
+  const fromBinding = await secretValue(env.RESUME_REPO_TOKEN);
   if (fromBinding) return fromBinding;
 
   return resolveResumeRepoToken({
