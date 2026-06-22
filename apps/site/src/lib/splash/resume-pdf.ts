@@ -10,23 +10,52 @@ const PAPER_WARM = { r: 236, g: 228, b: 210 } as const;
 
 let started = false;
 
-function waitForLayoutWidth(element: HTMLElement, timeoutMs = 2_400): Promise<void> {
-  if (element.clientWidth > 0) return Promise.resolve();
+const MIN_READABLE_WIDTH = 280;
+
+/** Pure layout gate — keeps PDF render from running on a narrow mid-animation pane. */
+export function isResumeLayoutReadable(
+  clientWidth: number,
+  splitOpen: boolean,
+  splitAnimating: boolean,
+): boolean {
+  if (clientWidth < MIN_READABLE_WIDTH) return false;
+  if (!splitOpen) return false;
+  if (splitAnimating) return false;
+  return true;
+}
+
+function resumeLayoutReady(container: HTMLElement, root = document.documentElement): boolean {
+  return isResumeLayoutReadable(
+    container.clientWidth,
+    root.dataset.splitOpen === "true",
+    root.classList.contains("is-split-animating"),
+  );
+}
+
+function waitForReadableLayout(container: HTMLElement, timeoutMs = 3_000): Promise<void> {
+  const root = document.documentElement;
+  if (resumeLayoutReady(container, root)) return Promise.resolve();
 
   return new Promise((resolve) => {
     let settled = false;
     const finish = (): void => {
       if (settled) return;
       settled = true;
-      observer.disconnect();
+      resize.disconnect();
+      mutation.disconnect();
       clearTimeout(timer);
       resolve();
     };
 
-    const observer = new ResizeObserver(() => {
-      if (element.clientWidth > 0) finish();
-    });
-    observer.observe(element);
+    const tryFinish = (): void => {
+      if (resumeLayoutReady(container, root)) finish();
+    };
+
+    const resize = new ResizeObserver(tryFinish);
+    resize.observe(container);
+    // ponytail: split end is a class flip, not a resize — watch html attrs instead of polling.
+    const mutation = new MutationObserver(tryFinish);
+    mutation.observe(root, { attributes: true, attributeFilter: ["class", "data-split-open"] });
     const timer = window.setTimeout(finish, timeoutMs);
   });
 }
@@ -54,10 +83,6 @@ function warmPaperPixels(ctx: CanvasRenderingContext2D, width: number, height: n
   ctx.putImageData(image, 0, 0);
 }
 
-export function resetResumePdfRenderState(): void {
-  started = false;
-}
-
 export async function renderResumePdf(
   pages: HTMLElement,
   url: string,
@@ -68,34 +93,39 @@ export async function renderResumePdf(
   pages.dataset.rendered = "pending";
 
   try {
-    await waitForLayoutWidth(pages);
+    await waitForReadableLayout(pages);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     const pdfjs = await import("pdfjs-dist");
     const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
     pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
 
     const doc = await pdfjs.getDocument({ url }).promise;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const targetWidth = Math.max(320, Math.min(pages.clientWidth || 720, 1100));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const cssWidth = Math.min(pages.clientWidth || 720, 1100);
 
     for (let n = 1; n <= doc.numPages; n++) {
       const page = await doc.getPage(n);
       const unit = page.getViewport({ scale: 1 });
-      const viewport = page.getViewport({ scale: (targetWidth / unit.width) * dpr });
+      const logicalScale = cssWidth / unit.width;
+      const viewport = page.getViewport({ scale: logicalScale });
       const frame = document.createElement("div");
       frame.className = "resume-page-frame";
       const canvas = document.createElement("canvas");
       canvas.className = "resume-page";
-      canvas.width = Math.floor(viewport.width);
-      canvas.height = Math.floor(viewport.height);
-      canvas.style.width = "100%";
-      canvas.style.height = "auto";
+      const logicalW = Math.floor(viewport.width);
+      const logicalH = Math.floor(viewport.height);
+      canvas.width = Math.floor(logicalW * dpr);
+      canvas.height = Math.floor(logicalH * dpr);
+      canvas.style.width = `${logicalW}px`;
+      canvas.style.height = `${logicalH}px`;
       canvas.style.setProperty("--resume-page-index", String(n - 1));
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("2D context unavailable");
       frame.appendChild(canvas);
       pages.appendChild(frame);
-      await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+      const transform = dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined;
+      await page.render({ canvas, canvasContext: ctx, viewport, transform }).promise;
       warmPaperPixels(ctx, canvas.width, canvas.height);
     }
 
