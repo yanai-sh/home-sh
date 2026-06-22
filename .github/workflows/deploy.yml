@@ -157,7 +157,7 @@ jobs:
           VERSION_ID: ${{ steps.upload.outputs.version_id }}
         run: |
           set -euo pipefail
-          WRANGLER_JSON="wrangler.jsonc"
+          WRANGLER_JSON="apps/site/wrangler.jsonc"
           DEPLOY_OUTPUT="$(WRANGLER_CI=1 nub -F @yanai-sh/site exec wrangler versions deploy \
             --config "$WRANGLER_JSON" \
             --version-id "${VERSION_ID}" \
