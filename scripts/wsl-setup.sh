@@ -20,7 +20,7 @@ if [[ -f "$HOME/.cargo/env" ]]; then
   source "$HOME/.cargo/env"
 fi
 
-export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$HOME/.local/share/pnpm:$PATH"
+export PATH="$HOME/.nub/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
 log "WSL2 bootstrap ($(uname -m)) — $ROOT"
 
@@ -102,7 +102,7 @@ configure_git_auth() {
   warn "on Windows, ensure active gh account is yanai-sh: gh auth switch -u yanai-sh"
 }
 
-ensure_node_pnpm() {
+ensure_node_nub() {
   if ! command -v node >/dev/null 2>&1; then
     echo "node missing after dnf install" >&2
     exit 1
@@ -114,13 +114,12 @@ ensure_node_pnpm() {
   fi
   log "node $(node -v)"
 
-  if command -v corepack >/dev/null 2>&1; then
-    corepack enable >/dev/null 2>&1 || true
-    corepack prepare pnpm@9.15.9 --activate
-  elif ! command -v pnpm >/dev/null 2>&1; then
-    npm install -g pnpm@9.15.9
+  if ! command -v nub >/dev/null 2>&1; then
+    log "installing nub"
+    curl -fsSL https://nubjs.com/install.sh | bash
+    export PATH="$HOME/.nub/bin:$PATH"
   fi
-  log "pnpm $(pnpm -v)"
+  log "nub $(nub --version)"
 }
 
 ensure_rustup() {
@@ -135,8 +134,8 @@ ensure_rustup() {
 }
 
 install_js_deps() {
-  log "pnpm install (linux/arm64 native bindings)"
-  LEFTHOOK=0 pnpm install --force --no-frozen-lockfile
+  log "nub ci (linux/arm64 native bindings)"
+  LEFTHOOK=0 nub ci
   mkdir -p node_modules
   date -Iseconds > node_modules/.wsl-toolchain
 }
@@ -144,7 +143,7 @@ install_js_deps() {
 install_hooks() {
   if command -v git >/dev/null 2>&1; then
     log "lefthook install"
-    pnpm exec lefthook install
+    nub exec lefthook install
   fi
 }
 
@@ -176,21 +175,21 @@ init_submodules() {
 
 install_playwright() {
   log "playwright chromium (linux/arm64)"
-  pnpm exec playwright install chromium
-  pnpm exec playwright install-deps chromium 2>/dev/null || warn "playwright install-deps skipped (may need sudo)"
+  nub exec playwright install chromium
+  nub exec playwright install-deps chromium 2>/dev/null || warn "playwright install-deps skipped (may need sudo)"
 }
 
 run_verify() {
-  log "pnpm run fix (normalize formatting after Windows edits)"
-  pnpm run fix || true
-  log "pnpm run verify"
-  pnpm run verify
+  log "nub run fix (normalize formatting after Windows edits)"
+  nub run fix || true
+  log "nub run verify"
+  nub run verify
 }
 
 install_dnf_packages
 ensure_shell_profile
 configure_git_auth
-ensure_node_pnpm
+ensure_node_nub
 ensure_rustup
 install_js_deps
 install_hooks
@@ -204,7 +203,7 @@ else
 fi
 
 log "WSL2 environment ready"
-log "  dev:     pnpm run dev"
-log "  verify:  pnpm run verify"
-log "  preview: pnpm run preview"
-log "  smoke:   pnpm run smoke"
+log "  dev:     nub run dev"
+log "  verify:  nub run verify"
+log "  preview: nub run preview"
+log "  smoke:   nub run smoke"

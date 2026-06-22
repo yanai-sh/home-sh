@@ -15,7 +15,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: ./.github/actions/pnpm-install
+    - uses: ./.github/actions/nub-install
     - uses: ./.github/actions/playwright-chromium
     - name: Preflight (Access + splash markers)
       env:
@@ -61,5 +61,5 @@ runs:
         SMOKE_BASE_URL: ${{ inputs.smoke_base_url }}
         CF_ACCESS_CLIENT_ID: ${{ inputs.cf_access_client_id }}
         CF_ACCESS_CLIENT_SECRET: ${{ inputs.cf_access_client_secret }}
-      run: pnpm run smoke
+      run: nub run smoke
       shell: bash

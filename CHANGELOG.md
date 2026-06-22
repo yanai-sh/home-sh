@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Inline résumé quality** — defer PDF.js render until the flyout finishes opening; render at logical width with DPR transform so text is not upscaled from a narrow mid-animation bitmap.
 
+### Changed
+
+- **Toolchain** — migrate package manager from pnpm to [Nub](https://nubjs.com/) (`lock.yaml`, `nub ci` / `nub run` in CI and scripts).
+
 ## [v0.1.27] - 2026-06-21
 
 ### Added
