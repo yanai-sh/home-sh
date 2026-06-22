@@ -16,7 +16,6 @@ import { trapFocus, withSplitViewTransition } from "./split-view-transition";
 
 const SPLIT_RATIO_KEY = "yanai-sh:split-ratio";
 const PDF_URL = "/resume.pdf";
-const REDUCED_MOTION_MS = 200;
 
 export type { DetailPane, SiteMode };
 
@@ -311,6 +310,11 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
     document.getElementById("cf-name")?.focus();
   };
 
+  const onPaneOpen = (pane: DetailPane): void => {
+    if (pane === "resume") ensurePdfLoaded();
+    if (pane === "contact") focusContactField();
+  };
+
   const openSplit = (pane: DetailPane, options: { slug?: string } = {}): void => {
     const slug = options.slug ?? "";
 
@@ -319,15 +323,11 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
       return;
     }
 
-    if (pane === "resume") ensurePdfLoaded();
-
     history.replaceState(null, "", `${location.pathname}${hashFor(pane, slug)}`);
 
     if (mode !== "splash") {
       paneDetail.removeAttribute("inert");
-      animatePaneSwitch(pane, slug, () => {
-        if (pane === "contact") focusContactField();
-      });
+      animatePaneSwitch(pane, slug, () => onPaneOpen(pane));
       return;
     }
 
@@ -339,7 +339,7 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
     withSplitViewTransition(() => {
       animateSplit(1, false, () => {
         releaseFocusTrap = trapFocus(paneDetail);
-        if (pane === "contact") focusContactField();
+        onPaneOpen(pane);
       });
     });
   };
@@ -461,4 +461,4 @@ export function createSplitController(deps: SplitControllerDeps): SplitControlle
   };
 }
 
-export { PDF_URL, REDUCED_MOTION_MS };
+export { PDF_URL };
