@@ -70,11 +70,20 @@ test("opening resume split shows the themed PDF viewer and download button", asy
   await waitForSplashClient(page);
   await page.locator('button[data-open-split="resume"]').click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "resume");
+  await waitForSplitOpen(page);
   await expect(page.locator("#pane-detail")).not.toHaveAttribute("inert", "");
   await expect(page.locator("#chrome-label")).toHaveText("resume.pdf");
-  // In-page PDF.js viewer (no sidebar/iframe) + a clear themed download button.
   await expect(page.locator("#resume-viewer")).toBeVisible();
   await expect(page.locator("#pdf-download")).toBeVisible();
+  await expect(page.locator("#resume-pages")).toHaveAttribute("data-rendered", "true", {
+    timeout: 20_000,
+  });
+  const canvas = page.locator(".resume-page").first();
+  const crisp = await canvas.evaluate((el: HTMLCanvasElement) => {
+    const display = el.getBoundingClientRect().width;
+    return display > 280 && el.width >= display;
+  });
+  expect(crisp).toBe(true);
 });
 
 test("closing resume split hides divider and returns to splash mode", async ({ page }) => {
