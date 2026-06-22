@@ -180,6 +180,20 @@ test("project card in projects flyout opens project detail", async ({ page }) =>
   await expect(page.locator('[data-project-detail="winmint"]:not([hidden])')).toBeVisible();
 });
 
+test("project detail back control returns to projects grid", async ({ page }) => {
+  await page.goto(`${BASE}/`);
+  await waitForSplashClient(page);
+  await page.locator('button[data-open-split="projects"]').click();
+  await page.locator('[data-open-project="winmint"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-site-mode", "project");
+  await page
+    .locator('[data-project-detail="winmint"]:not([hidden]) [data-back-to-projects]')
+    .click();
+  await expect(page.locator("html")).toHaveAttribute("data-site-mode", "projects");
+  await expect(page.locator("#view-projects")).toHaveClass(/is-active/);
+  await expect(page.locator('[data-open-project="winmint"]')).toBeVisible();
+});
+
 test("source link targets the site repository", async ({ page }) => {
   await page.goto(`${BASE}/`);
   await waitForSplashClient(page);
@@ -224,12 +238,6 @@ test("robots.txt references a live sitemap", async ({ request }) => {
   const xml = await sitemap.text();
   expect(xml).toContain("https://yanai.sh/uses");
   expect(xml).toContain("/blog/edge-native-personal-sites");
-});
-
-test("splash footer links to document pages", async ({ page }) => {
-  await page.goto(`${BASE}/`);
-  await expect(page.locator('.stage-footer a[href="/uses"]')).toBeVisible();
-  await expect(page.locator('.stage-footer a[href="/now"]')).toBeVisible();
 });
 
 test("mobile viewport (375px wide) shows splash without overflow", async ({ browser }) => {

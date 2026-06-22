@@ -23,6 +23,10 @@ const copyHeader = (from: Headers, to: Headers, name: string): void => {
   if (value) to.set(name, value);
 };
 
+function runtimeProcessEnv(): Record<string, string | undefined> | undefined {
+  return globalThis.process?.env;
+}
+
 async function resumeRepoToken(env: Env): Promise<string> {
   const devToken = devResumeRepoToken();
   if (devToken) return devToken;
@@ -35,13 +39,19 @@ async function resumeRepoToken(env: Env): Promise<string> {
 
   return resolveResumeRepoToken({
     privateEnv: privateEnv as Record<string, string | undefined>,
-    processEnv: process.env,
+    processEnv: runtimeProcessEnv(),
     metaEnv: import.meta.env as Record<string, string | undefined>,
   });
 }
 
 export async function resumePdfResponse(env: Env, includeBody: boolean): Promise<Response> {
-  const token = await resumeRepoToken(env);
+  let token = "";
+  try {
+    token = await resumeRepoToken(env);
+  } catch (error) {
+    console.error("resume-pdf: token resolution failed", error);
+    return errorResponse("Resume token lookup failed.", 502);
+  }
   if (!token) {
     return errorResponse("Resume token is not configured.", 503);
   }
@@ -65,7 +75,10 @@ export async function resumePdfResponse(env: Env, includeBody: boolean): Promise
     copyHeader(assetResponse.headers, headers, "ETag");
     copyHeader(assetResponse.headers, headers, "Last-Modified");
 
-    return new Response(includeBody ? assetResponse.body : null, {
+    const body = includeBody ? await assetResponse.arrayBuffer() : null;
+    if (body) headers.set("Content-Length", String(body.byteLength));
+
+    return new Response(body, {
       status: 200,
       headers,
     });

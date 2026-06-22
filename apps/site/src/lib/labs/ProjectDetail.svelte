@@ -6,11 +6,9 @@
   let {
     project,
     repoMeta,
-    onback,
   }: {
     project: LabSplashProject;
     repoMeta?: Record<string, import("$lib/github-repo-meta").RepoMeta | null>;
-    onback: () => void;
   } = $props();
 
   const meta = $derived(repoMetaFor(repoMeta, project.repo));
@@ -20,7 +18,7 @@
 
 <article class="project-detail lab-project-detail">
   <div class="pane-scroll">
-    <button type="button" class="lab-pane-back" data-back-to-projects onclick={onback}>
+    <button type="button" class="lab-pane-back" data-back-to-projects>
       ← Projects
     </button>
 

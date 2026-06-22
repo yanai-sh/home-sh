@@ -152,14 +152,6 @@
             <button type="button" class="stage-link" data-open-split="projects">Projects</button>
           </div>
         </nav>
-
-        <footer class="stage-footer">
-          <nav class="stage-footer__nav" aria-label="Documents">
-            <a class="stage-link stage-link--inline" href="/uses">Uses</a>
-            <span class="stage-footer__sep" aria-hidden="true">·</span>
-            <a class="stage-link stage-link--inline" href="/now">Now</a>
-          </nav>
-        </footer>
       </div>
     </main>
   </div>
@@ -242,7 +234,7 @@
                 : ('externalUrl' in project ? project.externalUrl : '') ?? ''}
               hidden
             >
-              <ProjectDetail {project} {repoMeta} onback={() => {}} />
+              <ProjectDetail {project} {repoMeta} />
             </div>
           {/each}
         {/await}
