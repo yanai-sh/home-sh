@@ -61,5 +61,5 @@ runs:
         SMOKE_BASE_URL: ${{ inputs.smoke_base_url }}
         CF_ACCESS_CLIENT_ID: ${{ inputs.cf_access_client_id }}
         CF_ACCESS_CLIENT_SECRET: ${{ inputs.cf_access_client_secret }}
-      run: nub run smoke
+      run: NODE_COMPAT=1 nub run -F @yanai-sh/site smoke
       shell: bash
