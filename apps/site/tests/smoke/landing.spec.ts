@@ -186,7 +186,9 @@ test("project detail back control returns to projects grid", async ({ page }) =>
   await page.locator('button[data-open-split="projects"]').click();
   await page.locator('[data-open-project="winmint"]').click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "project");
-  await page.locator('[data-project-detail="winmint"]:not([hidden]) [data-back-to-projects]').click();
+  await page
+    .locator('[data-project-detail="winmint"]:not([hidden]) [data-back-to-projects]')
+    .click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "projects");
   await expect(page.locator("#view-projects")).toHaveClass(/is-active/);
   await expect(page.locator('[data-open-project="winmint"]')).toBeVisible();
