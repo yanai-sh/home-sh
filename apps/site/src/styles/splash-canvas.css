@@ -1,0 +1,309 @@
+/* Trick-room canvas — full-viewport cells (reuses rest identity styles from splash-deck.css) */
+
+.splash-canvas {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  container-type: inline-size;
+  height: 100dvh;
+  min-height: 100%;
+  background: transparent;
+  isolation: isolate;
+  touch-action: none;
+}
+
+.splash-canvas__rest {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: max(4.5cqi, env(safe-area-inset-top, 0px)) 6cqi
+    calc(5cqi + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  touch-action: none;
+  overscroll-behavior: none;
+  transition:
+    opacity var(--canvas-duration, 320ms) var(--canvas-ease-enter, cubic-bezier(0.32, 0.72, 0, 1)),
+    transform var(--canvas-duration, 320ms) var(--canvas-ease-enter, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+.splash-canvas--active .splash-canvas__rest {
+  opacity: 0;
+  transform: scale(0.985);
+  pointer-events: none;
+}
+
+.splash-canvas__stage {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(1.25%);
+  touch-action: none;
+  overscroll-behavior: none;
+  transition:
+    opacity var(--canvas-duration, 320ms) var(--ease-out-ui, cubic-bezier(0.23, 1, 0.32, 1)),
+    transform var(--canvas-duration, 320ms) var(--canvas-ease-enter, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+.splash-canvas--active .splash-canvas__stage {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.splash-canvas__header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: max(4cqi, calc(0.35rem + env(safe-area-inset-top, 0px))) 5cqi 1.25cqi;
+}
+
+.splash-canvas__home {
+  margin: 0;
+  padding: 0.1rem 0.35rem;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--splash-stage-accent, var(--color-accent-text));
+  font:
+    600 clamp(0.78rem, 2cqi, 0.92rem) / 1.05
+    var(--splash-name-font, "Chiron GoRound TC", var(--font-body));
+  letter-spacing: -0.02em;
+  transition: color var(--deck-duration-ui, 200ms) var(--ease-out-ui);
+}
+
+.splash-canvas__home:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--splash-stage-accent) 45%, transparent);
+  outline-offset: 4px;
+}
+
+.splash-canvas__nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35cqi 1.5cqi;
+}
+
+.splash-canvas__nav-link {
+  border: 0;
+  padding: 0.2cqi 0.45cqi;
+  min-height: 2.25rem;
+  background: none;
+  cursor: pointer;
+  color: var(--color-muted, var(--muted));
+  font:
+    500 clamp(0.82rem, 2cqi, 0.95rem) / 1.1
+    var(--splash-name-font, "Chiron GoRound TC", var(--font-body));
+  transition:
+    color var(--deck-duration-ui, 200ms) var(--ease-out-ui),
+    transform var(--deck-duration-ui, 200ms) var(--ease-out-ui);
+}
+
+.splash-canvas__nav-link:hover,
+.splash-canvas__nav-link:focus-visible {
+  color: var(--color-maintext, var(--text));
+  transform: translateY(-1px);
+}
+
+.splash-canvas__nav-link:active {
+  transform: scale(0.97);
+}
+
+.splash-canvas__nav-link--active {
+  color: var(--splash-stage-accent, var(--color-accent-text));
+}
+
+.splash-canvas__viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+  overscroll-behavior: none;
+  transition: transform 180ms var(--canvas-ease-exit, cubic-bezier(0.4, 0, 0.85, 0.2));
+}
+
+.splash-canvas__viewport--nudge-west {
+  transform: translateX(10px);
+}
+
+.splash-canvas__viewport--nudge-east {
+  transform: translateX(-10px);
+}
+
+.splash-canvas__viewport--nudge-north {
+  transform: translateY(10px);
+}
+
+.splash-canvas__viewport--nudge-south {
+  transform: translateY(-10px);
+}
+
+.splash-canvas__cell {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transform: translate3d(var(--cell-x, 0), var(--cell-y, 0), 0);
+  transition:
+    opacity var(--canvas-duration, 320ms) var(--ease-out-ui, cubic-bezier(0.23, 1, 0.32, 1)),
+    transform var(--canvas-duration, 320ms) var(--canvas-ease-enter, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+.splash-canvas__cell--active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+  z-index: 2;
+}
+
+@starting-style {
+  .splash-canvas__cell--active {
+    transform: translate3d(var(--cell-x, 0), var(--cell-y, 0), 0);
+  }
+}
+
+.splash-canvas__cell--leaving {
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  z-index: 1;
+  transition-duration: var(--canvas-duration-exit, 260ms);
+  transition-timing-function: var(--canvas-ease-exit, cubic-bezier(0.4, 0, 0.85, 0.2));
+}
+
+.splash-canvas__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  overscroll-behavior-x: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y pinch-zoom;
+  padding: 0 clamp(1rem, 4cqi, 2.5rem) calc(2rem + env(safe-area-inset-bottom, 0px));
+}
+
+.splash-canvas__cell-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 clamp(1rem, 4cqi, 2.5rem) 1rem;
+  color: var(--color-subtext, var(--subtext));
+  font: 500 clamp(0.65rem, 1.8cqi, 0.78rem) / 1 var(--font-mono);
+}
+
+.splash-canvas__cell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.splash-canvas__chip {
+  color: var(--splash-stage-accent, var(--color-accent-text));
+  font: inherit;
+  text-decoration: none;
+}
+
+.splash-canvas__chip:hover,
+.splash-canvas__chip:focus-visible {
+  text-decoration: underline;
+}
+
+.splash-canvas__project {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: splash-canvas-project-in var(--canvas-duration, 320ms)
+    var(--canvas-ease-enter, cubic-bezier(0.32, 0.72, 0, 1)) both;
+}
+
+@keyframes splash-canvas-project-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 5%, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.splash-canvas__project-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: max(4cqi, calc(0.35rem + env(safe-area-inset-top, 0px))) clamp(1rem, 4cqi, 2.5rem)
+    1rem;
+  color: var(--color-subtext, var(--subtext));
+  font: 500 clamp(0.65rem, 1.8cqi, 0.78rem) / 1 var(--font-mono);
+}
+
+.splash-canvas__project-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  overscroll-behavior-x: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y pinch-zoom;
+  padding: 0 clamp(1rem, 4cqi, 2.5rem) calc(2rem + env(safe-area-inset-bottom, 0px));
+}
+
+.splash-canvas__resume-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  display: flex;
+  touch-action: none;
+  padding: 0 clamp(0.75rem, 3cqi, 1.75rem) calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.splash-canvas__resume-body .deck-pane--resume-fit {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-canvas__rest,
+  .splash-canvas__stage,
+  .splash-canvas__cell,
+  .splash-canvas__viewport,
+  .splash-canvas__project {
+    transition: none;
+    animation: none;
+  }
+
+  .splash-canvas--active .splash-canvas__rest {
+    transform: none;
+  }
+}
+
+@container (max-width: 34rem) {
+  .splash-canvas__rest {
+    padding: max(4cqi, env(safe-area-inset-top, 0px)) 5cqi
+      calc(5.5cqi + env(safe-area-inset-bottom, 0px));
+  }
+
+  .splash-canvas__header {
+    padding-bottom: 0.85cqi;
+  }
+}

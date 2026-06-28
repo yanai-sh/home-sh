@@ -1,6 +1,6 @@
 <script lang="ts">
   import SiteMeta from '$lib/components/SiteMeta.svelte';
-  import BodyShell from '$lib/components/BodyShell.svelte';
+  import DocumentChrome from '$lib/components/DocumentChrome.svelte';
   import { page } from '$app/state';
 
   let { children }: { children: import('svelte').Snippet } = $props();
@@ -15,12 +15,6 @@
 
 <SiteMeta {title} {pathname} />
 
-<BodyShell bodyClass="document-body" htmlData={{ theme: 'dark' }} />
-
-<header class="document-header">
-  <a class="document-header__home" href="/">yanai.sh</a>
-</header>
-
-<main class="document-main">
+<DocumentChrome>
   {@render children()}
-</main>
+</DocumentChrome>

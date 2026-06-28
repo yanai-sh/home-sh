@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **SplashCanvas (archived lab)** — trick-room navigation prototype at `/labs/splash-canvas` (horizontal ring + Contact south pole, full-viewport cells, hash deep links). Shared panes and HTML state with production deck.
+
+### Changed
+
+- **Splash navigation** — production `/` uses a **hybrid shell**: **split flyout** at `min-width: 721px` (production-like stage + flyout panes) and **SplashDeck** carousel below that breakpoint. Shared panes and HTML state; canvas experiment archived to `/labs/splash-canvas` only; `/labs/splash-deck` redirects to `/`.
+- **Node.js** — require **24+** locally and in CI (`.node-version`, `engines`); WSL bootstrap installs `nodejs24` on Fedora.
+
+### Removed (from production)
+
+- **SplashCanvas on `/`** — deferred; see lab route above.
+
 ## [v0.1.31] - 2026-06-22
 
 ### Changed

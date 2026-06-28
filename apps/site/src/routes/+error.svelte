@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import SiteMeta from '$lib/components/SiteMeta.svelte';
-  import BodyShell from '$lib/components/BodyShell.svelte';
+  import DocumentChrome from '$lib/components/DocumentChrome.svelte';
 
   let { error }: { error?: App.Error } = $props();
 
@@ -50,13 +50,7 @@
 
 <SiteMeta title={copy.title} pathname={page.url.pathname} />
 
-<BodyShell bodyClass="document-body" htmlData={{ theme: 'dark' }} />
-
-<header class="document-header">
-  <a class="document-header__home" href="/">yanai.sh</a>
-</header>
-
-<main class="document-main">
+<DocumentChrome>
   <article class="error-page panel" data-status={String(status)}>
     <header class="error-page__head">
       <p class="document-eyebrow">Error {status}</p>
@@ -67,4 +61,4 @@
       <a class="button-link button-link--primary" href="/">Back to home</a>
     </div>
   </article>
-</main>
+</DocumentChrome>

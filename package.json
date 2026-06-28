@@ -27,6 +27,11 @@
     "push-secrets": "node scripts/wsl-proxy.mjs nub exec tsx scripts/push-secrets.ts",
     "destroy-legacy-data": "node scripts/wsl-proxy.mjs nub exec tsx scripts/destroy-legacy-data-stores.ts",
     "optional:bitwarden-to-secrets": "node scripts/wsl-proxy.mjs nub exec tsx scripts/optional/bitwarden-to-secrets.ts",
+    "agent:env": "node scripts/agent-env.mjs",
+    "agent:quick": "node scripts/wsl-proxy.mjs sh scripts/agent-test.sh quick",
+    "agent:verify": "node scripts/wsl-proxy.mjs sh scripts/agent-test.sh verify",
+    "agent:qa": "node scripts/wsl-proxy.mjs sh scripts/agent-test.sh qa",
+    "agent:smoke": "node scripts/wsl-proxy.mjs sh scripts/agent-test.sh smoke",
     "prepare": "node scripts/wsl-proxy.mjs sh -c \"command -v git >/dev/null 2>&1 && nub exec lefthook install || exit 0\""
   },
   "devDependencies": {
@@ -37,7 +42,7 @@
     "vitest": "^4.1.0"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "packageManager": "nub@0.1.10",
   "devEngines": {

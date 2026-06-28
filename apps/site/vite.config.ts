@@ -48,5 +48,8 @@ export default defineConfig(({ mode }) => {
       host: "::",
       port: 4321,
     },
+    optimizeDeps: {
+      exclude: ["pdfjs-dist", "pdfjs-dist/build/pdf.mjs", "pdfjs-dist/build/pdf.worker.mjs"],
+    },
   };
 });

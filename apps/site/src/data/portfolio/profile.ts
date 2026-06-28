@@ -4,6 +4,8 @@ export const profile = {
   pageTitle: "yanai.sh",
   name: "Yanai Klugman",
   tagline: "Software Engineer · Integration · Infrastructure · Deployment",
+  roleTitle: "Software Engineer",
+  roleFocus: "Integration · Infrastructure · Deployment",
   socials: [
     {
       name: "github.com",

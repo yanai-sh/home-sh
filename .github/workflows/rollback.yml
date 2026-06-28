@@ -80,8 +80,8 @@ jobs:
             CURL+=(-H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}")
           fi
           BODY="$("${CURL[@]}" https://yanai.sh/ || true)"
-          if ! printf '%s' "$BODY" | grep -q 'id="shell"'; then
-            echo "::error::Rollback promote succeeded but https://yanai.sh still lacks SvelteKit splash (#shell)." >&2
+          if ! printf '%s' "$BODY" | grep -qE 'id="shell"|data-splash-root'; then
+            echo "::error::Rollback promote succeeded but https://yanai.sh still lacks SvelteKit splash (#shell or data-splash-root)." >&2
             exit 1
           fi
           "${CURL[@]}" -o /dev/null -w "HTTP %{http_code} /resume.pdf\n" https://yanai.sh/resume.pdf
