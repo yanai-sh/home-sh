@@ -196,14 +196,14 @@ jobs:
           for attempt in 1 2 3 4 5 6; do
             HTTP_CODE="$(curl -sS --http1.1 -4 -o /tmp/preview-body.html -w "%{http_code}" "${PREVIEW_URL}/" || echo "000")"
             BODY="$(cat /tmp/preview-body.html 2>/dev/null || true)"
-            if printf '%s' "$BODY" | grep -q 'id="shell"'; then
+            if printf '%s' "$BODY" | grep -qE 'id="shell"|data-splash-root'; then
               echo "Promoted version ${VERSION_ID} serves SvelteKit splash on preview URL (attempt ${attempt}, HTTP ${HTTP_CODE})."
               exit 0
             fi
             if printf '%s' "$BODY" | grep -qE 'Layout\.astro|/_astro/'; then
               echo "::warning::Preview still looks like pre-SvelteKit static HTML (attempt ${attempt}/6)" >&2
             else
-              echo "Attempt ${attempt}/6: HTTP ${HTTP_CODE}, #shell not found on ${PREVIEW_URL}" >&2
+              echo "Attempt ${attempt}/6: HTTP ${HTTP_CODE}, splash shell marker not found on ${PREVIEW_URL}" >&2
             fi
             sleep 10
           done

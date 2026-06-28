@@ -1,5 +1,11 @@
 import { expect, test } from "playwright/test";
-import { BASE, expectNoHorizontalOverflow, openSplash, resolveAssetUrl, restNav } from "./helpers";
+import {
+  BASE,
+  expectNoHorizontalOverflow,
+  openSplashDeck,
+  resolveAssetUrl,
+  restNav,
+} from "./helpers";
 
 test("bundled CSS and client JS return 200", async ({ page, request }) => {
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
@@ -63,7 +69,7 @@ test("mobile viewports avoid horizontal overflow", async ({ browser }) => {
     await expectNoHorizontalOverflow(page);
   }
 
-  await openSplash(page);
+  await openSplashDeck(page);
   await restNav(page, "resume").click();
   await expect(page.locator("html")).toHaveAttribute("data-site-mode", "resume");
   await expectNoHorizontalOverflow(page);

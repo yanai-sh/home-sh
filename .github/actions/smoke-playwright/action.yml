@@ -42,7 +42,7 @@ runs:
           (title && /access/i.test(title)) ||
           /cloudflareaccess\.com\/cdn-cgi\/access\/login/i.test(location);
         const looksLikePreSvelteKit = /Layout\.astro|\/_astro\//i.test(body);
-        const hasSplashShell = /id="shell"/i.test(body);
+        const hasSplashShell = /id="shell"/i.test(body) || /data-splash-root/i.test(body);
         console.log(`preflight: GET / -> ${res.status}`);
         if (title) console.log(`preflight: title="${title}"`);
         if (looksLikeAccess) {
@@ -52,7 +52,7 @@ runs:
           throw new Error("Preflight looks like pre-SvelteKit static HTML, not the splash shell (#shell missing).");
         }
         if (!hasSplashShell) {
-          throw new Error("Preflight missing splash shell marker (#shell).");
+          throw new Error("Preflight missing splash shell marker (#shell or data-splash-root).");
         }
         EOF
       shell: bash

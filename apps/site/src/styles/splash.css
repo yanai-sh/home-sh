@@ -46,6 +46,7 @@ html[data-site-mode='splash'] {
   overflow: hidden;
 }
 
+@media (min-width: 721px) {
 /* ── Split shell + floating flyouts ──────────────────────────────────────── */
 
 .shell {
@@ -744,6 +745,8 @@ html.is-pane-switching[data-pane-switch='back'] .pane-view.is-exiting {
 html.is-split-animating .pane-view {
   transition: none;
 }
+}
+
 .pane-scroll {
   flex: 1;
   overflow: auto;
@@ -1352,140 +1355,3 @@ html.is-split-animating .pane-view {
   }
 }
 
-/* ── Mobile: inset flyout card ───────────────────────────────────────────── */
-
-@media (max-width: 720px) {
-  :root {
-    --splash-stage-offset: max(clamp(3.5rem, 14vh, 5.5rem), env(safe-area-inset-top, 0px));
-    --splash-nav-offset: 1.25rem;
-    --splash-name-size: clamp(2.35rem, 10vw, 3.35rem);
-  }
-
-  .stage {
-    padding-inline: max(clamp(1.25rem, 4vw, 3.5rem), env(safe-area-inset-left, 0px))
-      max(clamp(1.25rem, 4vw, 3.5rem), env(safe-area-inset-right, 0px));
-  }
-
-  .stage-inner {
-    margin-inline: 0 auto;
-  }
-
-  .stage-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
-    padding-block: 0.5rem;
-  }
-
-  .glyph {
-    width: 2.75rem;
-    height: 2.75rem;
-  }
-
-  .pane--detail {
-    top: auto;
-    left: max(var(--flyout-inset), env(safe-area-inset-left, 0px));
-    right: max(var(--flyout-inset), env(safe-area-inset-right, 0px));
-    bottom: max(var(--flyout-inset), env(safe-area-inset-bottom, 0px));
-    width: auto;
-    max-width: none;
-    height: min(88svh, 52rem);
-    opacity: var(--split-progress);
-    transform: translate3d(0, calc((1 - var(--split-progress)) * 108%), 0);
-  }
-
-  .flyout-panel {
-    box-shadow:
-      0 18px 44px rgba(0, 0, 0, 0.28),
-      0 2px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  [data-theme='light'] .flyout-panel {
-    box-shadow:
-      0 18px 40px rgba(26, 42, 56, 0.14),
-      0 0 0 1px color-mix(in srgb, var(--rule) 55%, transparent);
-  }
-
-  .pane-chrome::before {
-    content: '';
-    position: absolute;
-    top: 0.35rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2.25rem;
-    height: 3px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--rule-strong) 85%, transparent);
-  }
-
-  .pane-chrome {
-    flex-wrap: wrap;
-    row-gap: 0.35rem;
-    padding-top: 1rem;
-  }
-
-  .chrome-btn {
-    min-height: 2.75rem;
-    padding: 0.5rem 0.75rem;
-  }
-
-  .chrome-btn[aria-label='Close pane'] {
-    min-width: 2.75rem;
-    justify-content: center;
-    padding-inline: 0.65rem;
-  }
-
-  .form-submit {
-    min-height: 2.75rem;
-  }
-
-  #view-resume {
-    padding: 0.55rem 0.65rem 0.7rem;
-  }
-
-  .stage {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* ── Reduced motion ──────────────────────────────────────────────────────── */
-
-@media (prefers-reduced-motion: reduce) {
-  .stage,
-  .pane--detail,
-  .pane--splash,
-  .split-divider,
-  .pane-view,
-  html.is-pane-switching .pane-view,
-  .glyph-copy__panel,
-  .glyph-copy__line,
-  .glyph-copy__address,
-  .glyph-copy__status,
-  .glyph-copy__trigger,
-  .stage-link,
-  .glyph,
-  .stage-name,
-  .stage-role,
-  .stage-location,
-  .stage-deck,
-  .stage-nav,
-  .stage-footer {
-    transition: none;
-    animation: none;
-  }
-  .pane--detail {
-    transform: none;
-  }
-  .resume-pages,
-  .resume-page,
-  .resume-viewer,
-  .resume-page-frame {
-    transition: none;
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* Split flyouts use spring motion only — no View Transition snapshots. */

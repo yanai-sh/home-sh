@@ -3,7 +3,7 @@
   import IconSprite from "$lib/components/IconSprite.svelte";
   import SiteMeta from "$lib/components/SiteMeta.svelte";
   import SplashAmbient from "$lib/splash/SplashAmbient.svelte";
-  import SplashDeckPage from "$lib/splash/SplashDeckPage.svelte";
+  import SplashShellPage from "$lib/splash/SplashShellPage.svelte";
   import { SITE_EMAIL } from "@config/site";
   import type { SplashHomeData } from "$lib/splash/splash-home-data";
 
@@ -42,4 +42,4 @@
   </div>
 </noscript>
 
-<SplashDeckPage {data} />
+<SplashShellPage {data} />

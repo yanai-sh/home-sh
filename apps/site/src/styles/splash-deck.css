@@ -1,4 +1,4 @@
-/* Splash deck — hybrid morph name + depth carousel (container-query layout) */
+@media (max-width: 720px) {
 
 .splash-deck {
   position: relative;
@@ -835,4 +835,5 @@
   .splash-deck__rest {
     padding-top: max(3cqi, env(safe-area-inset-top, 0px));
   }
+}
 }

@@ -10,6 +10,16 @@ export const BASE = (() => {
   return url.replace(/\/$/, "");
 })();
 
+/** Desktop split shell — matches `SPLASH_SPLIT_MEDIA` in split-shell.ts */
+export const SPLASH_SPLIT_VIEWPORT = { width: 1280, height: 800 };
+
+/** Mobile deck carousel — below split breakpoint */
+export const SPLASH_DECK_VIEWPORT = { width: 375, height: 812 };
+
+export function splitNav(page: Page, dest: "resume" | "contact" | "projects") {
+  return page.locator(`button.stage-link[data-open-split="${dest}"]`);
+}
+
 export function restNav(page: Page, dest: "resume" | "contact" | "projects") {
   return page.locator(`.splash-deck__nav button[data-splash-open="${dest}"]`);
 }
@@ -23,11 +33,45 @@ export function canvasNav(page: Page, dest: "resume" | "contact" | "projects") {
   return page.locator(`button[data-splash-nav="${dest}"]`);
 }
 
+/** Hybrid-aware: waits for shared splash markers only. */
 export async function openSplash(page: Page): Promise<void> {
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
   await expect(page.locator("#splash")).toBeVisible();
   await expect(page.locator("[data-splash-ambient]")).toBeAttached();
+}
+
+export async function openSplashSplit(page: Page): Promise<void> {
+  await page.setViewportSize(SPLASH_SPLIT_VIEWPORT);
+  await openSplash(page);
+  await expect(page.locator("#shell")).toBeVisible();
+  await expect(page.locator(".splash-shell--split")).toBeVisible();
+  await expect(splitNav(page, "resume")).toBeVisible();
+}
+
+export async function openSplashDeck(page: Page): Promise<void> {
+  await page.setViewportSize(SPLASH_DECK_VIEWPORT);
+  await openSplash(page);
+  await expect(page.locator(".splash-deck")).toBeVisible({ timeout: 10_000 });
   await expect(restNav(page, "resume")).toBeVisible();
+}
+
+/** Wait for splash open/close animations to finish (split or deck). */
+export async function waitSplashSettled(page: Page, timeout = 8_000): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const animating = await page
+          .locator("html")
+          .evaluate(
+            (el) =>
+              el.classList.contains("is-split-animating") ||
+              el.classList.contains("is-splash-animating"),
+          );
+        return !animating;
+      },
+      { timeout },
+    )
+    .toBe(true);
 }
 
 /** Simulate a compass pan swipe on the splash gesture surface (not scroll/pane chrome). */

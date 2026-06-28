@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Splash navigation** — production `/` restored to **SplashDeck** flyout carousel (matches live yanai.sh). Canvas experiment archived to lab only; `/labs/splash-deck` redirects to `/`.
+- **Splash navigation** — production `/` uses a **hybrid shell**: **split flyout** at `min-width: 721px` (production-like stage + flyout panes) and **SplashDeck** carousel below that breakpoint. Shared panes and HTML state; canvas experiment archived to `/labs/splash-canvas` only; `/labs/splash-deck` redirects to `/`.
 - **Node.js** — require **24+** locally and in CI (`.node-version`, `engines`); WSL bootstrap installs `nodejs24` on Fedora.
 
 ### Removed (from production)
