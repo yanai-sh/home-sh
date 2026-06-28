@@ -5,36 +5,56 @@
  * chunk. On any failure the caller's fallback link is shown.
  */
 
+import { computeResumeFitScale } from "./resume-pdf-fit";
+import { readSplashPaneAnimating, readSplashPaneOpen } from "./splash-html-state";
+
 /** Warm cream — replaces harsh PDF white in both themes. */
 const PAPER_WARM = { r: 236, g: 228, b: 210 } as const;
 
-let started = false;
+const renderStarted = new WeakMap<HTMLElement, boolean>();
+
+export type ResumeRenderMode = "scroll" | "fit";
 
 const MIN_READABLE_WIDTH = 280;
+const MIN_FIT_HEIGHT = 120;
 
 /** Pure layout gate — keeps PDF render from running on a narrow mid-animation pane. */
 export function isResumeLayoutReadable(
   clientWidth: number,
-  splitOpen: boolean,
-  splitAnimating: boolean,
+  paneOpen: boolean,
+  paneAnimating: boolean,
+  clientHeight = 0,
+  mode: ResumeRenderMode = "scroll",
 ): boolean {
   if (clientWidth < MIN_READABLE_WIDTH) return false;
-  if (!splitOpen) return false;
-  if (splitAnimating) return false;
+  if (!paneOpen) return false;
+  if (paneAnimating) return false;
+  if (mode === "fit" && clientHeight < MIN_FIT_HEIGHT) return false;
   return true;
 }
 
-function resumeLayoutReady(container: HTMLElement, root = document.documentElement): boolean {
+function resumeLayoutReady(container: HTMLElement, mode: ResumeRenderMode, root: HTMLElement): boolean {
+  const boxHeight =
+    container.clientHeight ||
+    container.parentElement?.clientHeight ||
+    container.closest(".splash-canvas__resume-body")?.clientHeight ||
+    0;
   return isResumeLayoutReadable(
     container.clientWidth,
-    root.dataset.splitOpen === "true",
-    root.classList.contains("is-split-animating"),
+    readSplashPaneOpen(root),
+    readSplashPaneAnimating(root),
+    boxHeight,
+    mode,
   );
 }
 
-function waitForReadableLayout(container: HTMLElement, timeoutMs = 3_000): Promise<void> {
+function waitForReadableLayout(
+  container: HTMLElement,
+  mode: ResumeRenderMode,
+  timeoutMs = 3_000,
+): Promise<void> {
   const root = document.documentElement;
-  if (resumeLayoutReady(container, root)) return Promise.resolve();
+  if (resumeLayoutReady(container, mode, root)) return Promise.resolve();
 
   return new Promise((resolve) => {
     let settled = false;
@@ -48,14 +68,16 @@ function waitForReadableLayout(container: HTMLElement, timeoutMs = 3_000): Promi
     };
 
     const tryFinish = (): void => {
-      if (resumeLayoutReady(container, root)) finish();
+      if (resumeLayoutReady(container, mode, root)) finish();
     };
 
     const resize = new ResizeObserver(tryFinish);
     resize.observe(container);
-    // ponytail: split end is a class flip, not a resize — watch html attrs instead of polling.
     const mutation = new MutationObserver(tryFinish);
-    mutation.observe(root, { attributes: true, attributeFilter: ["class", "data-split-open"] });
+    mutation.observe(root, {
+      attributes: true,
+      attributeFilter: ["class", "data-splash-open"],
+    });
     const timer = window.setTimeout(finish, timeoutMs);
   });
 }
@@ -83,31 +105,58 @@ function warmPaperPixels(ctx: CanvasRenderingContext2D, width: number, height: n
   ctx.putImageData(image, 0, 0);
 }
 
+export function resetResumePdfRender(pages: HTMLElement): void {
+  renderStarted.delete(pages);
+  pages.replaceChildren();
+  delete pages.dataset.rendered;
+}
+
 export async function renderResumePdf(
   pages: HTMLElement,
   url: string,
   onError: () => void,
+  mode: ResumeRenderMode = "scroll",
 ): Promise<void> {
-  if (started) return;
-  started = true;
+  if (renderStarted.get(pages)) return;
+  renderStarted.set(pages, true);
   pages.dataset.rendered = "pending";
 
   try {
-    await waitForReadableLayout(pages);
+    await waitForReadableLayout(pages, mode);
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-    const pdfjs = await import("pdfjs-dist");
-    const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
-    pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+    const pdfjs = await import("pdfjs-dist/build/pdf.mjs");
+    const { RESUME_PDF_WORKER_URL } = await import("./resume-pdf-worker");
+    pdfjs.GlobalWorkerOptions.workerSrc = RESUME_PDF_WORKER_URL;
 
     const doc = await pdfjs.getDocument({ url }).promise;
     const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     const cssWidth = Math.min(pages.clientWidth || 720, 1100);
 
+    const pageSizes: { width: number; height: number }[] = [];
     for (let n = 1; n <= doc.numPages; n++) {
       const page = await doc.getPage(n);
       const unit = page.getViewport({ scale: 1 });
-      const logicalScale = cssWidth / unit.width;
+      pageSizes.push({ width: unit.width, height: unit.height });
+    }
+
+    let logicalScale: number;
+    if (mode === "fit") {
+      const boxHeight =
+        pages.clientHeight ||
+        pages.parentElement?.clientHeight ||
+        pages.closest(".splash-canvas__resume-body")?.clientHeight ||
+        0;
+      logicalScale =
+        boxHeight > 0
+          ? computeResumeFitScale(pageSizes, cssWidth, boxHeight)
+          : cssWidth / Math.max(...pageSizes.map((p) => p.width));
+    } else {
+      logicalScale = cssWidth / pageSizes[0]!.width;
+    }
+
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
       const viewport = page.getViewport({ scale: logicalScale });
       const frame = document.createElement("div");
       frame.className = "resume-page-frame";
@@ -131,7 +180,7 @@ export async function renderResumePdf(
 
     pages.dataset.rendered = "true";
   } catch (err) {
-    started = false;
+    renderStarted.delete(pages);
     delete pages.dataset.rendered;
     console.warn("[resume] inline PDF render failed:", err);
     onError();
