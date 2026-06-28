@@ -33,7 +33,11 @@ export function isResumeLayoutReadable(
   return true;
 }
 
-function resumeLayoutReady(container: HTMLElement, mode: ResumeRenderMode, root: HTMLElement): boolean {
+function resumeLayoutReady(
+  container: HTMLElement,
+  mode: ResumeRenderMode,
+  root: HTMLElement,
+): boolean {
   const boxHeight =
     container.clientHeight ||
     container.parentElement?.clientHeight ||
