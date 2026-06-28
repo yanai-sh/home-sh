@@ -89,3 +89,5 @@ home-*.png
 skills-lock.json
 # Generated codebase docs (acquire-codebase-knowledge skill) — kept local for reference.
 docs/codebase/
+.agent-run-output.txt
+.agent-full-run.log

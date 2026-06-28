@@ -1,13 +1,35 @@
 # Roadmap
 
-Status date: 2026-05-11
+Status date: 2026-06-28
 
-This is the planning source of truth for `yanai.sh`. It consolidates the old
-split design and execution notes into one document. `ARCHITECTURE.md` records
-durable technical tradeoffs. `CHANGELOG.md` records shipped changes. This file
-records product direction, design intent, milestones, and acceptance gates.
+This is the planning source of truth for `yanai.sh`. `ARCHITECTURE.md` records
+durable technical tradeoffs. `CHANGELOG.md` records shipped changes.
 
-## Product Direction
+> **2026-06 pivot:** Production `/` is **SplashDeck** (flyout carousel: Resume ·
+> Projects · Contact). **SplashCanvas** trick-room prototype is archived at
+> `/labs/splash-canvas`.
+
+## Product Direction (shipped)
+
+`yanai.sh` opens on a calm **paper-fog splash**, then **SplashDeck** flyout panes:
+
+| Pane | Role | Hash |
+| ---- | ---- | ---- |
+| Resume | Inline PDF + download | `#resume` |
+| Projects | Featured work + `#p/<slug>` detail | `#projects` |
+| Contact | Turnstile form | `#contact` |
+
+Supporting routes:
+
+| Route | Role |
+| ----- | ---- |
+| `/` | **Primary:** Rest Home + SplashDeck |
+| `/resume` | **308 → `/resume.pdf`** |
+| `/resume.pdf` | PDF proxied from **`yanai-sh/resume`** releases |
+| `/labs/splash-canvas` | Archived canvas experiment |
+| `/workspace` | **308 → `/`** |
+
+## Product Direction (deferred — pre-2026-06 vision)
 
 `yanai.sh` should open with a technical first impression, then make the resume
 path impossible to miss.

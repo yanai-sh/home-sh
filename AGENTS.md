@@ -1,6 +1,6 @@
 ## This repository
 
-**Nub monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker (Workers with Static Assets); **`/api/contact`** and **`/resume.pdf`** on that Worker. Optional **`resume/`** git submodule (Rust PDF builder). Toolchain: **Vite+** (`vp check`: Oxlint, Oxfmt, tsgo), **svelte-check**, **Vitest**, **Velite**. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+**Nub monorepo** — **SvelteKit 5 + `@sveltejs/adapter-cloudflare`** site as a Cloudflare Worker (Workers with Static Assets); **`/api/contact`** and **`/resume.pdf`** on that Worker. Optional **`resume/`** git submodule (Rust PDF builder). Production `/` uses **SplashDeck** flyout navigation (résumé · projects · contact). Toolchain: **Vite+** (`vp check`: Oxlint, Oxfmt, tsgo), **svelte-check**, **Vitest**, **Velite**. Design and CI/deploy choices: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ### Monorepo layout
 
@@ -24,8 +24,11 @@ routes/             # SvelteKit pages (+page, +layout, +server)
   (doc)/            # DocumentLayout — blog, projects, uses, now
 lib/
   components/       # Svelte UI (SiteMeta, IconSprite)
+  splash/           # SplashDeck (production `/`), SplashAmbient, client init
+    deck/           # SplashDeck flyout carousel + SplashDeckPane content panes
+    canvas/         # archived SplashCanvas lab (`/labs/splash-canvas`)
   server/           # contact, resume-pdf, security helpers
-  splash/client.ts  # split pane, contact form, resume TOC (onMount)
+  splash/client.ts  # Turnstile + theme init (onMount)
 hooks.server.ts     # security headers, /workspace redirect
 content/            # Velite source (JSON experience, MDX projects/blog)
 data/portfolio/     # splash copy (hero, nav, contact)
