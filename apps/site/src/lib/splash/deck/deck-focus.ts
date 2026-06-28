@@ -1,8 +1,4 @@
-/** Split-pane open/close — spring animation only (no View Transition; avoids full-page blur). */
-
-export function withSplitViewTransition(update: () => void): void {
-  update();
-}
+/** Tab focus loop for an open deck viewport. */
 
 export function trapFocus(container: HTMLElement): () => void {
   const focusable = () =>
