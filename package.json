@@ -33,7 +33,7 @@
     "lefthook": "^2.1.9",
     "playwright": "^1.60.0",
     "tsx": "^4.21.0",
-    "vite-plus": "^0.1.23",
+    "vite-plus": "^0.2.1",
     "vitest": "^4.1.0"
   },
   "engines": {
