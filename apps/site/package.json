@@ -36,12 +36,12 @@
     "pdfjs-dist": "^6.0.227",
     "svelte": "^5.56.3",
     "tailwindcss": "^4.3.1",
-    "velite": "^0.3.1",
+    "velite": "^0.4.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.42.0",
-    "@cloudflare/workers-types": "^4.20260613.1",
+    "@cloudflare/workers-types": "^5.20260729.1",
     "@sveltejs/adapter-cloudflare": "^7.2.8",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@types/node": "^25.9.3",
