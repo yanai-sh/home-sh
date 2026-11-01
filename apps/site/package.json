@@ -42,7 +42,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.42.0",
     "@cloudflare/workers-types": "^4.20260613.1",
-    "@sveltejs/adapter-cloudflare": "^7.2.8",
+    "@sveltejs/adapter-cloudflare": "^8.0.1",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@types/node": "^25.9.3",
     "playwright": "^1.60.0",
