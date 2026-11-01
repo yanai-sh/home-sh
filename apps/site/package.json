@@ -29,7 +29,7 @@
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/space-grotesk": "^5.2.10",
     "@fontsource/ibm-plex-mono": "^5.2.7",
-    "@sveltejs/kit": "^2.65.0",
+    "@sveltejs/kit": "^3.1.0",
     "@tailwindcss/vite": "^4.3.1",
     "bits-ui": "^2.18.1",
     "fuzzball": "^2.2.6",
